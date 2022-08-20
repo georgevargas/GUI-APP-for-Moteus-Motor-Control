@@ -63,3 +63,4 @@ Be careful not to remove part of a sequence. It is OK to remove the whole sequen
 It is OK to cut and paste a whole sequence and then change the parameters.
 The sequence numbers are ignored but they must be there.
 The sequence is executed from top to bottom.
+![image0](https://user-images.githubusercontent.com/10259360/185726576-b0bd35a8-807b-4cd6-8bfe-685f9b3f9978.jpeg)
