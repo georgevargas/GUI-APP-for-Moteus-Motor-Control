@@ -8,8 +8,11 @@ https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/tree/master
 
 https://user-images.githubusercontent.com/10259360/185757499-707da9e6-a162-46f9-b141-da5669a89808.mov
 
+This is a QT GUI program which allows positions to be manually set for each motor and recorded along with other parameters such as velocity, torque and delay etc.. Then you can play back the sequence in cycles. More movements can be added to the sequence without limit.
 
- If the fdcanusb was not installed, Follow the instructions at: https://github.com/mjbots/fdcanusb/blob/master/70-fdcanusb.rules
+The sequence can be saved to a file so it can be run by opening the file. The file is in text format so it can be edited to change parameters or delete steps.
+
+If the fdcanusb was not installed, Follow the instructions at: https://github.com/mjbots/fdcanusb/blob/master/70-fdcanusb.rules
 This consists of doing the following;
 
 copy file 70-fdcanusb.rules to /etc/udev/rules.d folder
