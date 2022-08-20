@@ -4,6 +4,10 @@
 https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/tree/master
 
 
+
+https://user-images.githubusercontent.com/10259360/185756601-572811bd-6413-4572-9087-a42e5f5d24fe.mov
+
+
 ![image0](https://user-images.githubusercontent.com/10259360/185726576-b0bd35a8-807b-4cd6-8bfe-685f9b3f9978.jpeg)
 
  If the fdcanusb was not installed, Follow the instructions at: https://github.com/mjbots/fdcanusb/blob/master/70-fdcanusb.rules
