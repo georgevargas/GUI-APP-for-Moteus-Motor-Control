@@ -1,6 +1,9 @@
 
 Designed for use with MJBOTS Moteus motors using an fdcanusb.
 
+Files are located at
+https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/tree/master
+
 If the fdcanusb was not installed, you will need to have udev rules set up in order for regular users to access the device. Follow the instructions at: https://github.com/mjbots/fdcanusb/blob/master/70-fdcanusb.rules
 This consists of doing the following;
 copy file 70-fdcanusb.rules to /etc/udev/rules.d folder
