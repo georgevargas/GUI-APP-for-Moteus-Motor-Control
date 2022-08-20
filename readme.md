@@ -91,5 +91,5 @@ You can use File Open to read in a previously saved recorded list.
 You can edit the text file to change parameters or delete an entire move.
   
 Be careful not to remove part of a sequence. It is OK to remove the whole sequence including the sequence number and all parameters. 
-It is OK to cut and paste a whole sequence and then change the parameters. The sequence number value are ignored but they must be there. 
+It is OK to cut and paste a whole sequence and then change the parameters. The sequence number value is ignored but they must be there. 
 The sequence is executed from top to bottom.
