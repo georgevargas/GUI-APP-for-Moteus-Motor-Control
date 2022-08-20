@@ -26,4 +26,8 @@ When done click the 'Run Recorded' button and see if it acts as expected. Use Cl
 
 If desired you may save the Recorded list to a text file using the File Save in the menu. You can use File Open to read in a previously saved recorded list.
 
-You can edit the text file to change parameters or delete an entire move. Be careful not to remove part of a sequence. It is OK to remove the whole sequence including the sequence number and all parameters. It is OK to cut and paste a whole sequence and then change the parameters. The sequence numbers are ignored but they must be there. The sequence is executed from top to bottom.![image0](https://user-images.githubusercontent.com/10259360/185727330-1956d9e8-f2fb-4632-bf15-0f9d7283d608.jpeg)
+You can edit the text file to change parameters or delete an entire move. Be careful not to remove part of a sequence. It is OK to remove the whole sequence including the sequence number and all parameters. It is OK to cut and paste a whole sequence and then change the parameters. The sequence numbers are ignored but they must be there. The sequence is executed from top to bottom.
+
+note a desktop shortcut may be created to run the program in folder build-MotorQT_threaded-Desktop-Debug. The executable file is called MotorQT_threaded.
+
+![image0](https://user-images.githubusercontent.com/10259360/185727330-1956d9e8-f2fb-4632-bf15-0f9d7283d608.jpeg)
