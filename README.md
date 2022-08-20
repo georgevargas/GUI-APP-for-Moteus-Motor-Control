@@ -19,9 +19,11 @@ sudo udevadm trigger --subsystem-match=tty
 This is a QT GUI program which allows positions to be manually set for each motor and recorded along with other parameters such as velocity, torque and delay etc.. Then you can play back sequence in cycles. More movements can be added to the sequence without limit.
 The sequence can be saved to a file so it can be run by opening the file.
 The file is in text format so it can be edited to change parameters or delete steps.
-I have tested this on a laptop running Ubuntu 20.04 and a Nvidia Jetson running 18.04. It is self contained and only requires the fdcanusb is installed.
+
+This program needs to be opened the first time with qt creator so it can be built for your system. After running the program once, a desktop shortcut may be created to run the program after that. The executable file is in a folder qt creates called build-MotorQT_threaded-Desktop-Debug. The executable file is called MotorQT_threaded.
 
 If you don't have qt creator it can be installed as follows;
+
 
 Install Qt on Ubuntu
 https://newbedev.com/install-qt-on-ubuntu
