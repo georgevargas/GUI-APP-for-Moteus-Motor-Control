@@ -1,18 +1,17 @@
+ Designed for use with MJBOTS Moteus motors using an fdcanusb.
 
-Designed for use with MJBOTS Moteus motors using an fdcanusb.
-
-Files are located at
+ Files are located at
 https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/tree/master
 
 
 ![image0](https://user-images.githubusercontent.com/10259360/185726576-b0bd35a8-807b-4cd6-8bfe-685f9b3f9978.jpeg)
 
-If the fdcanusb was not installed, you will need to have udev rules set up in order for regular users to access the device. Follow the instructions at: https://github.com/mjbots/fdcanusb/blob/master/70-fdcanusb.rules
+ If the fdcanusb was not installed, you will need to have udev rules set up in order for regular users to access the device. Follow the instructions at: https://github.com/mjbots/fdcanusb/blob/master/70-fdcanusb.rules
 This consists of doing the following;
-copy file 70-fdcanusb.rules to /etc/udev/rules.d folder
- Then run the following from a terminal:
-sudo udevadm control --reload-rules
-sudo udevadm trigger --subsystem-match=tty
+ copy file 70-fdcanusb.rules to /etc/udev/rules.d folder
+  Then run the following from a terminal:
+ sudo udevadm control --reload-rules
+ sudo udevadm trigger --subsystem-match=tty
 
 This is a QT GUI program which allows positions to be manually set for each motor and recorded along with other parameters such as velocity, torque and delay etc.. Then you can play back sequence in cycles. More movements can be added to the sequence without limit.
 The sequence can be saved to a file so it can be run by opening the file.
