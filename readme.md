@@ -1,12 +1,16 @@
 Designed for use with MJBOTS Moteus motors using an fdcanusb.
-Refer to the picture below.
+
+![image0](https://user-images.githubusercontent.com/10259360/185727330-1956d9e8-f2fb-4632-bf15-0f9d7283d608.jpeg)
 
 This is a QT GUI program which allows positions to be manually set for each motor and recorded along with other parameters such as velocity, torque and delay etc.. 
 Then you can play back the sequence in cycles. More movements can be added to the sequence without limit. 
 
 The sequence can be saved to a file so it can be run by opening the file. The file is in text format so it can be edited to change parameters or delete steps. 
 
-If the fdcanusb was not installed, you will need to have udev rules set up in order for regular users to access the device. Follow the instructions at: https://github.com/mjbots/fdcanusb/blob/master/70-fdcanusb.rules This consists of doing the following; 
+If the fdcanusb was not installed, Follow the instructions at: https://github.com/mjbots/fdcanusb/blob/master/70-fdcanusb.rules 
+
+This consists of doing the following;
+
 copy file 70-fdcanusb.rules to /etc/udev/rules.d folder Then run the following from a terminal:
 
 sudo udevadm control --reload-rules 
@@ -14,7 +18,7 @@ sudo udevadm control --reload-rules
 sudo udevadm trigger --subsystem-match=tty
 
 
-This is a qtrreator project. If you don't have qt creator it can be installed as follows;
+If you don't have qt creator it can be installed as follows;
 
 Install Qt on Ubuntu 
 
@@ -91,5 +95,3 @@ It is OK to cut and paste a whole sequence and then change the parameters. The s
 The sequence is executed from top to bottom.
 
 Note a desktop shortcut may be created to run the program in folder build-MotorQT_threaded-Desktop-Debug. The executable file is called MotorQT_threaded.
-
-![image0](https://user-images.githubusercontent.com/10259360/185727330-1956d9e8-f2fb-4632-bf15-0f9d7283d608.jpeg)
