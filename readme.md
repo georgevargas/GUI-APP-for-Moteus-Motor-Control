@@ -18,6 +18,8 @@ sudo udevadm control --reload-rules
 sudo udevadm trigger --subsystem-match=tty
 
 
+This program needs to be opened the first time with qt creator so it can be built for your system. After running the program once, desktop shortcut may be created to run the program after that. The The executable file is in a folder qt creates called build-MotorQT_threaded-Desktop-Debug. The executable file is called MotorQT_threaded.
+
 If you don't have qt creator it can be installed as follows;
 
 Install Qt on Ubuntu 
@@ -91,5 +93,3 @@ You can edit the text file to change parameters or delete an entire move.
 Be careful not to remove part of a sequence. It is OK to remove the whole sequence including the sequence number and all parameters. 
 It is OK to cut and paste a whole sequence and then change the parameters. The sequence number value are ignored but they must be there. 
 The sequence is executed from top to bottom.
-
-Note a desktop shortcut may be created to run the program in folder build-MotorQT_threaded-Desktop-Debug. The executable file is called MotorQT_threaded.
