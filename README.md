@@ -4,6 +4,9 @@ Designed for use with MJBOTS Moteus motors using an fdcanusb.
 Files are located at
 https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/tree/master
 
+
+![image0](https://user-images.githubusercontent.com/10259360/185726576-b0bd35a8-807b-4cd6-8bfe-685f9b3f9978.jpeg)
+
 If the fdcanusb was not installed, you will need to have udev rules set up in order for regular users to access the device. Follow the instructions at: https://github.com/mjbots/fdcanusb/blob/master/70-fdcanusb.rules
 This consists of doing the following;
 copy file 70-fdcanusb.rules to /etc/udev/rules.d folder
@@ -68,5 +71,3 @@ The sequence numbers are ignored but they must be there.
 The sequence is executed from top to bottom.
 
 note a desktop shortcut may be created to run the program in folder build-MotorQT_threaded-Desktop-Debug. The executable file is called MotorQT_threaded.
-
-![image0](https://user-images.githubusercontent.com/10259360/185726576-b0bd35a8-807b-4cd6-8bfe-685f9b3f9978.jpeg)
