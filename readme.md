@@ -18,7 +18,7 @@ sudo udevadm control --reload-rules
 sudo udevadm trigger --subsystem-match=tty
 
 
-This program needs to be opened the first time with qt creator so it can be built for your system. After running the program once, desktop shortcut may be created to run the program after that. The The executable file is in a folder qt creates called build-MotorQT_threaded-Desktop-Debug. The executable file is called MotorQT_threaded.
+This program needs to be opened the first time with qt creator so it can be built for your system. After running the program once, a desktop shortcut may be created to run the program after that. The executable file is in a folder qt creates called build-MotorQT_threaded-Desktop-Debug. The executable file is called MotorQT_threaded.
 
 If you don't have qt creator it can be installed as follows;
 
