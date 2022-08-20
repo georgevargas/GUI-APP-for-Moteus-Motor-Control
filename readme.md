@@ -21,11 +21,9 @@ sudo udevadm trigger --subsystem-match=tty
 If you don't have qt creator it can be installed as follows;
 
 Install Qt on Ubuntu 
-
 https://newbedev.com/install-qt-on-ubuntu
 
 How to Install libqwt-qt5-dev in Ubuntu 18.04
-
 https://www.howtoinstall.me/ubuntu/18-04/libqwt-qt5-dev/
 
 At the terminal enter 
