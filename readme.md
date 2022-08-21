@@ -7,9 +7,11 @@ https://user-images.githubusercontent.com/10259360/185757374-29900f0e-8d2e-4773-
 
 
 This is a QT GUI program which allows positions to be manually set for each motor and recorded along with other parameters such as velocity, torque and delay etc.. 
-Then you can play back the sequence in cycles. More movements can be added to the sequence without limit. 
+Then you can play back the sequence in cycles. More movements can be added to the sequence without limit. Movements on different motors may be overlapped by setting the movement delay to zero on intermediat steps.
 
 The sequence can be saved to a file so it can be run by opening the file. The file is in text format so it can be edited to change parameters or delete steps. 
+
+Individule motors may also be commanded using position, status or stop buttons.
 
 If the fdcanusb was not installed, Follow the instructions at: https://github.com/mjbots/fdcanusb/blob/master/70-fdcanusb.rules 
 
