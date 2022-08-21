@@ -8,9 +8,14 @@ https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/tree/master
 
 https://user-images.githubusercontent.com/10259360/185757499-707da9e6-a162-46f9-b141-da5669a89808.mov
 
-This is a QT GUI program which allows positions to be manually set for each motor and recorded along with other parameters such as velocity, torque and delay etc.. Then you can play back the sequence in cycles. More movements can be added to the sequence without limit.
+This is a QT GUI program which allows positions to be manually set for each motor and recorded along with other parameters such as velocity, torque and delay etc.. Then you can play back the sequence in cycles. 
+
+More movements can be added to the sequence without limit.
+Movements on different motors may be overlapped by setting the movement delay to zero on intermediat steps.
 
 The sequence can be saved to a file so it can be run by opening the file. The file is in text format so it can be edited to change parameters or delete steps.
+
+Individule motors may also be commanded using position, status or stop buttons.
 
 If the fdcanusb was not installed, Follow the instructions at: https://github.com/mjbots/fdcanusb/blob/master/70-fdcanusb.rules
 This consists of doing the following;
@@ -78,7 +83,7 @@ Select a motor ID
 
 Move a motor manually to the position desired.
 
-Make sure the Move Delay is set large enough for the move to complete.
+Make sure the Move Delay is set large enough for the move to complete. Movements on different motors may be overlapped by setting the movement delay to zero on intermediat steps.
 
 Click the 'Rec Position' button to add the position and all parameters to the list.
 
