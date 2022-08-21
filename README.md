@@ -6,7 +6,8 @@ https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/tree/master
 ![image0](https://user-images.githubusercontent.com/10259360/185726576-b0bd35a8-807b-4cd6-8bfe-685f9b3f9978.jpeg)
 
 
-https://user-images.githubusercontent.com/10259360/185757499-707da9e6-a162-46f9-b141-da5669a89808.mov
+https://user-images.githubusercontent.com/10259360/185812413-ca915e5a-b62b-4de5-8d11-15c33791a3f6.mov
+
 
 This is a QT GUI program which allows positions to be manually set for each motor and recorded along with other parameters such as velocity, torque and delay etc.. Then you can play back the sequence in cycles. 
 
