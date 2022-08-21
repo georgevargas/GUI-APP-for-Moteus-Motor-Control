@@ -78,7 +78,7 @@ Select a motor ID
   
 Move a motor manually to the position desired.
   
-Make sure the Move Delay is set large enough for the move to complete.
+Make sure the Move Delay is set large enough for the move to complete. Movements on different motors may be overlapped by setting the movement delay to zero on intermediat steps.
   
 Click the 'Rec Position' button to add the position and all parameters to the list. 
   
