@@ -3,7 +3,14 @@ Designed for use with MJBOTS Moteus motors using an fdcanusb.
 ![image0](https://user-images.githubusercontent.com/10259360/185727330-1956d9e8-f2fb-4632-bf15-0f9d7283d608.jpeg)
 
 
-https://user-images.githubusercontent.com/10259360/185812382-1c51f3f8-2b38-4e5c-a805-91b88cbec76f.mov
+
+https://user-images.githubusercontent.com/10259360/186272854-441dea01-21eb-4197-84f5-2b5241cb627e.MOV
+
+
+
+https://user-images.githubusercontent.com/10259360/186272889-b71ec811-54a1-4598-a5bd-4602f3498855.MOV
+
+
 
 
 This is a QT GUI program which allows positions to be manually set for each motor and recorded along with other parameters such as velocity, torque and delay etc.. 
