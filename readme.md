@@ -2,10 +2,6 @@ Designed for use with MJBOTS Moteus motors using an fdcanusb.
 
 ![image0](https://user-images.githubusercontent.com/10259360/185727330-1956d9e8-f2fb-4632-bf15-0f9d7283d608.jpeg)
 
-x-special/nautilus-clipboard
-copy
-file:///home/george/Desktop/image2.jpg
-
 
 https://user-images.githubusercontent.com/10259360/186272854-441dea01-21eb-4197-84f5-2b5241cb627e.MOV
 
