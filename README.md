@@ -1,6 +1,8 @@
  Designed for use with MJBOTS Moteus motors using an fdcanusb.
 
- Files are located at
+Caution: This program allows a sequence of user programmed motor movements to be run in cycles. It is the users responsibility to insure safety so no damage can occur. Remove all obstructions, and run at 1 cycle at first to insure safety.
+
+Files are located at
 https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/tree/master
 
 ![image0](https://user-images.githubusercontent.com/10259360/185726576-b0bd35a8-807b-4cd6-8bfe-685f9b3f9978.jpeg)
