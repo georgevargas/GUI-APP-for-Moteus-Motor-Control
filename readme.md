@@ -6,8 +6,7 @@ Caution: This program allows a sequence of user programmed motor movements to be
 
 ![image2](https://user-images.githubusercontent.com/10259360/187097208-4014dfba-b03b-4c88-a795-2ce75ea0e87a.jpg)
 
-Uploading IMG_4685.mov…
-
+https://user-images.githubusercontent.com/10259360/186273491-ab93b256-e3b3-49d7-86f6-c15fab2f0d93.MOV
 
 This is a QT GUI program which allows positions to be manually set for each motor and recorded along with other parameters such as velocity, torque and delay etc.. 
 Then you can play back the sequence in cycles. More movements can be added to the sequence without limit. Movements on different motors may be overlapped by setting the movement delay to zero on intermediat steps.
