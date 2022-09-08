@@ -1,4 +1,4 @@
-Designed for use with MJBOTS Moteus motors using an fdcanusb.
+Designed for use with an MJBOTS moteus controller using an fdcanusb.
 
 Caution: This program allows a sequence of user programmed motor movements to be run in cycles. It is the users responsibility to insure safety so no damage can occur. Remove all obstructions, and run at 1 cycle at first to insure safety.
 
@@ -6,7 +6,7 @@ Caution: This program allows a sequence of user programmed motor movements to be
 
 ![image2](https://user-images.githubusercontent.com/10259360/187097208-4014dfba-b03b-4c88-a795-2ce75ea0e87a.jpg)
 
-https://user-images.githubusercontent.com/10259360/186272854-441dea01-21eb-4197-84f5-2b5241cb627e.MOV
+Uploading IMG_4685.mov…
 
 
 This is a QT GUI program which allows positions to be manually set for each motor and recorded along with other parameters such as velocity, torque and delay etc.. 
