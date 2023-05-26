@@ -32,10 +32,10 @@ private:
     Ui::MainWindow *ui;
     QThread *thread;
     QThread *thread1;
-    double start_position = -0.35;
-    double stop_position = 0.35;
-    double velocity = 0.75;
-    double max_torque = 1;
+    double accel_limit = 5.0;
+    double position = 1;
+    double velocity_limit = 0.75;
+    double max_torque = 20;
     double feedforward_torque = 0.1;
     double kp_scale = 1;
     double kd_scale = 1;
@@ -43,6 +43,7 @@ private:
     double bounds_max = 0.35;
     double Cycle_Start_Stop = 100;
     double Cycle_Delay = 1.1;
+    bool   Dynamic = false;
 
     string dev_name = "/dev/ttyACM0";
     int moteus_id = 1;
@@ -57,7 +58,7 @@ public:
 
 signals:
     void sendSetup(int device,int mode);
-    void sendToWorker(QString msg, QString dev_name,int Motor_id,double start_position,double stop_position,double velocity,double max_torque,double feedforward_torque,double kp_scale,
+    void sendToWorker(QString msg, QString dev_name,int Motor_id,double accel_limit,double position,double velocity_limit,double max_torque,double feedforward_torque,double kp_scale,
          double kd_scale,double bounds_min,double bounds_max,double Cycle,double Delay);
 
 public slots:
@@ -76,9 +77,9 @@ private slots:
     void on_btnRead_Status_clicked();
     void on_comboBox_currentIndexChanged(int index);
 
-    void on_Slider_Start_Position_valueChanged(double value);
-    void on_Slider_Stop_Position_valueChanged(double value);
-    void on_Slider_Velocity_valueChanged(double value);
+    void on_Slider_Accel_Limit_valueChanged(double value);
+    void on_Slider_Position_valueChanged(double value);
+    void on_Slider_Velocity_Limit_valueChanged(double value);
     void on_Slider_Max_Torque_valueChanged(double value);
     void on_Slider_Feedforward_valueChanged(double value);
     void on_Slider_KP_Scale_valueChanged(double value);
@@ -86,9 +87,9 @@ private slots:
     void on_Slider_Cycle_Start_Stop_valueChanged(double value);
     void on_Slider_Cycle_Delay_valueChanged(double value);
 
-    void on_Counter_Start_Position_valueChanged(double value);
-    void on_Counter_Stop_Position_valueChanged(double value);
-    void on_Counter_Velocity_valueChanged(double value);
+    void on_Counter_Accel_Limit_valueChanged(double value);
+    void on_Counter_Position_valueChanged(double value);
+    void on_Counter_Velocity_Limit_valueChanged(double value);
     void on_Counter_Max_Torque_valueChanged(double value);
     void on_Counter_Feedforward_valueChanged(double value);
     void on_Counter_KP_Scale_valueChanged(double value);
@@ -101,6 +102,9 @@ private slots:
     void on_actionHelp_triggered();
     void on_actionOpen_triggered();
     void on_actionSave_triggered();
+    void on_btnStart_Motor_clicked();
+    void on_checkBox_Dymamic_clicked();
+    void on_btnSetNearest_clicked();
 };
 
 #endif // MAINWINDOW_H
