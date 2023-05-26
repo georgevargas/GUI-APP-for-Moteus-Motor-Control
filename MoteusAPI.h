@@ -42,6 +42,7 @@ struct State {
   double temperature = NAN;
   double fault = NAN;
   double mode = NAN;
+  bool TrajectoryComplete = false;
   // flags
   bool position_flag = false;
   bool velocity_flag = false;
@@ -49,6 +50,7 @@ struct State {
   bool q_curr_flag = false;
   bool d_curr_flag = false;
   bool rezero_state_flag = false;
+  bool TrajectoryComplete_flag = false;
   bool voltage_flag = false;
   bool temperature_flag = false;
   bool fault_flag = false;
@@ -72,6 +74,10 @@ struct State {
   }
   State& EN_DCurr() {
     d_curr_flag = true;
+    return *this;
+  }
+  State& EN_TrajectoryComplete() {
+    TrajectoryComplete_flag = true;
     return *this;
   }
   State& EN_Rezerostate() {
@@ -114,18 +120,28 @@ class MoteusAPI {
   MoteusAPI(const string dev_name, int moteus_id);
   ~MoteusAPI();
 
-  bool SendPositionCommand(double stop_position, double velocity,
-                           double max_torque, double feedforward_torque = 0,
-                           double kp_scale = 1.0, double kd_scale = 1.0,
-                           double position = NAN,
+  bool SendPositionCommand(double position,
+                           double velocity_limit,
+                           double accel_limit,
+                           double max_torque,
+                           double feedforward_torque,
+                           double kp_scale,
+                           double kd_scale,
+                           double velocity, // end velocity
                            double watchdog_timer = NAN) const;
-  bool SendWithinCommand(double bounds_min, double bounds_max,
-                         double feedforward_torque, double kp_scale,
-                         double kd_scale, double max_torque,
+
+  bool SendWithinCommand(double bounds_min,
+                         double bounds_max,
+                         double feedforward_torque,
+                         double kp_scale,
+                         double kd_scale,
+                         double max_torque,
                          double stop_position = NAN,
                          double timeout = NAN) const;
 
   bool SendStopCommand();
+
+  bool SendSetOutputNearest(double value);
 
   void ReadState(State& curr_state) const;
 
