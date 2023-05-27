@@ -5,8 +5,7 @@ Caution: This program allows a sequence of user programmed motor movements to be
 Files are located at
 https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/tree/master
 
-![image0](https://user-images.githubusercontent.com/10259360/185726576-b0bd35a8-807b-4cd6-8bfe-685f9b3f9978.jpeg)
-![image2](https://user-images.githubusercontent.com/10259360/187097266-310df18e-00aa-47a0-bc25-91e1d187dee2.jpg)
+![Screenshot from 2023-05-26 17-24-32](https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/assets/10259360/a619f18e-28d8-4e92-baff-10e4c660be3d)
 
 https://user-images.githubusercontent.com/10259360/189043966-548ee207-111d-4935-bef0-b264bdaf1f76.MOV
 
