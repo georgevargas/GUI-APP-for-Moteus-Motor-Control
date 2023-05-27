@@ -9,102 +9,109 @@ https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/tree/master
 
 https://user-images.githubusercontent.com/10259360/189043966-548ee207-111d-4935-bef0-b264bdaf1f76.MOV
 
-This is a QT GUI program which allows positions to be manually set for each motor and recorded along with other parameters such as velocity, torque and delay etc.. Then you can play back the sequence in cycles. 
+This is a QT GUI program which allows positions to be manually set for each motor and recorded along with other parameters such as velocity, torque and delay etc.. 
+Then you can play back the sequence in cycles. More movements can be added to the sequence without limit. Movements on different motors may be overlapped by setting the movement delay to zero on intermediate steps.
 
-More movements can be added to the sequence without limit.
-Movements on different motors may be overlapped by setting the movement delay to zero on intermediat steps.
-
-The sequence can be saved to a file so it can be run by opening the file. The file is in text format so it can be edited to change parameters or delete steps.
+The sequence can be saved to a file so it can be run later by opening the file. The file is in text format so it can be edited to change parameters or delete steps. 
 
 Individule motors may also be commanded using position, status or stop buttons.
 
-If the fdcanusb was not installed, Follow the instructions at: https://github.com/mjbots/fdcanusb/blob/master/70-fdcanusb.rules
+If the fdcanusb was not installed, Follow the instructions at: https://github.com/mjbots/fdcanusb/blob/master/70-fdcanusb.rules 
+
 This consists of doing the following;
 
-copy file 70-fdcanusb.rules to /etc/udev/rules.d folder
+copy file 70-fdcanusb.rules to /etc/udev/rules.d folder Then run the following from a terminal:
 
-Then run the following from a terminal:
+sudo udevadm control --reload-rules 
 
-sudo udevadm control --reload-rules
 sudo udevadm trigger --subsystem-match=tty
 
-This is a QT GUI program which allows positions to be manually set for each motor and recorded along with other parameters such as velocity, torque and delay etc.. Then you can play back sequence in cycles. More movements can be added to the sequence without limit.
-The sequence can be saved to a file so it can be run by opening the file.
-The file is in text format so it can be edited to change parameters or delete steps.
 
 This program needs to be opened the first time with qt creator so it can be built for your system. After running the program once, a desktop shortcut may be created to run the program after that. The executable file is in a folder qt creates called build-MotorQT_threaded-Desktop-Debug. The executable file is called MotorQT_threaded.
 
 If you don't have qt creator it can be installed as follows;
 
-
-Install Qt on Ubuntu
+Install Qt on Ubuntu 
 https://newbedev.com/install-qt-on-ubuntu
 
 How to Install libqwt-qt5-dev in Ubuntu 18.04
 https://www.howtoinstall.me/ubuntu/18-04/libqwt-qt5-dev/
 
-At the terminal enter
-qtcreator
+At the terminal enter 
 
+qtcreator <cr>
+  
 click open project
-
-find MotorQT_threaded.pro
-
-click open
+  
+find MotorQT_threaded.pro 
+  
+click open 
+  
 click Configure Project
-
-from the menu select Build then Build All
+  
+from the menu 
+  
+select Build then Build All
 
 Make sure the fdcanusb is pluged in to the motor controller and the USB.
 
-when the build is done,
-select Build Run, or hit the Play icon on the left side.
+when the build is done select from the menu,
+  
+Build Run, or hit the Play icon on the left side.
 
-Once running the Motor Control section contains Parameters which can be changed using the counter or slider. 
-
+Once running the Motor Control section contains Parameters which can be changed using the counter or slider.
+  
 Typing into the counter is the easiest way to precisly change a value.
-
+  
 Use the buttons to command the controller.
+  
+The Motor combo box allows the selection of a motor ID 
+  
+The Position button will move to the indicated position. 
+  
+Read Status will return the status, Stop Motor will stop the selected motor.
+  
+Run Forever will run until a motor position limit is reached, or forever. To run without limits use moteus.moteus_tool to set the limits as follows,
+  
+   conf set servopos.position_min nan
+  
+   conf set servopos.position_max nan
+  
+   conf write
+  
+Start Motor will will start the motor at its current position.
+  
+Set nearest causes the servo to select a whole number of internal motor rotations so that the final position is as close 0 as possible.
 
-Motor allows the selection of a motor ID
-
-Go to Stop will move to the indicated stop position.
-
-Read Status will return the status
-
-Stop Motor will stop the selected motor
-
-Run Forever sends NAN as a stop position so it will run until a motor position limit is reached, or forever.
-
-Running a sequence of motor movements.
-
+Running a sequence of motor movements; 
+  
 Stop a motors so they can be manually moved.
-
-Select a motor ID
-
+  
+Select a motor ID, and set the screen parameters as desired.
+  
 Move a motor manually to the position desired.
+  
+Make sure the Move Delay is set large enough for desired the move to complete. 
+If the delay is less the movement, the software will wait for the movement to complete the next time the motor is used.
 
-Make sure the Move Delay is set large enough for the move to complete. Movements on different motors may be overlapped by setting the movement delay to zero on intermediat steps.
-
-Click the 'Rec Position' button to add the position and all parameters to the list.
-
+Movements on different motors may be overlapped by setting the movement delay to zero or a short delay on intermediat steps.
+  
+Click the 'Rec Position' button to add the position and all parameters to the list. 
+  
 Repeat this procedure for as many steps as desired.
-
+  
 When done click the 'Run Recorded' button and see if it acts as expected.
-
+  
 Use Clear Rec if desired to erase the recorded list.
-
+  
 Click Stop Cycles to stop cycling through the recorded positions.
 
-If desired you may save the Recorded list to a text file using the File Save in the menu.
-
+If desired you may save the Recorded list to a text file using the File Save in the menu. 
+  
 You can use File Open to read in a previously saved recorded list.
-
+  
 You can edit the text file to change parameters or delete an entire move.
-
-Be careful not to remove part of a sequence. It is OK to remove the whole sequence including the sequence number and all parameters.
-It is OK to cut and paste a whole sequence and then change the parameters.
-The sequence number value is ignored but they must be there.
+  
+Be careful not to remove part of a sequence. It is OK to remove the whole sequence including the sequence number and all parameters. 
+The sequence number value is ignored but they must be there. 
 The sequence is executed from top to bottom.
-
-note a desktop shortcut may be created to run the program in folder build-MotorQT_threaded-Desktop-Debug. The executable file is called MotorQT_threaded.
