@@ -68,9 +68,12 @@ The Position button will move to the indicated position.
   
 Read Status will return the status, Stop Motor will stop the selected motor.
   
-Run Forever will run until a motor position limit is reached, or forever. To run without limits use moteus.moteus_tool to set the limits as follows, 
+Run Forever will run until a motor position limit is reached, or forever. To run without limits use moteus.moteus_tool to set the limits as follows,
+  
    conf set servopos.position_min nan
+  
    conf set servopos.position_max nan
+  
    conf write
   
 Start Motor will will start the motor at its current position.
