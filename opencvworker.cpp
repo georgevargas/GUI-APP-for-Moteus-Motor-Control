@@ -36,9 +36,11 @@ void OpenCvWorker::Check_Motor_Error(QString dev_name,int Motor_id)
     api.ReadState(curr_state.EN_Velocity());
     api.ReadState(curr_state.EN_Fault());
     api.ReadState(curr_state.EN_Mode());
+    api.ReadState(curr_state.EN_TrajectoryComplete());
     double Run_velocity = curr_state.velocity;
     unsigned int fault = static_cast<unsigned int>(curr_state.fault);
     unsigned int mode = static_cast<unsigned int>(curr_state.mode);
+    bool TrajectoryComplete = static_cast<bool>(curr_state.TrajectoryComplete);
 
     if (fault !=0 || mode == 1 || mode == 11)
     {
@@ -132,15 +134,19 @@ void OpenCvWorker::Check_Motor_Error(QString dev_name,int Motor_id)
         // send one stop command
         api.SendStopCommand();
     }
-    else if (Run_velocity > 0.2 || Run_velocity  < -0.2 )
+    else if (mode == 10 && !TrajectoryComplete)
     {
-        out.str("");
-        out << "Velocity detected, stopping Motor first. Velocity = "  << Run_velocity << endl;
+        // wait until Trajectory Complete is true
+        out << "Trajectory is not Complete, waiting for complete "  << " , Motor = " << list_Motor_id[current_list_index] << endl;
         emit sendToMain(QString::fromStdString(out.str()));
 
-        // send one stop command
-        api.SendStopCommand();
-        QThread::msleep(1500);  //Blocking delay 1500ms
+        while (mode == 10 && !TrajectoryComplete )
+        {
+            QThread::msleep(100);  //Blocking delay 100ms
+            //read current position
+            api.ReadState(curr_state.EN_TrajectoryComplete());
+            TrajectoryComplete = static_cast<bool>(curr_state.TrajectoryComplete);
+        }
     }
 }
 
@@ -165,12 +171,54 @@ void OpenCvWorker::run_cycles()
 
                 if (current_list_index < (int)list_Position.size())
                 {
-                    api.SendPositionCommand(list_Position[current_list_index], list_Velocity[current_list_index],
-                                            list_Max_torque[current_list_index],list_Feedforward_torque[current_list_index], list_Kp_scale[current_list_index], list_Kd_scale[current_list_index]);
+
+                    if (Dynamic)
+                    {
+                        api.SendPositionCommand(list_Position[current_list_index],
+                                                l_velocity_limit,
+                                                l_accel_limit,
+                                                l_max_torque,
+                                                l_feedforward_torque,
+                                                l_kp_scale,
+                                                l_kd_scale,
+                                                0.0 // end velocity
+                                                );
+                    }
+                    else
+                    {
+                        api.SendPositionCommand(list_Position[current_list_index],
+                                                list_velocity_limit[current_list_index],
+                                                list_accel_limit[current_list_index],
+                                                list_Max_torque[current_list_index],
+                                                list_Feedforward_torque[current_list_index],
+                                                list_Kp_scale[current_list_index],
+                                                list_Kd_scale[current_list_index],
+                                                0.0 // end velocity
+                                                );
+                    }
 
                     out.str("");
-                    out << "Position to: " << list_Position[current_list_index] << ", Velocity: " << list_Velocity[current_list_index] << ", Motor: " << list_Motor_id[current_list_index]
-                           << ", Delay: " << list_Delay[current_list_index] << endl;
+                    if (Dynamic)
+                    {
+                        out << "Position to: " << list_Position[current_list_index]
+                                << ", Velocity: " << l_velocity_limit
+                                << ", Accel: " << l_accel_limit
+                                << ", Motor: " << list_Motor_id[current_list_index]
+                                << ", Max torque: " << l_max_torque
+                                << ", Feedforward torque: " << l_feedforward_torque
+                                << ", KP scale: " << l_kp_scale
+                                << ", KD scale: " << l_kd_scale
+                                << endl;
+                    }
+                    else
+                    {
+                        out << "Position to: " << list_Position[current_list_index]
+                            << ", Velocity: " << list_velocity_limit[current_list_index]
+                            << ", Accel: " << list_accel_limit[current_list_index]
+                            << ", Motor: " << list_Motor_id[current_list_index]
+                            << ", Delay: " << list_Delay[current_list_index]
+                            << endl;
+                    }
                     emit sendToMain(QString::fromStdString(out.str()));
 
                     current_list_index++ ;
@@ -210,7 +258,7 @@ void OpenCvWorker::receiveSetup(int device, int mode)
     emit sendToMain(QString::fromStdString(out.str()));
 }
 
-void OpenCvWorker::getFromMain(QString msg, QString dev_name, int Motor_id, double start_position, double stop_position, double velocity, double max_torque, double feedforward_torque, double kp_scale,
+void OpenCvWorker::getFromMain(QString msg, QString dev_name, int Motor_id, double accel_limit, double position, double velocity_limit, double max_torque, double feedforward_torque, double kp_scale,
                                double kd_scale, double bounds_min, double bounds_max, double Cycle, double Delay) // slot implementation
 {
     if (msg == "Save File")
@@ -227,7 +275,8 @@ void OpenCvWorker::getFromMain(QString msg, QString dev_name, int Motor_id, doub
                 db << "Position: " << list_Position[current_list_index] << endl
                      << "Motor: " << list_Motor_id[current_list_index] << endl
                      << "Delay: " << list_Delay[current_list_index] << endl
-                     << "Velocity: " << list_Velocity[current_list_index] << endl
+                     << "Velocity_limit: " << list_velocity_limit[current_list_index] << endl
+                     << "Accel_limit: " << list_accel_limit[current_list_index] << endl
                      << "Max_torque: " << list_Max_torque[current_list_index] << endl
                      << "Feedforward_torque: " << list_Feedforward_torque[current_list_index] << endl
                      << "Kp_scale: " << list_Kp_scale[current_list_index]  << endl
@@ -261,11 +310,12 @@ void OpenCvWorker::getFromMain(QString msg, QString dev_name, int Motor_id, doub
             list_Position.clear();
             list_Motor_id.clear();
             list_Delay.clear();
-            list_Velocity.clear();
+            list_velocity_limit.clear();
             list_Max_torque.clear();
             list_Feedforward_torque.clear();
             list_Kp_scale.clear();
             list_Kd_scale.clear();
+            list_accel_limit.clear();
             while  (!file.atEnd())
             {
                 line = file.readLine(); // read in sequence number
@@ -293,7 +343,6 @@ void OpenCvWorker::getFromMain(QString msg, QString dev_name, int Motor_id, doub
                 iss >> val_int;
                 list_Motor_id.push_back(val_int);
 
-
                 line = file.readLine();
                 iss.str(line.toStdString());
                 iss >> val_string;
@@ -304,7 +353,13 @@ void OpenCvWorker::getFromMain(QString msg, QString dev_name, int Motor_id, doub
                 iss.str(line.toStdString());
                 iss >> val_string;
                 iss >> val_double;
-                list_Velocity.push_back(val_double);
+                list_velocity_limit.push_back(val_double);
+
+                line = file.readLine();
+                iss.str(line.toStdString());
+                iss >> val_string;
+                iss >> val_double;
+                list_accel_limit.push_back(val_double);
 
                 line = file.readLine();
                 iss.str(line.toStdString());
@@ -329,6 +384,7 @@ void OpenCvWorker::getFromMain(QString msg, QString dev_name, int Motor_id, doub
                 iss >> val_string;
                 iss >> val_double;
                 list_Kd_scale.push_back(val_double);
+
             }
         }
         else
@@ -359,16 +415,25 @@ void OpenCvWorker::getFromMain(QString msg, QString dev_name, int Motor_id, doub
         }
         else close(fd);
     }
+    else if (msg == "Set Dynamic")
+    {
+        Dynamic = true;
+    }
+    else if (msg == "Clear Dynamic")
+    {
+        Dynamic = false;
+    }
     else if (msg == "Clear_Recorded")
     {
         list_Position.clear();
         list_Motor_id.clear();
         list_Delay.clear();
-        list_Velocity.clear();
+        list_velocity_limit.clear();
         list_Max_torque.clear();
         list_Feedforward_torque.clear();
         list_Kp_scale.clear();
         list_Kd_scale.clear();
+        list_accel_limit.clear();
 
         emit sendToMain(msg);
     }
@@ -387,19 +452,37 @@ void OpenCvWorker::getFromMain(QString msg, QString dev_name, int Motor_id, doub
         list_Position.push_back(curr_state.position);
         list_Motor_id.push_back(Motor_id);
         list_Delay.push_back(Delay);
-        list_Velocity.push_back(velocity);
+        list_velocity_limit.push_back(velocity_limit);
         list_Max_torque.push_back(max_torque);
         list_Feedforward_torque.push_back(feedforward_torque);
         list_Kp_scale.push_back(kp_scale);
         list_Kd_scale.push_back(kd_scale);
+        list_accel_limit.push_back(accel_limit);
 
-        out << "Current position: " << curr_state.position  << ", Velocity: " << velocity << ", Motor: " << Motor_id << ", Delay: " << Delay << endl;
+        out << "Current position: " << curr_state.position  << ", Velocity limit: " << velocity_limit << ", Accel limit: " << accel_limit << ", Motor: " << Motor_id << ", Delay: " << Delay << endl;
         emit sendToMain(QString::fromStdString(out.str()));
 
+    }
+    else if (msg == "Update Dynamic")
+    {
+        l_velocity_limit = velocity_limit;
+        l_accel_limit = accel_limit;
+        l_max_torque = max_torque;
+        l_feedforward_torque = feedforward_torque;
+        l_kp_scale = kp_scale;
+        l_kd_scale = kd_scale;
     }
     else if (msg == "Run_Recorded")
     {
         Rec_run_Enable = false;
+
+        l_velocity_limit = velocity_limit;
+        l_accel_limit = accel_limit;
+        l_max_torque = max_torque;
+        l_feedforward_torque = feedforward_torque;
+        l_kp_scale = kp_scale;
+        l_kd_scale = kd_scale;
+
         l_Cycle_Start_Stop = Cycle;
         l_dev_name = dev_name;
         current_list_index = 0;
@@ -434,6 +517,56 @@ void OpenCvWorker::getFromMain(QString msg, QString dev_name, int Motor_id, doub
         emit sendToMain(QString::fromStdString(out.str()));
 
     }
+    else if (msg == "Set Output Nearest")
+    {
+        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        Rec_run_Enable = false;
+        // send one stop command
+        api.SendSetOutputNearest(0.0);
+
+        // define a state object
+        State curr_state;
+        std::ostringstream out;
+        out.str("");
+
+        // reset the state
+        curr_state.Reset();
+
+        //read current position
+        api.ReadState(curr_state.EN_Position());
+        out << "Motor: " << Motor_id << " Position:\t" << curr_state.position << endl;
+        emit sendToMain(QString::fromStdString(out.str()));
+
+    }
+    else if (msg == "Send Start")
+    {
+        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        Rec_run_Enable = false;
+        Check_Motor_Error(dev_name,Motor_id);
+
+        // define a state object
+        State curr_state;
+
+        // reset the state
+        curr_state.Reset();
+
+        //read current position
+        api.ReadState(curr_state.EN_Position());
+
+        std::ostringstream out;
+        out.str("");
+        out << "Current position:\t" << curr_state.position << endl;
+        emit sendToMain(QString::fromStdString(out.str()));
+        api.SendPositionCommand(curr_state.position,
+                                velocity_limit,
+                                accel_limit,
+                                max_torque,
+                                feedforward_torque,
+                                kp_scale,
+                                kd_scale,
+                                0.0 // end velocity
+                                );
+    }
     else if (msg == "Go To Position")
     {
         MoteusAPI api(dev_name.toStdString(), Motor_id);
@@ -453,7 +586,15 @@ void OpenCvWorker::getFromMain(QString msg, QString dev_name, int Motor_id, doub
         out.str("");
         out << "Starting position:\t" << curr_state.position << endl;
         emit sendToMain(QString::fromStdString(out.str()));
-        api.SendPositionCommand(stop_position, velocity, max_torque,feedforward_torque, kp_scale, kd_scale);
+        api.SendPositionCommand(position,
+                                velocity_limit,
+                                accel_limit,
+                                max_torque,
+                                feedforward_torque,
+                                kp_scale,
+                                kd_scale,
+                                0.0 // end velocity
+                                );
 
     }
     else if (msg == "Run Forever")
@@ -477,8 +618,19 @@ void OpenCvWorker::getFromMain(QString msg, QString dev_name, int Motor_id, doub
         out.str("");
         out << "Starting position:\t" << curr_state.position << endl;
         emit sendToMain(QString::fromStdString(out.str()));
+        float final_velocity = velocity_limit;
+        if (position < 0.0)
+            final_velocity = -velocity_limit;
 
-        api.SendPositionCommand(NAN, velocity, max_torque,feedforward_torque, kp_scale, kd_scale);
+        api.SendPositionCommand(curr_state.position,
+                                velocity_limit,
+                                accel_limit,
+                                max_torque,
+                                feedforward_torque,
+                                kp_scale,
+                                kd_scale,
+                                final_velocity // end velocity
+                                );
 
     }
     else if (msg == "Read_Status")
@@ -503,7 +655,8 @@ void OpenCvWorker::getFromMain(QString msg, QString dev_name, int Motor_id, doub
         api.ReadState(curr_state.EN_Temp());
         api.ReadState(curr_state.EN_Fault());
         api.ReadState(curr_state.EN_Mode());
-
+        api.ReadState(curr_state.EN_TrajectoryComplete());
+        api.ReadState(curr_state.EN_Rezerostate());
         // print everyting
         out << "Position:\t\t" << curr_state.position << endl;
         out << "Velocity:\t\t" << curr_state.velocity << endl;
@@ -512,6 +665,15 @@ void OpenCvWorker::getFromMain(QString msg, QString dev_name, int Motor_id, doub
         out << "D Current:\t\t" << curr_state.d_curr << endl;
         out << "Voltage:\t\t" << curr_state.voltage << endl;
         out << "Temperature:\t" << curr_state.temperature << endl;
+        out << "Trajectory Complete:\t";
+        if  (curr_state.TrajectoryComplete != 0)
+        {
+            out << "True" << endl;
+        }
+        else
+        {
+            out << "False" << endl;
+        }
         unsigned int fault = static_cast<unsigned int>(curr_state.fault);
         switch (fault)  {
             case 0:
@@ -605,10 +767,3 @@ void OpenCvWorker::getFromMain(QString msg, QString dev_name, int Motor_id, doub
         emit sendToMain(msg);
     }
 }
-
-
-
-
-
-
-
