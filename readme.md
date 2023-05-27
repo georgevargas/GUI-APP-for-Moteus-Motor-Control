@@ -9,7 +9,7 @@ https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/assets/10259360
 This is a QT GUI program which allows positions to be manually set for each motor and recorded along with other parameters such as velocity, torque and delay etc.. 
 Then you can play back the sequence in cycles. More movements can be added to the sequence without limit. Movements on different motors may be overlapped by setting the movement delay to zero on intermediate steps.
 
-The sequence can be saved to a file so it can be run by opening the file. The file is in text format so it can be edited to change parameters or delete steps. 
+The sequence can be saved to a file so it can be run later by opening the file. The file is in text format so it can be edited to change parameters or delete steps. 
 
 Individule motors may also be commanded using position, status or stop buttons.
 
@@ -64,21 +64,28 @@ Use the buttons to command the controller.
   
 The Motor combo box allows the selection of a motor ID 
   
-Go to Stop will move to the indicated stop position. 
+The Position button will move to the indicated position. 
   
-Read Status will return the status Stop Motor will stop the selected motor
+Read Status will return the status, Stop Motor will stop the selected motor.
   
-Run Forever sends NAN as a stop position so it will run until a motor position limit is reached, or forever.
+Run Forever will run until a motor position limit is reached, or forever.
+
+Start Motor will will start the motor at its current position.
+  
+Set nearest causes the servo to select a whole number of internal motor rotations so that the final position is as close 0 as possible.
 
 Running a sequence of motor movements; 
   
 Stop a motors so they can be manually moved.
   
-Select a motor ID 
+Select a motor ID, and set the screen parameters as desired.
   
 Move a motor manually to the position desired.
   
-Make sure the Move Delay is set large enough for the move to complete. Movements on different motors may be overlapped by setting the movement delay to zero on intermediat steps.
+Make sure the Move Delay is set large enough for desired the move to complete. 
+If the delay is less the movement, the software will wait for the movement to complete the next time the motor is used.
+
+Movements on different motors may be overlapped by setting the movement delay to zero or a short delay on intermediat steps.
   
 Click the 'Rec Position' button to add the position and all parameters to the list. 
   
@@ -97,5 +104,5 @@ You can use File Open to read in a previously saved recorded list.
 You can edit the text file to change parameters or delete an entire move.
   
 Be careful not to remove part of a sequence. It is OK to remove the whole sequence including the sequence number and all parameters. 
-It is OK to cut and paste a whole sequence and then change the parameters. The sequence number value is ignored but they must be there. 
+The sequence number value is ignored but they must be there. 
 The sequence is executed from top to bottom.
