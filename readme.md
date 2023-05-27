@@ -2,7 +2,8 @@ Designed for use with an MJBOTS moteus controller using an fdcanusb.
 
 Caution: This program allows a sequence of user programmed motor movements to be run in cycles. It is the users responsibility to insure safety so no damage can occur. Remove all obstructions, and run at 1 cycle at first to insure safety.
 ![Screenshot from 2023-05-26 17-24-32](https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/assets/10259360/3da9fb12-9768-40ca-9712-4125ce8aaf19)
-https://user-images.githubusercontent.com/10259360/189043579-0b83c92b-ca9e-4951-bc84-3f89f17fd38f.MOV
+
+https://user-images.githubusercontent.com/10259360/189043966-548ee207-111d-4935-bef0-b264bdaf1f76.MOV
 
 This is a QT GUI program which allows positions to be manually set for each motor and recorded along with other parameters such as velocity, torque and delay etc.. 
 Then you can play back the sequence in cycles. More movements can be added to the sequence without limit. Movements on different motors may be overlapped by setting the movement delay to zero on intermediat steps.
