@@ -154,6 +154,18 @@ enum class Mode {
   kNumModes,
 };
 
+enum class Fault {
+  kNoFault = 0,
+  kCalibrationFault = 32,
+  kMotorDriverFault = 33,
+  kOverVoltageFault = 34,
+  kEncoderFault = 35,
+  kMotorNotConfiguredFault = 36,
+  kPwmCycleOverrunFault = 37,
+  kOverTemperatureFault = 38,
+  kOutsideLimitFault = 39,
+};
+
 enum class Resolution {
   kInt8,
   kInt16,
