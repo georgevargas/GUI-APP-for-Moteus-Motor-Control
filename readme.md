@@ -112,3 +112,5 @@ You can edit the text file to change parameters or delete an entire move.
 Be careful not to remove part of a sequence. It is OK to remove the whole sequence including the sequence number and all parameters. 
 The sequence number value is ignored but they must be there. 
 The sequence is executed from top to bottom.
+mainwindow.h contains an array called Motor_rest_position which should be edited to establish all motor rest positions.
+mainwindow.h contains 2 arrays called bounds_min and bounds_max which should be edited to establish all motor min and max positions. 
