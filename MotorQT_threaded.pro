@@ -27,12 +27,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         main.cpp \
         mainwindow.cpp \
-        opencvworker.cpp \
+        Motorworker.cpp \
         MoteusAPI.cpp
 
 HEADERS += \
         mainwindow.h \
-        opencvworker.h \
+        Motorworker.h \
         moteus_protocol.h \
         MoteusAPI.h
 
