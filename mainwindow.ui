@@ -1265,7 +1265,7 @@
       <double>1.000000000000000</double>
      </property>
      <property name="value">
-      <double>0.750000000000000</double>
+      <double>1.500000000000000</double>
      </property>
      <property name="totalSteps">
       <UInt>30</UInt>
@@ -2228,7 +2228,7 @@
 </string>
      </property>
      <property name="value">
-      <double>5.000000000000000</double>
+      <double>1.000000000000000</double>
      </property>
      <property name="minimum">
       <double>0.000000000000000</double>
@@ -2292,7 +2292,7 @@
       <string notr="true">background-color:rgb(197, 213, 219);</string>
      </property>
      <property name="value">
-      <double>0.750000000000000</double>
+      <double>1.000000000000000</double>
      </property>
      <property name="minimum">
       <double>0.000000000000000</double>
@@ -4129,6 +4129,47 @@ background-color: #C5D5DB;
     </property>
     <property name="text">
      <string>Set Nearest</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnGo_To_Rest_Position">
+    <property name="geometry">
+     <rect>
+      <x>430</x>
+      <y>50</y>
+      <width>111</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">    QPushButton {
+         border: 1px solid #337E9F;
+        border-radius: 6px;
+        background-color:  #4682B4;
+        background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
+            stop: 0 #FF9C43, stop: 1 #CC0000);
+    }
+    QPushButton:hover{
+        border: 1px solid #333333;
+        background-color: rgb(70, 130, 180);
+        background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
+            stop: 0 #FFEA43, stop: 1 #CC0000);
+    }
+    QPushButton:pressed {
+        border: 1px solid #333333;
+        background-color: rgb(70, 130, 180);
+        background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
+            stop: 0 #CF5C40, stop: 1 #A04731);
+    };</string>
+    </property>
+    <property name="text">
+     <string>Go to Rest</string>
     </property>
    </widget>
   </widget>
