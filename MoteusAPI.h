@@ -112,6 +112,7 @@ struct State {
     temperature_flag = false;
     fault_flag = false;
     mode_flag = false;
+    TrajectoryComplete_flag = false;
   }
 };
 
