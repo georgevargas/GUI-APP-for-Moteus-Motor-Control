@@ -34,19 +34,22 @@ private:
     QThread *thread1;
     double accel_limit = 5.0;
     double position = 1;
-    double velocity_limit = 0.75;
+    double velocity_limit = 1.5;
     double max_torque = 20;
     double feedforward_torque = 0.1;
     double kp_scale = 1;
     double kd_scale = 1;
-    double bounds_min = -0.35;
-    double bounds_max = 0.35;
     double Cycle_Start_Stop = 100;
     double Cycle_Delay = 1.1;
     bool   Dynamic = false;
+    bool   Enable_startup_nearest_commands = true;
 
     string dev_name = "/dev/ttyACM0";
     int moteus_id = 1;
+    int Number_of_Motors = 3;
+    double Motor_rest_position[3] ={0.0,0.0,0.208496}; // Contains rest positions for each motor
+    double bounds_min[3] ={-6.070940,-4.000000,-0.040000}; // Contains the minimum positions for each motor
+    double bounds_max[3] ={0.080000,1.410000,0.294174}; // Contains the mamimum positions for each motor
 
     void setup();
     void Init_Motor();
@@ -57,7 +60,7 @@ public:
     ~MainWindow();
 
 signals:
-    void sendSetup(int device,int mode);
+    void sendSetup();
     void sendToWorker(QString msg, QString dev_name,int Motor_id,double accel_limit,double position,double velocity_limit,double max_torque,double feedforward_torque,double kp_scale,
          double kd_scale,double bounds_min,double bounds_max,double Cycle,double Delay);
 
@@ -105,6 +108,7 @@ private slots:
     void on_btnStart_Motor_clicked();
     void on_checkBox_Dymamic_clicked();
     void on_btnSetNearest_clicked();
+    void on_btnGo_To_Rest_Position_clicked();
 };
 
 #endif // MAINWINDOW_H
