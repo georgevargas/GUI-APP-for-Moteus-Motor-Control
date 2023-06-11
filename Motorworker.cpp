@@ -36,9 +36,11 @@ void Motorworker::Check_Motor_Error(QString dev_name,int Motor_id)
     curr_state.Reset();
 
     //read current position
-    api.ReadState(curr_state.EN_Fault());
-    api.ReadState(curr_state.EN_Mode());
-    api.ReadState(curr_state.EN_TrajectoryComplete());
+    curr_state.EN_Fault();
+    curr_state.EN_Mode();
+    curr_state.EN_TrajectoryComplete();
+    api.ReadState(curr_state);
+
     Fault fault = static_cast<Fault>(curr_state.fault);
     Mode mode = static_cast<Mode>(curr_state.mode);
     bool TrajectoryComplete = static_cast<bool>(curr_state.TrajectoryComplete);
@@ -145,9 +147,7 @@ void Motorworker::Check_Motor_Error(QString dev_name,int Motor_id)
         while (count > 0 && fault == Fault::kNoFault && mode == Mode::kPosition && !TrajectoryComplete)
         {
             QThread::msleep(100);  //Blocking delay 100ms
-            api.ReadState(curr_state.EN_Fault());
-            api.ReadState(curr_state.EN_Mode());
-            api.ReadState(curr_state.EN_TrajectoryComplete());
+            api.ReadState(curr_state);
             fault = static_cast<Fault>(curr_state.fault);
             mode = static_cast<Mode>(curr_state.mode);
             TrajectoryComplete = static_cast<bool>(curr_state.TrajectoryComplete);
@@ -466,7 +466,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         curr_state.Reset();
 
         //read current position
-        api.ReadState(curr_state.EN_Position());
+        curr_state.EN_Position();
+        api.ReadState(curr_state);
 
         double position_limited = curr_state.position;
         if (curr_state.position > bounds_max)
@@ -537,7 +538,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         curr_state.Reset();
 
         //read current position
-        api.ReadState(curr_state.EN_Position());
+        curr_state.EN_Position();
+        api.ReadState(curr_state);
         out << "Motor: " << Motor_id << " Stopped position:\t" << curr_state.position << endl;
         emit sendToMain(QString::fromStdString(out.str()));
 
@@ -558,7 +560,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         curr_state.Reset();
 
         //read current position
-        api.ReadState(curr_state.EN_Position());
+        curr_state.EN_Position();
+        api.ReadState(curr_state);
         out << "Motor: " << Motor_id << " Position:\t" << curr_state.position << endl;
         emit sendToMain(QString::fromStdString(out.str()));
 
@@ -576,7 +579,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         curr_state.Reset();
 
         //read current position
-        api.ReadState(curr_state.EN_Position());
+        curr_state.EN_Position();
+        api.ReadState(curr_state);
 
         std::ostringstream out;
         out.str("");
@@ -627,9 +631,11 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
             emit sendToMain(QString::fromStdString(out.str()));
 
         }
-        api.ReadState(curr_state.EN_Fault());
-        api.ReadState(curr_state.EN_Mode());
-        api.ReadState(curr_state.EN_TrajectoryComplete());
+        curr_state.EN_Fault();
+        curr_state.EN_Mode();
+        curr_state.EN_TrajectoryComplete();
+        api.ReadState(curr_state);
+
         Fault fault = static_cast<Fault>(curr_state.fault);
         Mode mode = static_cast<Mode>(curr_state.mode);
         bool TrajectoryComplete = static_cast<bool>(curr_state.TrajectoryComplete);
@@ -640,9 +646,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
             {
                 QThread::msleep(100);  //Blocking delay 100ms
                 //read current position
-                api.ReadState(curr_state.EN_Fault());
-                api.ReadState(curr_state.EN_Mode());
-                api.ReadState(curr_state.EN_TrajectoryComplete());
+                api.ReadState(curr_state);
                 fault = static_cast<Fault>(curr_state.fault);
                 mode = static_cast<Mode>(curr_state.mode);
                 TrajectoryComplete = static_cast<bool>(curr_state.TrajectoryComplete);
@@ -665,7 +669,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         {
             //read current position
             curr_state.Reset();
-            api.ReadState(curr_state.EN_Position());
+            curr_state.EN_Position();
+            api.ReadState(curr_state);
             out << "Motor: " << Motor_id << " Position:\t" << curr_state.position << endl;
             emit sendToMain(QString::fromStdString(out.str()));
         }
@@ -684,7 +689,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         curr_state.Reset();
 
         //read current position
-        api.ReadState(curr_state.EN_Position());
+        curr_state.EN_Position();
+        api.ReadState(curr_state);
 
         std::ostringstream out;
         out.str("");
@@ -724,7 +730,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         curr_state.Reset();
 
         //read current position
-        api.ReadState(curr_state.EN_Position());
+        curr_state.EN_Position();
+        api.ReadState(curr_state);
 
         out.str("");
         out << "Starting position:\t" << curr_state.position << endl;
@@ -757,17 +764,22 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         // reset the state
         curr_state.Reset();
 
-        api.ReadState(curr_state.EN_Position());
-        api.ReadState(curr_state.EN_Velocity());
-        api.ReadState(curr_state.EN_Torque());
-        api.ReadState(curr_state.EN_QCurr());
-        api.ReadState(curr_state.EN_DCurr());
-        api.ReadState(curr_state.EN_Voltage());
-        api.ReadState(curr_state.EN_Temp());
-        api.ReadState(curr_state.EN_Fault());
-        api.ReadState(curr_state.EN_Mode());
-        api.ReadState(curr_state.EN_TrajectoryComplete());
-        api.ReadState(curr_state.EN_Rezerostate());
+        // enable read register flags
+        curr_state.EN_Position();
+        curr_state.EN_Velocity();
+        curr_state.EN_Torque();
+        curr_state.EN_QCurr();
+        curr_state.EN_DCurr();
+        curr_state.EN_Voltage();
+        curr_state.EN_Temp();
+        curr_state.EN_Fault();
+        curr_state.EN_Mode();
+        curr_state.EN_TrajectoryComplete();
+        curr_state.EN_Rezerostate();
+
+        // read registers
+        api.ReadState(curr_state);
+
         // print everyting
         out << "Position:\t\t" << curr_state.position << endl;
         out << "Velocity:\t\t" << curr_state.velocity << endl;
@@ -878,3 +890,4 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         emit sendToMain(msg);
     }
 }
+
