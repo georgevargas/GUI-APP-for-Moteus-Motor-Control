@@ -47,9 +47,9 @@ private:
     string dev_name = "/dev/ttyACM0";
     int moteus_id = 1;
     int Number_of_Motors = 3;
-    double Motor_rest_position[3] ={0.0,0.0,0.208496}; // Contains rest positions for each motor
-    double bounds_min[3] ={-6.070940,-4.000000,-0.040000}; // Contains the minimum positions for each motor
-    double bounds_max[3] ={0.080000,1.410000,0.294174}; // Contains the mamimum positions for each motor
+    double Motor_rest_position[10] ={0.0,0.0,0.208496,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains rest positions for each motor
+    double bounds_min[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the minimum positions for each motor
+    double bounds_max[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
 
     void setup();
     void Init_Motor();
@@ -65,7 +65,7 @@ signals:
          double kd_scale,double bounds_min,double bounds_max,double Cycle,double Delay);
 
 public slots:
-    void receiveMsg(QString);
+    void receiveMsg(QString  msg,int Motor_id,double limit_min,double limit_max);
     void getFromWorker(QString);
 
 private slots:
