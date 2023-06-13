@@ -142,6 +142,10 @@ class MoteusAPI {
 
   bool SendStopCommand();
 
+  bool SendDiagnosticCommand(string msg);
+
+  bool SendDiagnosticRead(double& value);
+
   bool SendSetOutputNearest(double value);
 
   void ReadState(State& curr_state) const;
