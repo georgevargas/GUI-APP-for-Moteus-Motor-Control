@@ -22,6 +22,8 @@
 #include <termios.h>  // POSIX terminal control definitions
 #include <unistd.h>   // UNIX standard function definitions
 
+using namespace mjbots;
+using namespace moteus;
 
 MoteusAPI::MoteusAPI(const string dev_name, int moteus_id)
     : dev_name_(dev_name), moteus_id_(moteus_id) {
@@ -73,6 +75,93 @@ bool MoteusAPI::SendPositionCommand(double position,
     return false;
   }
 
+  return true;
+}
+bool MoteusAPI::SendDiagnosticRead(double& value) {
+  mjbots::moteus::CanFrame frame;
+  mjbots::moteus::WriteCanFrame write_frame(&frame);
+  mjbots::moteus::EmitDiagnosticRead(&write_frame);
+
+  // Encode message to hex
+  stringstream ss;
+  ss << "can send 80" << std::setfill('0') << std::setw(2) << std::hex
+     << moteus_id_ << " ";
+  for (uint ii = 0; ii < (uint)frame.size; ii++) {
+    ss << std::setfill('0') << std::setw(2) << std::hex << (int)frame.data[ii];
+  }
+  ss << '\n';
+  //cout << ss.str() << endl;
+
+  if (!WriteDev(ss.str()))
+    throw std::runtime_error("Failiur: could not WriteDev.");
+
+  // process response
+  string resp;
+  if (!((ExpectResponse("OK", resp) && ExpectResponse("rcv", resp)))) {
+    return false;
+  }
+  istringstream iss(resp);
+  vector<string> words;
+  copy(istream_iterator<string>(iss), istream_iterator<string>(),
+       back_inserter(words));
+
+  uint8_t decoded[readbuffsize];
+  string respstr(words.at(2));
+  std::stringstream stream;
+  stream << respstr.substr(4 , 2);
+
+  // get the number size
+  uint loopsize = 0;
+  stream >> std::hex >> loopsize;
+
+  // convert hex to a number
+  for (uint ii = 3; ii < loopsize+3; ii++)
+  {
+    std::stringstream stream;
+    stream << respstr.substr(ii * 2, 2);
+    int tmp;
+    stream >> std::hex >> tmp;
+    decoded[ii] = (uint8_t)tmp;
+  }
+  std::stringstream num;
+  for (uint ii = 3; ii < loopsize+3; ii++)
+  {
+    num << decoded[ii];
+  }
+  string str;
+  str = num.str();
+  value = stod(str);
+  return true;
+}
+bool MoteusAPI::SendDiagnosticCommand(string msg) {
+    mjbots::moteus::CanFrame frame;
+    mjbots::moteus::WriteCanFrame write_frame(&frame);
+    mjbots::moteus::EmitDiagnosticCommand(&write_frame,msg.size());
+
+  // Encode message to hex
+  stringstream ss;
+  ss << "can send 80" << std::setfill('0') << std::setw(2) << std::hex
+     << moteus_id_ << " ";
+
+  for (uint ii = 0; ii < (uint)frame.size; ii++) {
+    ss << std::setfill('0') << std::setw(2) << std::hex << (int)frame.data[ii];
+  }
+
+  for (uint ii = 0; ii < (uint)msg.size(); ii++) {
+    ss << std::setfill('0') << std::setw(2) << std::hex << (uint)msg[ii];
+  }
+  ss << '\n';
+
+  //cout << ss.str() << endl;
+
+  if (!WriteDev(ss.str()))
+    throw std::runtime_error("Failiur: could not WriteDev.");
+
+  // process response
+  string resp;
+  if (!((ExpectResponse("OK", resp) && ExpectResponse("rcv", resp)))) {
+    return false;
+  }
   return true;
 }
 
