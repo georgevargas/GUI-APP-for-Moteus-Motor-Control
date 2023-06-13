@@ -470,9 +470,9 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         api.ReadState(curr_state);
 
         double position_limited = curr_state.position;
-        if (curr_state.position > bounds_max)
+        if (bounds_max != NAN && position_limited > bounds_max)
             position_limited = bounds_max;
-        else if (curr_state.position < bounds_min)
+        else if (bounds_min != NAN && position_limited < bounds_min)
             position_limited = bounds_min;
 
         list_Position.push_back(position_limited);
@@ -519,6 +519,28 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         {
            Rec_run_Enable = true;
         }
+    }
+    else if (msg == "get motor limits")
+    {
+        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        Rec_run_Enable = false;
+        double value = std::numeric_limits<double>::quiet_NaN();
+
+        std::ostringstream out;
+        out.str("");
+
+        // get min limit command
+        api.SendDiagnosticCommand("conf get servopos.position_min\n");
+        api.SendDiagnosticRead(value);
+        l_bounds_min[Motor_id-1] = value;
+
+        // get min limit command
+        api.SendDiagnosticCommand("conf get servopos.position_max\n");
+        api.SendDiagnosticRead(value);
+        l_bounds_max[Motor_id-1] = value;
+
+        emit sendMsg("set motor limits",Motor_id,l_bounds_min[Motor_id-1],l_bounds_max[Motor_id-1]);
+
     }
     else if (msg == "Send Stop")
     {
@@ -612,9 +634,9 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         std::ostringstream out;
         out.str("");
         double position_limited = position;
-        if (position > bounds_max)
+        if (bounds_max != NAN && position_limited > bounds_max)
             position_limited = bounds_max;
-        else if (position < bounds_min)
+        else if (bounds_min != NAN && position_limited < bounds_min)
             position_limited = bounds_min;
         success = api.SendPositionCommand(position_limited, // position
                                 1.0, // velocity_limit
@@ -698,9 +720,9 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         emit sendToMain(QString::fromStdString(out.str()));
 
         double position_limited = position;
-        if (position > bounds_max)
+        if (bounds_max != NAN && position_limited > bounds_max)
             position_limited = bounds_max;
-        else if (position < bounds_min)
+        else if (bounds_min != NAN && position_limited < bounds_min)
             position_limited = bounds_min;
 
         api.SendPositionCommand(position_limited,
@@ -890,4 +912,3 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         emit sendToMain(msg);
     }
 }
-
