@@ -47,7 +47,7 @@ void MainWindow::setup()
 
     connect(workerTrigger, SIGNAL(timeout()), worker, SLOT(run_cycles()));
     connect(this, SIGNAL(sendSetup()), worker, SLOT(receiveSetup()));
-    connect(worker, SIGNAL(sendMsg(QString)), this, SLOT(receiveMsg(QString)));
+    connect(worker, SIGNAL(sendMsg(QString,int,double,double)), this, SLOT(receiveMsg(QString,int,double,double)));
     connect(this,SIGNAL(sendToWorker(QString,QString,int,double,double,double,double,double,double,double,double,double,double,double)),worker,SLOT(getFromMain(QString,QString,int,double,
              double,double,double,double,double,double,double,double,double,double)));
     connect(worker,SIGNAL(sendToMain(QString)),this,SLOT(getFromWorker(QString)));
@@ -65,9 +65,21 @@ void MainWindow::getFromWorker(QString msg) //slot implementation
     MainWindow::ui->txtXYRadius->appendPlainText(msg);
 }
 
-void MainWindow::receiveMsg(QString msg)
+void MainWindow::receiveMsg(QString msg, int Motor_id, double limit_min, double limit_max)
 {
-    MainWindow::ui->txtXYRadius->appendPlainText(msg);
+    if (msg == "set motor limits")
+    {
+        std::ostringstream out;
+
+        bounds_min[Motor_id-1] =  limit_min;
+        bounds_max[Motor_id-1] =  limit_max;
+
+        out.str("");
+        out << "Motor: " << Motor_id << " limit min:\t" << bounds_min[Motor_id-1]
+        << "\tlimit max:\t" << bounds_max[Motor_id-1] << endl;
+
+        MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
+    }
 }
 
 void MainWindow:: Init_Motor()
@@ -103,6 +115,12 @@ void MainWindow:: Init_Motor()
                 emit sendToWorker("Set Output Nearest",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                                   kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
             }
+        }
+
+        for (int i = 1; i <= Number_of_Motors; i++)
+        {
+            emit sendToWorker("get motor limits",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                              kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
         }
 }
 
