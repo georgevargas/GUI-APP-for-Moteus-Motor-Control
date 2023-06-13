@@ -22,7 +22,7 @@ public:
     ~Motorworker();
 
 signals:
-    void sendMsg(QString);
+    void sendMsg(QString  msg,int Motor_id,double bounds_min,double bounds_max);
     void sendToMain(QString);
 
 public slots:
@@ -48,6 +48,8 @@ private:
     int    l_Motor_id;
     int Trajectory_Timeout_1 = 200; // 20 secs
     int Trajectory_Timeout_2 = 100; // 10 secs
+    double l_bounds_min[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the minimum positions for each motor
+    double l_bounds_max[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the mamimum positions for each motor
 
     bool   Rec_run_Enable = false;
     bool   Dynamic = false;
