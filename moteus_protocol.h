@@ -35,7 +35,6 @@ namespace moteus {
 enum {
   kCurrentRegisterMapVersion = 4,
 };
-
 enum Multiplex : uint32_t {
   kWriteBase = 0x00,
   kWriteInt8 = 0x00,
@@ -668,6 +667,17 @@ struct WithinResolution {
   Resolution stop_position = Resolution::kFloat;
   Resolution watchdog_timeout = Resolution::kFloat;
 };
+inline void EmitDiagnosticRead(WriteCanFrame *frame) {
+  frame->Write<int8_t>(Multiplex::kClientPollServer);
+  frame->Write<int8_t>(0x01);
+  frame->Write<int8_t>(0x30);
+}
+
+inline void EmitDiagnosticCommand(WriteCanFrame *frame,int8_t size) {
+  frame->Write<int8_t>(Multiplex::kClientToServer);
+  frame->Write<int8_t>(01);
+  frame->Write<int8_t>(size);
+}
 
 inline void EmitStopCommand(WriteCanFrame *frame) {
   frame->Write<int8_t>(Multiplex::kWriteInt8 | 0x01);
