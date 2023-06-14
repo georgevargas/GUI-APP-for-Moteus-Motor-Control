@@ -46,6 +46,7 @@ private:
     double delay = 0;
     double l_Cycle;
     int    l_Motor_id;
+    int    Dynamic_Motor_id = 0;
     int Trajectory_Timeout_1 = 200; // 20 secs
     int Trajectory_Timeout_2 = 100; // 10 secs
     double l_bounds_min[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the minimum positions for each motor
