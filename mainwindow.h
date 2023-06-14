@@ -50,6 +50,7 @@ private:
     double Motor_rest_position[10] ={0.0,0.0,0.208496,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains rest positions for each motor
     double bounds_min[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the minimum positions for each motor
     double bounds_max[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
+    double kp[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
 
     void setup();
     void Init_Motor();
@@ -109,6 +110,15 @@ private slots:
     void on_checkBox_Dymamic_clicked();
     void on_btnSetNearest_clicked();
     void on_btnGo_To_Rest_Position_clicked();
+    void on_btnRec_update_limits_clicked();
+    void on_btnRun_update_KP_clicked();
+    void on_Counter_Limit_Min_valueChanged(double value);
+    void on_Slider_Limit_Min_valueChanged(double value);
+    void on_Counter_Limit_Max_valueChanged(double value);
+    void on_Slider_Limit_Max_valueChanged(double value);
+    void on_Counter_KP_valueChanged(double value);
+    void on_Slider_KP_valueChanged(double value);
+    void on_btnConf_Write_clicked();
 };
 
 #endif // MAINWINDOW_H
