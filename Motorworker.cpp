@@ -170,6 +170,7 @@ void Motorworker::Check_Motor_Error(QString dev_name,int Motor_id)
 
 void Motorworker::run_cycles()
 {
+    bool success = false;
     if (Rec_run_Enable && l_Cycle <= l_Cycle_Start_Stop)
     {
         if (delay >= l_Cycle_Delay)
@@ -190,9 +191,9 @@ void Motorworker::run_cycles()
                 if (current_list_index < (int)list_Position.size())
                 {
 
-                    if (Dynamic)
+                    if (Dynamic && Dynamic_Motor_id == l_Motor_id)
                     {
-                        api.SendPositionCommand(list_Position[current_list_index],
+                        success = api.SendPositionCommand(list_Position[current_list_index],
                                                 l_velocity_limit,
                                                 l_accel_limit,
                                                 l_max_torque,
@@ -201,10 +202,15 @@ void Motorworker::run_cycles()
                                                 l_kd_scale,
                                                 0.0 // end velocity
                                                 );
+                        if (!success)
+                        {
+                            out << "error on posiion command " << l_Motor_id << endl;
+                            emit sendToMain(QString::fromStdString(out.str()));
+                        }
                     }
                     else
                     {
-                        api.SendPositionCommand(list_Position[current_list_index],
+                        success = api.SendPositionCommand(list_Position[current_list_index],
                                                 list_velocity_limit[current_list_index],
                                                 list_accel_limit[current_list_index],
                                                 list_Max_torque[current_list_index],
@@ -213,10 +219,15 @@ void Motorworker::run_cycles()
                                                 list_Kd_scale[current_list_index],
                                                 0.0 // end velocity
                                                 );
+                        if (!success)
+                        {
+                            out << "error on posiion command " << l_Motor_id << endl;
+                            emit sendToMain(QString::fromStdString(out.str()));
+                        }
                     }
 
                     out.str("");
-                    if (Dynamic)
+                    if (Dynamic && Dynamic_Motor_id == l_Motor_id)
                     {
                         out << "Position to: " << list_Position[current_list_index]
                                 << ", Velocity: " << l_velocity_limit
@@ -279,6 +290,7 @@ void Motorworker::receiveSetup()
 void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, double accel_limit, double position, double velocity_limit, double max_torque, double feedforward_torque, double kp_scale,
                                double kd_scale, double bounds_min, double bounds_max, double Cycle, double Delay) // slot implementation
 {
+    bool success = false;
     if (msg == "Save File")
     {
         std::ostringstream out;
@@ -436,6 +448,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     else if (msg == "Set Dynamic")
     {
         Dynamic = true;
+        Dynamic_Motor_id = Motor_id;
     }
     else if (msg == "Clear Dynamic")
     {
@@ -497,6 +510,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         l_feedforward_torque = feedforward_torque;
         l_kp_scale = kp_scale;
         l_kd_scale = kd_scale;
+        Dynamic_Motor_id = Motor_id;
     }
     else if (msg == "Run_Recorded")
     {
@@ -538,6 +552,79 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         api.SendDiagnosticCommand("conf get servopos.position_max\n");
         api.SendDiagnosticRead(value);
         l_bounds_max[Motor_id-1] = value;
+
+        emit sendMsg("set motor limits",Motor_id,l_bounds_min[Motor_id-1],l_bounds_max[Motor_id-1]);
+
+    }
+    else if (msg == "conf write")
+    {
+        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        Rec_run_Enable = false;
+
+        std::ostringstream out;
+        out.str("");
+
+        // save conf
+        api.SendDiagnosticCommand("conf write\n");
+
+        out << "configuration write" << endl;
+        emit sendToMain(QString::fromStdString(out.str()));
+
+    }
+    else if (msg == "get KP")
+    {
+        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        Rec_run_Enable = false;
+        double value = std::numeric_limits<double>::quiet_NaN();
+
+        std::ostringstream out;
+        out.str("");
+
+        // get min limit command
+        api.SendDiagnosticCommand("conf get servo.pid_position.kp\n");
+        api.SendDiagnosticRead(value);
+
+        emit sendMsg("get KP",Motor_id,value,0);
+
+    }
+    else if (msg == "set KP")
+    {
+        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        Rec_run_Enable = false;
+
+        std::ostringstream out;
+        out.str("");
+
+        // set min limit command
+        out << "conf set servo.pid_position.kp " << kp_scale << endl;
+        string text = out.str();
+        api.SendDiagnosticCommand(text);
+
+        out.str("");
+        out <<"Motor: " << Motor_id << " KP write\t" << kp_scale << endl;
+        emit sendToMain(QString::fromStdString(out.str()));
+
+    }
+    else if (msg == "set motor limits")
+    {
+        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        Rec_run_Enable = false;
+
+        std::ostringstream out;
+        out.str("");
+
+        // set min limit command
+        out << "conf set servopos.position_min " << bounds_min << endl;
+        string text = out.str();
+        api.SendDiagnosticCommand(text);
+        l_bounds_min[Motor_id-1] = bounds_min;
+
+        // set max limit command
+        out.str("");
+        out << "conf set servopos.position_max " << bounds_max << endl;
+        text = out.str();
+        api.SendDiagnosticCommand(text);
+        l_bounds_max[Motor_id-1] = bounds_max;
 
         emit sendMsg("set motor limits",Motor_id,l_bounds_min[Motor_id-1],l_bounds_max[Motor_id-1]);
 
@@ -608,7 +695,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         out.str("");
         out << "Current position:\t" << curr_state.position << endl;
         emit sendToMain(QString::fromStdString(out.str()));
-        api.SendPositionCommand(curr_state.position,
+        success = api.SendPositionCommand(curr_state.position,
                                 velocity_limit,
                                 accel_limit,
                                 max_torque,
@@ -617,10 +704,14 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
                                 kd_scale,
                                 0.0 // end velocity
                                 );
+        if (!success)
+        {
+            out << "error on posiion command " << Motor_id << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+        }
     }
     else if (msg == "Go To Rest Position")
     {
-        bool success = false;
         MoteusAPI api(dev_name.toStdString(), Motor_id);
         Rec_run_Enable = false;
         Check_Motor_Error(dev_name,Motor_id);
@@ -651,7 +742,6 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         {
             out << "error on posiion command " << Motor_id << endl;
             emit sendToMain(QString::fromStdString(out.str()));
-
         }
         curr_state.EN_Fault();
         curr_state.EN_Mode();
@@ -725,7 +815,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         else if (bounds_min != NAN && position_limited < bounds_min)
             position_limited = bounds_min;
 
-        api.SendPositionCommand(position_limited,
+        success = api.SendPositionCommand(position_limited,
                                 velocity_limit,
                                 accel_limit,
                                 max_torque,
@@ -734,6 +824,11 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
                                 kd_scale,
                                 0.0 // end velocity
                                 );
+        if (!success)
+        {
+            out << "error on posiion command " << Motor_id << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+        }
 
     }
     else if (msg == "Run Forever")
@@ -762,7 +857,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         if (position < 0.0)
             final_velocity = -velocity_limit;
 
-        api.SendPositionCommand(curr_state.position,
+        success = api.SendPositionCommand(curr_state.position,
                                 velocity_limit,
                                 accel_limit,
                                 max_torque,
@@ -771,6 +866,11 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
                                 kd_scale,
                                 final_velocity // end velocity
                                 );
+        if (!success)
+        {
+            out << "error on posiion command " << Motor_id << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+        }
 
     }
     else if (msg == "Read_Status")
