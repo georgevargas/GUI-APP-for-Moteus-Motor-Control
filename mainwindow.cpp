@@ -77,6 +77,23 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double limit_min, double 
         out.str("");
         out << "Motor: " << Motor_id << " limit min:\t" << bounds_min[Motor_id-1]
         << "\tlimit max:\t" << bounds_max[Motor_id-1] << endl;
+        ui->Slider_Limit_Min->setValue(bounds_min[moteus_id -1]);
+        ui->Counter_Limit_Min->setValue(bounds_min[moteus_id -1]);
+        ui->Slider_Limit_Max->setValue(bounds_max[moteus_id -1]);
+        ui->Counter_Limit_Max->setValue(bounds_max[moteus_id -1]);
+
+        MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
+    }
+    else if (msg == "get KP")
+    {
+        std::ostringstream out;
+
+        kp[Motor_id-1] =  limit_min;
+
+        out.str("");
+        out << "Motor: " << Motor_id << " kp:\t" << kp[Motor_id-1] << endl;
+        ui->Slider_KP->setValue(kp[moteus_id -1]);
+        ui->Counter_KP->setValue(kp[moteus_id -1]);
 
         MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
     }
@@ -120,6 +137,11 @@ void MainWindow:: Init_Motor()
         for (int i = 1; i <= Number_of_Motors; i++)
         {
             emit sendToWorker("get motor limits",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                              kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+        }
+        for (int i = 1; i <= Number_of_Motors; i++)
+        {
+            emit sendToWorker("get KP",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                               kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
         }
 }
@@ -353,6 +375,12 @@ void MainWindow::on_actionHelp_triggered()
 void MainWindow::on_comboBox_currentIndexChanged(int index)
 {
     moteus_id  = index + 1;
+    ui->Slider_Limit_Min->setValue(bounds_min[moteus_id -1]);
+    ui->Counter_Limit_Min->setValue(bounds_min[moteus_id -1]);
+    ui->Slider_Limit_Max->setValue(bounds_max[moteus_id -1]);
+    ui->Counter_Limit_Max->setValue(bounds_max[moteus_id -1]);
+    ui->Counter_KP->setValue(kp[moteus_id -1]);
+    ui->Slider_KP->setValue(kp[moteus_id -1]);
 }
 
 void MainWindow::on_Counter_Cycle_Start_Stop_valueChanged(double value)
@@ -453,4 +481,60 @@ void MainWindow::on_checkBox_Dymamic_clicked()
                           kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
     }
 
+}
+
+void MainWindow::on_btnRec_update_limits_clicked()
+{
+    emit sendToWorker("set motor limits",QString::fromStdString(dev_name),moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+}
+
+void MainWindow::on_btnRun_update_KP_clicked()
+{
+    emit sendToWorker("set KP",QString::fromStdString(dev_name),moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp[moteus_id -1],
+                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+
+}
+
+void MainWindow::on_Counter_Limit_Min_valueChanged(double value)
+{
+    bounds_min[moteus_id -1] = value;
+    ui->Slider_Limit_Min->setValue(value);
+
+}
+
+void MainWindow::on_Slider_Limit_Min_valueChanged(double value)
+{
+    bounds_min[moteus_id -1] = value;
+    ui->Counter_Limit_Min->setValue(value);
+}
+
+void MainWindow::on_Counter_Limit_Max_valueChanged(double value)
+{
+    bounds_max[moteus_id -1] = value;
+    ui->Slider_Limit_Max->setValue(value);
+}
+
+void MainWindow::on_Slider_Limit_Max_valueChanged(double value)
+{
+    bounds_max[moteus_id -1] = value;
+    ui->Counter_Limit_Max->setValue(value);
+}
+
+void MainWindow::on_Counter_KP_valueChanged(double value)
+{
+    kp[moteus_id -1] = value;
+    ui->Slider_KP->setValue(value);
+}
+
+void MainWindow::on_Slider_KP_valueChanged(double value)
+{
+    kp[moteus_id -1] = value;
+    ui->Counter_KP->setValue(kp[moteus_id -1]);
+}
+
+void MainWindow::on_btnConf_Write_clicked()
+{
+    emit sendToWorker("conf write",QString::fromStdString(dev_name),moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
 }
