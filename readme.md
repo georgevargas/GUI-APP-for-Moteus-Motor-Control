@@ -82,7 +82,6 @@ Conf Write will permanently save any parameters sent to the moteus controller fo
 Start Motor will will start the motor at its current position.
   
 Set nearest causes the servo to select a whole number of internal motor rotations so that the final position is as close 0 as possible.
-  
 
 Running a sequence of motor movements; 
   
@@ -106,6 +105,8 @@ When done click the 'Run Recorded' button and see if it acts as expected.
 Use Clear Rec if desired to erase the recorded list.
   
 Click Stop Cycles to stop cycling through the recorded positions.
+  
+The Dynamic check box allows the screen parameters to override some recorded parameters for the selected motor. This is useful when tunning movements with different velocities, accelerations for example. Velocity Limit, Accel Limit, Max torque, Feedforward, KP Scale, and KD Scale can be dynamic.
 
 If desired you may save the Recorded list to a text file using the File Save in the menu. 
   
