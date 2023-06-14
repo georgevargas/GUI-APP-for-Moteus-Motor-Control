@@ -2,7 +2,7 @@ Designed for use with an MJBOTS moteus controller using an fdcanusb.
 
 Caution: This program allows a sequence of user programmed motor movements to be run in cycles. It is the users responsibility to insure safety so no damage can occur. Remove all obstructions, and run at 1 cycle at first to insure safety.
 
-![Screenshot from 2023-06-10 16-00-09](https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/assets/10259360/6a5360ed-8cd0-471d-a8a2-957ace94bebc)
+![Screenshot from 2023-06-13 20-49-46](https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/assets/10259360/d90cc608-3347-4899-a712-cab1f43d7ddc)
 
 https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/assets/10259360/d028d0c7-e149-4cbe-a20f-dade5b8a40c5
 
@@ -69,17 +69,20 @@ The Position button will move to the indicated position.
   
 Read Status will return the status, Stop Motor will stop the selected motor.
   
-Run Forever will run until a motor position limit is reached, or forever. To run without limits use moteus.moteus_tool to set the limits as follows,
+Run Forever will run until a motor position limit is reached, or forever. 
+
+Limit Maximum, Limit Minimum, and KP are parameters on the GUI screen which display moteus controller parameters for the selected motor. These can be edited and sent to the controller with the Write Limits and Write KP buttons.
   
-   conf set servopos.position_min nan
+Write limits will send the servopos.position_min and servopos.position_max from the GUI to the moteus controller for the selected motor.
   
-   conf set servopos.position_max nan
-  
-   conf write
+Write KP will send the servo.pid_position.kp from the GUI to the moteus controller for the selected motor.
+
+Conf Write will permanently save any parameters sent to the moteus controller for the selected motor. Note the selected motor should be stopped prior to sending this command.
   
 Start Motor will will start the motor at its current position.
   
 Set nearest causes the servo to select a whole number of internal motor rotations so that the final position is as close 0 as possible.
+  
 
 Running a sequence of motor movements; 
   
@@ -114,6 +117,5 @@ Be careful not to remove part of a sequence. It is OK to remove the whole sequen
 The sequence number value is ignored but they must be there. 
 The sequence is executed from top to bottom.
   
-mainwindow.h contains an array called Motor_rest_position which should be edited to establish all motor rest positions.
-  
-mainwindow.h contains 2 arrays called bounds_min and bounds_max which should be edited to establish all motor min and max positions. 
+mainwindow.h contains an array called Motor_rest_position which can be edited to establish all motor rest positions.
+
