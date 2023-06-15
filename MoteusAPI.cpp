@@ -107,6 +107,13 @@ bool MoteusAPI::SendDiagnosticRead(double& value) {
 
   uint8_t decoded[readbuffsize];
   string respstr(words.at(2));
+
+  if (respstr.substr(0 , 2) != "41")
+       return false; // not equal to ServerToClient
+
+  if (respstr.substr(2 , 2) != "01")
+        return false; // not equal to 1 parameter
+
   std::stringstream stream;
   stream << respstr.substr(4 , 2);
 
@@ -114,17 +121,20 @@ bool MoteusAPI::SendDiagnosticRead(double& value) {
   uint loopsize = 0;
   stream >> std::hex >> loopsize;
 
+  if (loopsize == 0 || loopsize > (respstr.size()/2 -3))
+      return false; // size 0 or too large for response size
+
   // convert hex to a number
-  for (uint ii = 3; ii < loopsize+3; ii++)
+  for (uint ii = 0 ,  offset = 3; ii < loopsize; ii++ , offset++)
   {
     std::stringstream stream;
-    stream << respstr.substr(ii * 2, 2);
+    stream << respstr.substr( offset * 2, 2);
     int tmp;
     stream >> std::hex >> tmp;
     decoded[ii] = (uint8_t)tmp;
   }
   std::stringstream num;
-  for (uint ii = 3; ii < loopsize+3; ii++)
+  for (uint ii = 0; ii < loopsize; ii++)
   {
     num << decoded[ii];
   }
