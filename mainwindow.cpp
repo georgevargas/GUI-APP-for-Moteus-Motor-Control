@@ -90,11 +90,11 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double limit_min, double 
 
         kp[Motor_id-1] =  limit_min;
 
-        out.str("");
-        out << "Motor: " << Motor_id << " kp:\t" << kp[Motor_id-1] << endl;
         ui->Slider_KP->setValue(kp[moteus_id -1]);
         ui->Counter_KP->setValue(kp[moteus_id -1]);
 
+        out.str("");
+        out << "Motor: " << Motor_id << " kp:\t" << kp[Motor_id-1] << endl;
         MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
     }
 }
