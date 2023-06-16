@@ -549,7 +549,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         {
             error = true;
             out.str("");
-            out << "error read position_min value " << Motor_id << endl;
+            out << "error read position_min value. motor " << Motor_id << endl;
             emit sendToMain(QString::fromStdString(out.str()));
         }
         else
@@ -559,7 +559,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
             {
                 error = true;
                 out.str("");
-                out << "error read position_min value " << Motor_id << endl;
+                out << "error read position_min value. motor " << Motor_id << endl;
                 emit sendToMain(QString::fromStdString(out.str()));
             }
             else
@@ -574,7 +574,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         {
             error = true;
             out.str("");
-            out << "error on read position_max value " << Motor_id << endl;
+            out << "error on read position_max value. motor " << Motor_id << endl;
             emit sendToMain(QString::fromStdString(out.str()));
         }
         else
@@ -584,7 +584,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
             {
                 error = true;
                 out.str("");
-                out << "error on read position_max value " << Motor_id << endl;
+                out << "error on read position_max value. motor " << Motor_id << endl;
                 emit sendToMain(QString::fromStdString(out.str()));
             }
             else
@@ -609,7 +609,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         if (!success)
         {
             out.str("");
-            out << "error on send conf write " << Motor_id << endl;
+            out << "error on send conf write. motor " << Motor_id << endl;
             emit sendToMain(QString::fromStdString(out.str()));
         }
         else
@@ -632,7 +632,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         if (!success)
         {
             out.str("");
-            out << "error on read KP value " << Motor_id << endl;
+            out << "error on read KP value. motor " << Motor_id << endl;
             emit sendToMain(QString::fromStdString(out.str()));
         }
         else
@@ -642,7 +642,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
             if (!success)
             {
                 out.str("");
-                out << "error on read KP value " << Motor_id << endl;
+                out << "error on read KP value. motor " << Motor_id << endl;
                 emit sendToMain(QString::fromStdString(out.str()));
             }
             else
@@ -667,7 +667,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         if (!success)
         {
             out.str("");
-            out << "error on set KP value " << Motor_id << endl;
+            out << "error on set KP value. motor " << Motor_id << endl;
             emit sendToMain(QString::fromStdString(out.str()));
         }
         else
@@ -695,7 +695,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         {
             error = true;
             out.str("");
-            out << "error on  set servopos.position_min value " << Motor_id << endl;
+            out << "error on  set servopos.position_min value. motor " << Motor_id << endl;
             emit sendToMain(QString::fromStdString(out.str()));
         }
         else
@@ -711,7 +711,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         {
             error = true;
             out.str("");
-            out << "error on set servopos.position_max value " << Motor_id << endl;
+            out << "error on set servopos.position_max value. motor " << Motor_id << endl;
             emit sendToMain(QString::fromStdString(out.str()));
         }
         else
@@ -1106,9 +1106,3 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         emit sendToMain(msg);
     }
 }
-
-
-
-
-
-
