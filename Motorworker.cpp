@@ -147,6 +147,9 @@ void Motorworker::Check_Motor_Error(QString dev_name,int Motor_id)
         while (count > 0 && fault == Fault::kNoFault && mode == Mode::kPosition && !TrajectoryComplete)
         {
             QThread::msleep(100);  //Blocking delay 100ms
+            curr_state.EN_Fault();
+            curr_state.EN_Mode();
+            curr_state.EN_TrajectoryComplete();
             api.ReadState(curr_state);
             fault = static_cast<Fault>(curr_state.fault);
             mode = static_cast<Mode>(curr_state.mode);
@@ -851,7 +854,9 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
             while (count > 0 && fault == Fault::kNoFault && mode == Mode::kPosition && !TrajectoryComplete)
             {
                 QThread::msleep(100);  //Blocking delay 100ms
-                //read current position
+                curr_state.EN_Fault();
+                curr_state.EN_Mode();
+                curr_state.EN_TrajectoryComplete();
                 api.ReadState(curr_state);
                 fault = static_cast<Fault>(curr_state.fault);
                 mode = static_cast<Mode>(curr_state.mode);
