@@ -32,7 +32,7 @@ private:
     Ui::MainWindow *ui;
     QThread *thread;
     QThread *thread1;
-    double accel_limit = 5.0;
+    double accel_limit = 5;
     double position = 1;
     double velocity_limit = 1.5;
     double max_torque = 20;
@@ -47,7 +47,7 @@ private:
     string dev_name = "/dev/ttyACM0";
     int moteus_id = 1;
     int Number_of_Motors = 3;
-    double Motor_rest_position[10] ={0.0,0.0,0.208496,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains rest positions for each motor
+    double Motor_rest_position[10] ={-0.005,-0.007,0.208496,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains rest positions for each motor
     double bounds_min[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the minimum positions for each motor
     double bounds_max[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
     double kp[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
