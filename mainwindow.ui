@@ -3477,7 +3477,7 @@
       <string notr="true">background-color:rgb(197, 213, 219);</string>
      </property>
      <property name="value">
-      <double>-10.000000000000000</double>
+      <double>0.000000000000000</double>
      </property>
      <property name="minimum">
       <double>-10000.000000000000000</double>
@@ -3860,7 +3860,7 @@
       <string notr="true">background-color:rgb(197, 213, 219);</string>
      </property>
      <property name="value">
-      <double>10.000000000000000</double>
+      <double>1.000000000000000</double>
      </property>
      <property name="minimum">
       <double>-10000.000000000000000</double>
@@ -4449,7 +4449,7 @@
       <double>0.000000000000000</double>
      </property>
      <property name="upperBound">
-      <double>100.000000000000000</double>
+      <double>1000000.000000000000000</double>
      </property>
      <property name="scaleStepSize">
       <double>1.000000000000000</double>
@@ -4525,13 +4525,13 @@
       <string notr="true">background-color:rgb(197, 213, 219);</string>
      </property>
      <property name="value">
-      <double>15.000000000000000</double>
+      <double>1.000000000000000</double>
      </property>
      <property name="minimum">
       <double>0.000000000000000</double>
      </property>
      <property name="maximum">
-      <double>100.000000000000000</double>
+      <double>1000000.000000000000000</double>
      </property>
      <property name="singleStep">
       <double>1.000000000000000</double>
