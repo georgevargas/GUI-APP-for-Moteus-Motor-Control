@@ -32,7 +32,9 @@ public slots:
     void run_cycles();
 
 private:
-    void Check_Motor_Error(QString dev_name,int Motor_id);
+    bool Check_Motor(QString dev_name,int Motor_id);
+    bool Check_TrajectoryComplete(QString dev_name,int Motor_id);
+    bool Wait_TrajectoryComplete(QString dev_name,int Motor_id);
     double l_accel_limit;
     double l_position;
     double l_velocity_limit;
@@ -43,17 +45,22 @@ private:
     double l_Cycle_Start_Stop;
     double l_Cycle_Delay;
     QString l_dev_name;
+    QString Position_dev_name;
     double delay = 0;
     double l_Cycle;
     int    l_Motor_id;
+    int    position_Motor_id = 0;
     int    Dynamic_Motor_id = 0;
     int Trajectory_Timeout_1 = 200; // 20 secs
     int Trajectory_Timeout_2 = 100; // 10 secs
     double l_bounds_min[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the minimum positions for each motor
     double l_bounds_max[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the mamimum positions for each motor
-
+    bool   Position_wait = false;
     bool   Rec_run_Enable = false;
     bool   Dynamic = false;
+    bool   Motor_error = false;
+    bool   TrajectoryComplete_error = false;
+    bool   TrajectoryComplete_pause = false;
     vector <double> list_Position;
     vector <int>    list_Motor_id;
     vector <double> list_Delay;
