@@ -47,7 +47,7 @@ void MainWindow::setup()
 
     connect(workerTrigger, SIGNAL(timeout()), worker, SLOT(run_cycles()));
     connect(this, SIGNAL(sendSetup()), worker, SLOT(receiveSetup()));
-    connect(worker, SIGNAL(sendMsg(QString,int,double,double)), this, SLOT(receiveMsg(QString,int,double,double)));
+    connect(worker, SIGNAL(sendMsg(QString,int,double,double,double)), this, SLOT(receiveMsg(QString,int,double,double,double)));
     connect(this,SIGNAL(sendToWorker(QString,QString,int,double,double,double,double,double,double,double,double,double,double,double)),worker,SLOT(getFromMain(QString,QString,int,double,
              double,double,double,double,double,double,double,double,double,double)));
     connect(worker,SIGNAL(sendToMain(QString)),this,SLOT(getFromWorker(QString)));
@@ -65,14 +65,14 @@ void MainWindow::getFromWorker(QString msg) //slot implementation
     MainWindow::ui->txtXYRadius->appendPlainText(msg);
 }
 
-void MainWindow::receiveMsg(QString msg, int Motor_id, double limit_min, double limit_max)
+void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Value2 , double Value3)
 {
     if (msg == "set motor limits")
     {
         std::ostringstream out;
 
-        bounds_min[Motor_id-1] =  limit_min;
-        bounds_max[Motor_id-1] =  limit_max;
+        bounds_min[Motor_id-1] =  Value1;
+        bounds_max[Motor_id-1] =  Value2;
 
         out.str("");
         out << "Motor: " << Motor_id << " limit min:\t" << bounds_min[Motor_id-1]
@@ -84,17 +84,27 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double limit_min, double 
 
         MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
     }
-    else if (msg == "get KP")
+    else if (msg == "get PID")
     {
         std::ostringstream out;
 
-        kp[Motor_id-1] =  limit_min;
+        kp[Motor_id-1] =  Value1;
+        kd[Motor_id-1] =  Value2;
+        ki[Motor_id-1] =  Value3;
 
         ui->Slider_KP->setValue(kp[moteus_id -1]);
         ui->Counter_KP->setValue(kp[moteus_id -1]);
+        ui->Slider_KD->setValue(kd[moteus_id -1]);
+        ui->Counter_KD->setValue(kd[moteus_id -1]);
+        ui->Slider_KI->setValue(ki[moteus_id -1]);
+        ui->Counter_KI->setValue(ki[moteus_id -1]);
 
         out.str("");
-        out << "Motor: " << Motor_id << " kp:\t" << kp[Motor_id-1] << endl;
+        out << "Motor: " << Motor_id
+            << "\tkp: " << kp[Motor_id-1]
+            << "\tkd: " << kd[Motor_id-1]
+            << "\t ki: " << ki[Motor_id-1]
+            << endl;
         MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
     }
 }
@@ -141,7 +151,7 @@ void MainWindow:: Init_Motor()
         }
         for (int i = 1; i <= Number_of_Motors; i++)
         {
-            emit sendToWorker("get KP",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+            emit sendToWorker("get PID",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                               kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
         }
 }
@@ -381,6 +391,10 @@ void MainWindow::on_comboBox_currentIndexChanged(int index)
     ui->Counter_Limit_Max->setValue(bounds_max[moteus_id -1]);
     ui->Counter_KP->setValue(kp[moteus_id -1]);
     ui->Slider_KP->setValue(kp[moteus_id -1]);
+    ui->Counter_KD->setValue(kd[moteus_id -1]);
+    ui->Slider_KD->setValue(kd[moteus_id -1]);
+    ui->Counter_KI->setValue(ki[moteus_id -1]);
+    ui->Slider_KI->setValue(ki[moteus_id -1]);
 }
 
 void MainWindow::on_Counter_Cycle_Start_Stop_valueChanged(double value)
@@ -491,9 +505,8 @@ void MainWindow::on_btnRec_update_limits_clicked()
 
 void MainWindow::on_btnRun_update_KP_clicked()
 {
-    emit sendToWorker("set KP",QString::fromStdString(dev_name),moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp[moteus_id -1],
-                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
-
+    emit sendToWorker("set PID",QString::fromStdString(dev_name),moteus_id,accel_limit,position,velocity_limit,max_torque,ki[moteus_id -1],kp[moteus_id -1],
+                      kd[moteus_id -1],bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
 }
 
 void MainWindow::on_Counter_Limit_Min_valueChanged(double value)
@@ -530,7 +543,31 @@ void MainWindow::on_Counter_KP_valueChanged(double value)
 void MainWindow::on_Slider_KP_valueChanged(double value)
 {
     kp[moteus_id -1] = value;
-    ui->Counter_KP->setValue(kp[moteus_id -1]);
+    ui->Counter_KP->setValue(value);
+}
+
+void MainWindow::on_Counter_KD_valueChanged(double value)
+{
+    kd[moteus_id -1] = value;
+    ui->Slider_KD->setValue(value);
+}
+
+void MainWindow::on_Slider_KD_valueChanged(double value)
+{
+    kd[moteus_id -1] = value;
+    ui->Counter_KD->setValue(value);
+}
+
+void MainWindow::on_Counter_KI_valueChanged(double value)
+{
+    ki[moteus_id -1] = value;
+    ui->Slider_KI->setValue(value);
+}
+
+void MainWindow::on_Slider_KI_valueChanged(double value)
+{
+    ki[moteus_id -1] = value;
+    ui->Counter_KI->setValue(value);
 }
 
 void MainWindow::on_btnConf_Write_clicked()
