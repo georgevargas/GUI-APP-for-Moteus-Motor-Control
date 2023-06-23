@@ -2,7 +2,7 @@ Designed for use with an MJBOTS moteus controller using an fdcanusb.
 
 Caution: This program allows a sequence of user programmed motor movements to be run in cycles. It is the users responsibility to insure safety so no damage can occur. Remove all obstructions, and run at 1 cycle at first to insure safety.
 
-![Screenshot from 2023-06-13 20-49-46](https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/assets/10259360/d90cc608-3347-4899-a712-cab1f43d7ddc)
+![Screenshot from 2023-06-23 10-09-30](https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/assets/10259360/b8030a9e-a53c-4660-880d-db3f21f488e8)
 
 https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/assets/10259360/d028d0c7-e149-4cbe-a20f-dade5b8a40c5
 
@@ -70,11 +70,11 @@ Read Status will return the status, Stop Motor will stop the selected motor.
  
 Run Forever will run until a motor position limit is reached, or forever.
 
-Limit Maximum, Limit Minimum, and KP are parameters on the GUI screen which display moteus controller parameters for the selected motor. These can be edited and sent to the controller with the Write Limits and Write KP buttons.
+Limit Maximum, Limit Minimum, KP. kd, and ki are parameters on the GUI screen which display moteus controller parameters for the selected motor. These can be edited and sent to the controller with the Write Limits and Write PID buttons.
  
 Write limits will send the servopos.position_min and servopos.position_max from the GUI to the moteus controller for the selected motor.
  
-Write KP will send the servo.pid_position.kp from the GUI to the moteus controller for the selected motor.
+Write PID will send the PID Parameters KP, KD, and KI from the GUI to the moteus controller for the selected motor.
 
 Conf Write will permanently save any parameters sent to the moteus controller for the selected motor. Note the selected motor should be stopped prior to sending this command.
  
