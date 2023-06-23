@@ -1347,7 +1347,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
                 out << "Mode:\t\t" << curr_state.mode << " = Stay Within Bounds" << endl;
                 break;
             case 14:
-                out << "Mode:\t\t" << curr_state.mode << " = Measure Inductance" << endl;
+                out << "Mode:\t\t" << curr_state.mode << " = Measure Inductance" << endl; 
                 break;
 
             default:
