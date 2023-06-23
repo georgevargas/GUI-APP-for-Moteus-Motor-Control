@@ -32,9 +32,9 @@ private:
     Ui::MainWindow *ui;
     QThread *thread;
     QThread *thread1;
-    double accel_limit = 5;
+    double accel_limit = 0.75;
     double position = 1;
-    double velocity_limit = 1.5;
+    double velocity_limit = 0.224;
     double max_torque = 20;
     double feedforward_torque = 0.1;
     double kp_scale = 1;
@@ -51,6 +51,8 @@ private:
     double bounds_min[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the minimum positions for each motor
     double bounds_max[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
     double kp[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
+    double kd[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
+    double ki[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
 
     void setup();
     void Init_Motor();
@@ -66,7 +68,7 @@ signals:
          double kd_scale,double bounds_min,double bounds_max,double Cycle,double Delay);
 
 public slots:
-    void receiveMsg(QString  msg,int Motor_id,double limit_min,double limit_max);
+    void receiveMsg(QString  msg, int Motor_id, double Value1, double Value2, double Value3);
     void getFromWorker(QString);
 
 private slots:
@@ -119,6 +121,10 @@ private slots:
     void on_Counter_KP_valueChanged(double value);
     void on_Slider_KP_valueChanged(double value);
     void on_btnConf_Write_clicked();
+    void on_Counter_KD_valueChanged(double value);
+    void on_Slider_KD_valueChanged(double value);
+    void on_Counter_KI_valueChanged(double value);
+    void on_Slider_KI_valueChanged(double value);
 };
 
 #endif // MAINWINDOW_H
