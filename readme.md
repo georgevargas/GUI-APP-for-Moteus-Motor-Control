@@ -70,11 +70,11 @@ Read Status will return the status, Stop Motor will stop the selected motor.
  
 Run Forever will run until a motor position limit is reached, or forever.
 
-Limit Maximum, Limit Minimum, KP. kd, and ki are parameters on the GUI screen which display moteus controller parameters for the selected motor. These can be edited and sent to the controller with the Write Limits and Write PID buttons.
+Limit Max, Limit Min, PID kp. PID kd, and PID ki are parameters on the GUI screen which display moteus controller parameters for the selected motor. These can be edited and sent to the controller with the Write Limits and Write PID buttons.
  
-Write limits will send the servopos.position_min and servopos.position_max from the GUI to the moteus controller for the selected motor.
+Write limits will send the Limit Min and Limit Max from the GUI to the moteus controller for the selected motor.
  
-Write PID will send the PID Parameters KP, KD, and KI from the GUI to the moteus controller for the selected motor.
+Write PID will send the PID Parameters from the GUI to the moteus controller for the selected motor.
 
 Conf Write will permanently save any parameters sent to the moteus controller for the selected motor. Note the selected motor should be stopped prior to sending this command.
  
