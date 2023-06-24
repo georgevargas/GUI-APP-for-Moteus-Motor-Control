@@ -371,7 +371,7 @@ void MainWindow::on_actionAbout_triggered()
 {
     QMessageBox::information(this,"About",
      "Motor Controller\n\n"
-     "Rev 1.0"
+     "Rev 2.0"
      );
 }
 
