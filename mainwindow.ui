@@ -3878,7 +3878,7 @@ background-color: #C5D5DB;
    <widget class="QPushButton" name="btnConf_Write">
     <property name="geometry">
      <rect>
-      <x>290</x>
+      <x>430</x>
       <y>110</y>
       <width>111</width>
       <height>25</height>
@@ -3893,23 +3893,23 @@ background-color: #C5D5DB;
     </property>
     <property name="styleSheet">
      <string notr="true">    QPushButton {
-        border: 1px solid #337E9F;
+         border: 1px solid #337E9F;
         border-radius: 6px;
-        background-color: rgb(70, 130, 180);
+        background-color:  #4682B4;
         background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
-            stop: 0 #22c70d, stop: 1 #168B07);
+            stop: 0 #FF9C43, stop: 1 #CC0000);
     }
     QPushButton:hover{
         border: 1px solid #333333;
         background-color: rgb(70, 130, 180);
         background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
-            stop: 0 #A0E397, stop: 1 #428206);
+            stop: 0 #FFEA43, stop: 1 #CC0000);
     }
     QPushButton:pressed {
         border: 1px solid #333333;
         background-color: rgb(70, 130, 180);
         background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
-           stop: 0 #444444, stop: 1 #222222);
+            stop: 0 #CF5C40, stop: 1 #A04731);
     };</string>
     </property>
     <property name="text">
@@ -6129,6 +6129,47 @@ background-color: #C5D5DB;
     </property>
     <property name="singleStep">
      <double>1.000000000000000</double>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnConf_Read">
+    <property name="geometry">
+     <rect>
+      <x>290</x>
+      <y>110</y>
+      <width>111</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">    QPushButton {
+        border: 1px solid #337E9F;
+        border-radius: 6px;
+        background-color: rgb(70, 130, 180);
+        background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
+            stop: 0 #22c70d, stop: 1 #168B07);
+    }
+    QPushButton:hover{
+        border: 1px solid #333333;
+        background-color: rgb(70, 130, 180);
+        background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
+            stop: 0 #A0E397, stop: 1 #428206);
+    }
+    QPushButton:pressed {
+        border: 1px solid #333333;
+        background-color: rgb(70, 130, 180);
+        background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
+           stop: 0 #444444, stop: 1 #222222);
+    };</string>
+    </property>
+    <property name="text">
+     <string>Conf Read</string>
     </property>
    </widget>
   </widget>
