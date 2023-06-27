@@ -4,7 +4,9 @@ Caution: This program allows a sequence of user programmed motor movements to be
 
 ![Screenshot from 2023-06-24 08-48-00](https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/assets/10259360/e408d377-7a72-4c22-9d10-d8ee0408f77a)
 
-https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/assets/10259360/d028d0c7-e149-4cbe-a20f-dade5b8a40c5
+
+https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/assets/10259360/dd57bec8-9009-4d42-a9e1-9305ce02af5a
+
 
 This is a QT GUI program which allows positions to be manually set for each motor and recorded along with other parameters such as velocity, torque and delay etc..
 Then you can play back the sequence in cycles. More movements can be added to the sequence without limit. Movements on different motors may be overlapped by setting the movement delay to zero on intermediate steps.
