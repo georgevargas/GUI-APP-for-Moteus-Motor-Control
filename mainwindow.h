@@ -125,6 +125,7 @@ private slots:
     void on_Slider_KD_valueChanged(double value);
     void on_Counter_KI_valueChanged(double value);
     void on_Slider_KI_valueChanged(double value);
+    void on_btnConf_Read_clicked();
 };
 
 #endif // MAINWINDOW_H
