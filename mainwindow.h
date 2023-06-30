@@ -53,6 +53,9 @@ private:
     double kp[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
     double kd[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
     double ki[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
+    double Gear_Ratio[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
+    double Break_Voltage[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
+
 
     void setup();
     void Init_Motor();
@@ -126,6 +129,12 @@ private slots:
     void on_Counter_KI_valueChanged(double value);
     void on_Slider_KI_valueChanged(double value);
     void on_btnConf_Read_clicked();
+    void on_Counter_Gear_Ratio_valueChanged(double value);
+    void on_Slider_Gear_Ratio_valueChanged(double value);
+    void on_btnRec_Gear_Ratio_clicked();
+    void on_Counter_Break_voltage_valueChanged(double value);
+    void on_Slider_Break_voltage_valueChanged(double value);
+    void on_btnRec_Break_voltage_clicked();
 };
 
 #endif // MAINWINDOW_H
