@@ -659,6 +659,66 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
            Rec_run_Enable = true;
         }
     }
+    else if (msg == "get rotor_to_output_ratio")
+    {
+        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        Rec_run_Enable = false;
+        Position_wait = false;
+        double value = std::numeric_limits<double>::quiet_NaN();
+
+        std::ostringstream out;
+
+        // get rotor_to_output_ratio
+        if (!api.SendDiagnosticCommand("conf get motor_position.rotor_to_output_ratio\n"))
+        {
+            out.str("");
+            out << "error on read rotor_to_output_ratio. motor " << Motor_id << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+        }
+        else
+        {
+            if (!api.SendDiagnosticRead(value))
+            {
+                out.str("");
+                out << "error on read rotor_to_output_ratio. motor " << Motor_id << endl;
+                emit sendToMain(QString::fromStdString(out.str()));
+            }
+            else
+            {
+                emit sendMsg("get gear ratio",Motor_id,value,0,0);
+            }
+        }
+    }
+    else if (msg == "get break voltage")
+    {
+        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        Rec_run_Enable = false;
+        Position_wait = false;
+        double value = std::numeric_limits<double>::quiet_NaN();
+
+        std::ostringstream out;
+
+        // get min break voltage
+        if (!api.SendDiagnosticCommand("conf get servo.flux_brake_min_voltage\n"))
+        {
+            out.str("");
+            out << "error on read flux_brake_min_voltage. motor " << Motor_id << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+        }
+        else
+        {
+            if (!api.SendDiagnosticRead(value))
+            {
+                out.str("");
+                out << "error on read flux_brake_min_voltage " << Motor_id << endl;
+                emit sendToMain(QString::fromStdString(out.str()));
+            }
+            else
+            {
+                emit sendMsg("get Break Voltage",Motor_id,value,0,0);
+            }
+        }
+    }
     else if (msg == "get motor limits")
     {
         MoteusAPI api(dev_name.toStdString(), Motor_id);
@@ -674,7 +734,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         {
             error = true;
             out.str("");
-            out << "error read position_min value. motor " << Motor_id << endl;
+            out << "error on read position_min value. motor " << Motor_id << endl;
             emit sendToMain(QString::fromStdString(out.str()));
         }
         else
@@ -683,7 +743,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
             {
                 error = true;
                 out.str("");
-                out << "error read position_min value. motor " << Motor_id << endl;
+                out << "error on read position_min value. motor " << Motor_id << endl;
                 emit sendToMain(QString::fromStdString(out.str()));
             }
             else
@@ -867,6 +927,64 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
             }
         }
     }
+    else if (msg == "set rotor_to_output_ratio")
+    {
+
+        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        Rec_run_Enable = false;
+        Position_wait = false;
+
+        std::ostringstream out;
+        out.str("");
+
+        // set min limit command
+        out << "conf set motor_position.rotor_to_output_ratio " << feedforward_torque << endl;
+        string text = out.str();
+        if (!api.SendDiagnosticCommand(text))
+        {
+            out.str("");
+            out << "error on set motor_position.rotor_to_output_ratio value. motor " << Motor_id << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+        }
+        else
+        {
+            out.str("");
+            out << "Motor: " << Motor_id
+                << "\t Gear Ratio: " << feedforward_torque
+                << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+        }
+
+    }
+    else if (msg == "set break voltage")
+    {
+
+        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        Rec_run_Enable = false;
+        Position_wait = false;
+
+        std::ostringstream out;
+        out.str("");
+
+        // set min limit command
+        out << "conf set servo.flux_brake_min_voltage " << feedforward_torque << endl;
+        string text = out.str();
+        if (!api.SendDiagnosticCommand(text))
+        {
+            out.str("");
+            out << "error on set flux_brake_min_voltage value. motor " << Motor_id << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+        }
+        else
+        {
+            out.str("");
+            out << "Motor: " << Motor_id
+                << "\t Break Min Voltage: " << feedforward_torque
+                << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+        }
+
+    }
     else if (msg == "set motor limits")
     {
         bool error = false;
@@ -909,8 +1027,13 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         }
 
         if (!error)
-            emit sendMsg("set motor limits",Motor_id,l_bounds_min[Motor_id-1],l_bounds_max[Motor_id-1],0);
-
+        {
+            out.str("");
+            out << "Motor: " << Motor_id
+                << " limit min:\t" << l_bounds_min[Motor_id-1]
+                << "\tlimit max:\t" << l_bounds_max[Motor_id-1] << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+        }
     }
     else if (msg == "Send Stop")
     {
@@ -1347,7 +1470,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
                 out << "Mode:\t\t" << curr_state.mode << " = Stay Within Bounds" << endl;
                 break;
             case 14:
-                out << "Mode:\t\t" << curr_state.mode << " = Measure Inductance" << endl; 
+                out << "Mode:\t\t" << curr_state.mode << " = Measure Inductance" << endl;
                 break;
 
             default:
@@ -1362,9 +1485,3 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         emit sendToMain(msg);
     }
 }
-
-
-
-
-
-
