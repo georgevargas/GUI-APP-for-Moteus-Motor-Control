@@ -107,6 +107,37 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
             << endl;
         MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
     }
+    else if (msg == "get gear ratio")
+    {
+        std::ostringstream out;
+
+        Gear_Ratio[Motor_id-1] =  Value1;
+
+        ui->Slider_Gear_Ratio->setValue(Gear_Ratio[moteus_id -1]);
+        ui->Counter_Gear_Ratio->setValue(Gear_Ratio[moteus_id -1]);
+
+        out.str("");
+        out << "Motor: " << Motor_id
+            << "\tGear Ratio: " << Gear_Ratio[Motor_id-1]
+            << endl;
+        MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
+    }
+    else if (msg == "get Break Voltage")
+    {
+        std::ostringstream out;
+
+        Break_Voltage[Motor_id-1] =  Value1;
+
+        ui->Slider_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
+        ui->Counter_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
+
+        out.str("");
+        out << "Motor: " << Motor_id
+            << "\tBreak Voltage: " << Break_Voltage[Motor_id-1]
+            << endl;
+        MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
+    }
+
 }
 
 void MainWindow:: Init_Motor()
@@ -152,6 +183,16 @@ void MainWindow:: Init_Motor()
         for (int i = 1; i <= Number_of_Motors; i++)
         {
             emit sendToWorker("get PID",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                              kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+        }
+        for (int i = 1; i <= Number_of_Motors; i++)
+        {
+            emit sendToWorker("get rotor_to_output_ratio",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                              kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+        }
+        for (int i = 1; i <= Number_of_Motors; i++)
+        {
+            emit sendToWorker("get break voltage",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                               kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
         }
 }
@@ -395,6 +436,12 @@ void MainWindow::on_comboBox_currentIndexChanged(int index)
     ui->Slider_KD->setValue(kd[moteus_id -1]);
     ui->Counter_KI->setValue(ki[moteus_id -1]);
     ui->Slider_KI->setValue(ki[moteus_id -1]);
+    ui->Slider_Gear_Ratio->setValue(Gear_Ratio[moteus_id -1]);
+    ui->Counter_Gear_Ratio->setValue(Gear_Ratio[moteus_id -1]);
+    ui->Slider_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
+    ui->Counter_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
+    ui->Slider_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
+    ui->Counter_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
 }
 
 void MainWindow::on_Counter_Cycle_Start_Stop_valueChanged(double value)
@@ -502,7 +549,16 @@ void MainWindow::on_btnRec_update_limits_clicked()
     emit sendToWorker("set motor limits",QString::fromStdString(dev_name),moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                       kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
 }
-
+void MainWindow::on_btnRec_Gear_Ratio_clicked()
+{
+    emit sendToWorker("set rotor_to_output_ratio",QString::fromStdString(dev_name),moteus_id,accel_limit,position,velocity_limit,max_torque,Gear_Ratio[moteus_id -1],kp_scale,
+                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+}
+void MainWindow::on_btnRec_Break_voltage_clicked()
+{
+    emit sendToWorker("set break voltage",QString::fromStdString(dev_name),moteus_id,accel_limit,position,velocity_limit,max_torque,Break_Voltage[moteus_id -1],kp_scale,
+                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+}
 void MainWindow::on_btnRun_update_KP_clicked()
 {
     emit sendToWorker("set PID",QString::fromStdString(dev_name),moteus_id,accel_limit,position,velocity_limit,max_torque,ki[moteus_id -1],kp[moteus_id -1],
@@ -569,6 +625,28 @@ void MainWindow::on_Slider_KI_valueChanged(double value)
     ki[moteus_id -1] = value;
     ui->Counter_KI->setValue(value);
 }
+void MainWindow::on_Counter_Gear_Ratio_valueChanged(double value)
+{
+    Gear_Ratio[moteus_id -1] = value;
+    ui->Slider_Gear_Ratio->setValue(value);
+}
+
+void MainWindow::on_Slider_Gear_Ratio_valueChanged(double value)
+{
+    Gear_Ratio[moteus_id -1] = value;
+    ui->Counter_Gear_Ratio->setValue(value);
+}
+void MainWindow::on_Counter_Break_voltage_valueChanged(double value)
+{
+    Break_Voltage[moteus_id -1] = value;
+    ui->Slider_Break_voltage->setValue(value);
+}
+
+void MainWindow::on_Slider_Break_voltage_valueChanged(double value)
+{
+    Gear_Ratio[moteus_id -1] = value;
+    ui->Counter_Break_voltage->setValue(value);
+}
 
 void MainWindow::on_btnConf_Write_clicked()
 {
@@ -586,6 +664,16 @@ void MainWindow::on_btnConf_Read_clicked()
     for (int i = 1; i <= Number_of_Motors; i++)
     {
         emit sendToWorker("get PID",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+    }
+    for (int i = 1; i <= Number_of_Motors; i++)
+    {
+        emit sendToWorker("get rotor_to_output_ratio",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+    }
+    for (int i = 1; i <= Number_of_Motors; i++)
+    {
+        emit sendToWorker("get break voltage",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                           kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
     }
 
