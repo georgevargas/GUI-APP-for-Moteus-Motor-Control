@@ -502,8 +502,6 @@ void MainWindow::on_comboBox_currentIndexChanged(int index)
     ui->Counter_Gear_Ratio->setValue(Gear_Ratio[moteus_id -1]);
     ui->Slider_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
     ui->Counter_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
-    ui->Slider_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
-    ui->Counter_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
 }
 
 void MainWindow::on_Counter_Cycle_Start_Stop_valueChanged(double value)
@@ -706,7 +704,7 @@ void MainWindow::on_Counter_Break_voltage_valueChanged(double value)
 
 void MainWindow::on_Slider_Break_voltage_valueChanged(double value)
 {
-    Gear_Ratio[moteus_id -1] = value;
+    Break_Voltage[moteus_id -1] = value;
     ui->Counter_Break_voltage->setValue(value);
 }
 
