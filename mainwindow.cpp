@@ -38,6 +38,20 @@ MainWindow::~MainWindow()
 
 void MainWindow::setup()
 {
+    //Setup my diagram
+    ui->myPlot->addGraph();
+    ui->myPlot->xAxis->setLabel("Time");
+    ui->myPlot->xAxis->setRange(0,2);
+    ui->myPlot->yAxis->setLabel("Position");
+    ui->myPlot->yAxis->setRange(-.4,-.1);
+
+    //init time
+    time = 0.0;
+
+    //init my qtimer
+    myTimer = new QTimer(this);
+    connect(myTimer, &QTimer::timeout, this, &MainWindow::updateDiagram);
+    myTimer->setInterval(50);
 
     thread = new QThread();
     Motorworker *worker = new Motorworker();
@@ -58,11 +72,19 @@ void MainWindow::setup()
 
     workerTrigger->start();
     workerTrigger->moveToThread(thread);
+    myTimer->start();
 
 }
 void MainWindow::getFromWorker(QString msg) //slot implementation
 {
     MainWindow::ui->txtXYRadius->appendPlainText(msg);
+}
+
+void MainWindow::updateDiagram()
+{
+    time += 0.05;
+    emit sendToWorker("Update Velocity",QString::fromStdString(dev_name),moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
 }
 
 void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Value2 , double Value3)
@@ -137,7 +159,47 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
             << endl;
         MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
     }
+    else if (msg == "get velocity")
+    {
+        Velocity[Motor_id-1] =  Value1;
 
+        // Add the time the x data buffer
+        m_XData.append( time );
+        m_YData.append( Velocity[moteus_id-1] );
+        if( m_XData.size() > 100 )
+        {
+            m_XData.remove( 0 );
+            m_YData.remove( 0 );
+        }
+
+        ui->myPlot->graph(0)->setData( m_XData , m_YData );
+
+        // Set the range of the vertical and horizontal axis of the plot ( not the graph )
+        // so all the data will be centered. first we get the min and max of the x and y data
+        QVector<double>::iterator xMaxIt = std::max_element( m_XData.begin() , m_XData.end() );
+        QVector<double>::iterator xMinIt = std::min_element( m_XData.begin() , m_XData.end() );
+        QVector<double>::iterator yMaxIt = std::max_element( m_YData.begin() , m_YData.end() );
+        QVector<double>::iterator yMinIt = std::min_element( m_YData.begin() , m_YData.end() );
+
+        qreal yPlotMin = *yMinIt;
+        qreal yPlotMax = *yMaxIt;
+
+        qreal xPlotMin = *xMinIt;
+        qreal xPlotMax = *xMaxIt;
+
+        // The yOffset just to make sure that the graph won't take the whole
+        // space in the plot widget, and to keep a margin at the top, the same goes for xOffset
+        qreal yOffset = 0.05 * ( yPlotMax - yPlotMin ) ;
+        qreal xOffset = 0.05 *( xPlotMax - xPlotMin );
+
+        if ( (time - oldtime) > 1.0)
+        {
+            oldtime = time;
+            ui->myPlot->xAxis->setRange( xPlotMin , xPlotMax + xOffset );
+            ui->myPlot->yAxis->setRange(yPlotMin - yOffset, yPlotMax + yOffset);
+        }
+        ui->myPlot->replot();
+    }
 }
 
 void MainWindow:: Init_Motor()
