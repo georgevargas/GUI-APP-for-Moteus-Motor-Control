@@ -15,6 +15,8 @@
 #include <QPixmap>
 #include <stdlib.h> // required for system call
 #include "MoteusAPI.h"
+#include <QTimer>
+#include "qcustomplot.h"
 
 QT_BEGIN_NAMESPACE
 class QPrinter;
@@ -30,6 +32,7 @@ class MainWindow : public QMainWindow
 
 private:
     Ui::MainWindow *ui;
+    QCustomPlot * m_CustomPlot;
     QThread *thread;
     QThread *thread1;
     double accel_limit = 0.75;
@@ -43,7 +46,16 @@ private:
     double Cycle_Delay = 1.1;
     bool   Dynamic = false;
     bool   Enable_startup_nearest_commands = true;
+    double time = 0;
+    double oldtime = 0;
+    // Data buffers
+    QVector<qreal> m_YData;
+    QVector<qreal> m_XData;
+    // This object will hold the current value as a text
+    // that will appear at the extreme right of the plot,
+    QCPItemText *m_ValueIndex;
 
+    QTimer * myTimer;
     string dev_name = "/dev/ttyACM0";
     int moteus_id = 1;
     int Number_of_Motors = 3;
@@ -55,6 +67,7 @@ private:
     double ki[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
     double Gear_Ratio[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
     double Break_Voltage[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
+    double Velocity[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
 
 
     void setup();
@@ -73,9 +86,9 @@ signals:
 public slots:
     void receiveMsg(QString  msg, int Motor_id, double Value1, double Value2, double Value3);
     void getFromWorker(QString);
+    void updateDiagram();
 
 private slots:
-
     void on_btnStop_Motor_clicked();
     void on_btnRun_Velocity_clicked();
     void on_btnRun_Position_clicked();
