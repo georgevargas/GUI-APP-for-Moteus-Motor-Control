@@ -35,6 +35,7 @@ private:
     bool Check_Motor(QString dev_name,int Motor_id);
     bool Check_TrajectoryComplete(QString dev_name,int Motor_id);
     bool Wait_TrajectoryComplete(QString dev_name,int Motor_id);
+    bool Check_Velocity(QString dev_name,int Motor_id);
     double l_accel_limit;
     double l_position;
     double l_velocity_limit;
@@ -77,8 +78,3 @@ private:
 };
 
 #endif // MOTORWORKER_H
-
-
-
-
-
