@@ -237,6 +237,24 @@ bool Motorworker::Wait_TrajectoryComplete(QString dev_name,int Motor_id)
     }
     return !error;
 }
+bool Motorworker::Check_Velocity(QString dev_name,int Motor_id)
+{
+    MoteusAPI api(dev_name.toStdString(), Motor_id);
+    // define a state object
+    State curr_state;
+    std::ostringstream out;
+    out.str("");
+
+    // reset the state
+    curr_state.Reset();
+
+    //read current velocity
+    curr_state.EN_Position();
+
+    api.ReadState(curr_state);
+    emit sendMsg("get velocity",Motor_id,curr_state.position,0,0);
+    return true;
+}
 void Motorworker::run_cycles()
 {
     if (!Rec_run_Enable && Position_wait)
@@ -634,6 +652,10 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         l_kp_scale = kp_scale;
         l_kd_scale = kd_scale;
         Dynamic_Motor_id = Motor_id;
+    }
+    else if (msg == "Update Velocity")
+    {
+        Check_Velocity(dev_name, Motor_id);
     }
     else if (msg == "Run_Recorded")
     {
