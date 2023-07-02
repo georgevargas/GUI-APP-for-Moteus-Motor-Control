@@ -6970,6 +6970,16 @@ background-color: #C5D5DB;
      <string>Set Break V</string>
     </property>
    </widget>
+   <widget class="QCustomPlot" name="myPlot" native="true">
+    <property name="geometry">
+     <rect>
+      <x>570</x>
+      <y>398</y>
+      <width>521</width>
+      <height>297</height>
+     </rect>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
@@ -7133,6 +7143,12 @@ background-color: #C5D5DB;
    <class>QwtSlider</class>
    <extends>QWidget</extends>
    <header>qwt_slider.h</header>
+  </customwidget>
+  <customwidget>
+   <class>QCustomPlot</class>
+   <extends>QWidget</extends>
+   <header>qcustomplot.h</header>
+   <container>1</container>
   </customwidget>
  </customwidgets>
  <resources>
