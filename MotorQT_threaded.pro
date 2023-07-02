@@ -28,13 +28,15 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
         Motorworker.cpp \
-        MoteusAPI.cpp
+        MoteusAPI.cpp \
+        qcustomplot.cpp
 
 HEADERS += \
         mainwindow.h \
         Motorworker.h \
         moteus_protocol.h \
-        MoteusAPI.h
+        MoteusAPI.h \
+        qcustomplot.h
 
 FORMS += \
         mainwindow.ui
