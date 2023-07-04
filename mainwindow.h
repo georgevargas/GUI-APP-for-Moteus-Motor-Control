@@ -158,8 +158,8 @@ private slots:
     void on_Counter_Break_voltage_valueChanged(double value);
     void on_Slider_Break_voltage_valueChanged(double value);
     void on_btnRec_Break_voltage_clicked();
-    void on_checkBox_Position_clicked();
-    void on_checkBox_Velocity_clicked();
+    void on_actionPosition_changed();
+    void on_actionVelocity_changed();
 };
 
 #endif // MAINWINDOW_H
