@@ -46,11 +46,19 @@ private:
     double Cycle_Delay = 1.1;
     bool   Dynamic = false;
     bool   Enable_startup_nearest_commands = true;
+    bool   Enable_plot_position = true;
+    bool   Enable_plot_velocity = false;
+    bool   Enable_plot_torque = false;
     double time = 0;
     double oldtime = 0;
     // Data buffers
     QVector<qreal> m_YData;
     QVector<qreal> m_XData;
+    QVector<qreal> m_YData1;
+    QVector<qreal> m_XData1;
+    QVector<qreal> m_YData2;
+    QVector<qreal> m_XData2;
+
     // This object will hold the current value as a text
     // that will appear at the extreme right of the plot,
     QCPItemText *m_ValueIndex;
@@ -68,6 +76,8 @@ private:
     double Gear_Ratio[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
     double Break_Voltage[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
     double Velocity[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
+    double Position[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
+    double Torque[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
 
 
     void setup();
@@ -148,6 +158,8 @@ private slots:
     void on_Counter_Break_voltage_valueChanged(double value);
     void on_Slider_Break_voltage_valueChanged(double value);
     void on_btnRec_Break_voltage_clicked();
+    void on_checkBox_Position_clicked();
+    void on_checkBox_Velocity_clicked();
 };
 
 #endif // MAINWINDOW_H
