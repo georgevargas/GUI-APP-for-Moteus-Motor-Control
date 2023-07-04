@@ -40,10 +40,14 @@ void MainWindow::setup()
 {
     //Setup my diagram
     ui->myPlot->addGraph();
+    ui->myPlot->addGraph(ui->myPlot->xAxis2, ui->myPlot->yAxis2);
     ui->myPlot->xAxis->setLabel("Time");
     ui->myPlot->xAxis->setRange(0,2);
-    ui->myPlot->yAxis->setLabel("Position");
     ui->myPlot->yAxis->setRange(-.4,-.1);
+
+    ui->myPlot->yAxis2->setRange(0,3);
+    ui->myPlot->graph(1)->setPen(QPen(Qt::red));
+
 
     //init time
     time = 0.0;
@@ -161,18 +165,77 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
     }
     else if (msg == "get velocity")
     {
-        Velocity[Motor_id-1] =  Value1;
+        Position[Motor_id-1] =  Value1;
+        Velocity[Motor_id-1] =  Value2;
+        Torque[Motor_id-1]   =  Value3;
+
+        if (Enable_plot_velocity || Enable_plot_position)
+        {
+            ui->myPlot->yAxis->setVisible(true);
+        }
+        else
+        {
+            ui->myPlot->yAxis->setVisible(false);
+        }
+
+        if (Enable_plot_position && Enable_plot_velocity)
+        {
+            ui->myPlot->yAxis2->setVisible(true);
+        }
+        else
+        {
+            ui->myPlot->yAxis2->setVisible(false);
+        }
+
+        int left = 0;
+        int right = 0;
+
+
+        if (Enable_plot_velocity)
+        {
+            ui->myPlot->graph(1)->setVisible(true);
+            if (!Enable_plot_position)
+            {
+                left = 1;
+                ui->myPlot->yAxis->setLabel("Velocity");
+            }
+            else
+            {
+                right = 1;
+                ui->myPlot->yAxis2->setLabel("Velocity");
+            }
+        }
+        else
+        {
+            ui->myPlot->graph(1)->setVisible(false);
+        }
+
+        if (Enable_plot_position)
+        {
+            ui->myPlot->yAxis->setLabel("Position");
+            ui->myPlot->graph(0)->setVisible(true);
+            left = 0;
+        }
+        else
+        {
+            ui->myPlot->graph(0)->setVisible(false);
+        }
 
         // Add the time the x data buffer
         m_XData.append( time );
-        m_YData.append( Velocity[moteus_id-1] );
+        m_YData.append( Position[moteus_id-1] );
+        m_XData1.append( time );
+        m_YData1.append( Velocity[moteus_id-1] );
         if( m_XData.size() > 100 )
         {
             m_XData.remove( 0 );
             m_YData.remove( 0 );
+            m_XData1.remove( 0 );
+            m_YData1.remove( 0 );
         }
 
         ui->myPlot->graph(0)->setData( m_XData , m_YData );
+        ui->myPlot->graph(1)->setData( m_XData1 , m_YData1 );
 
         // Set the range of the vertical and horizontal axis of the plot ( not the graph )
         // so all the data will be centered. first we get the min and max of the x and y data
@@ -180,10 +243,13 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         QVector<double>::iterator xMinIt = std::min_element( m_XData.begin() , m_XData.end() );
         QVector<double>::iterator yMaxIt = std::max_element( m_YData.begin() , m_YData.end() );
         QVector<double>::iterator yMinIt = std::min_element( m_YData.begin() , m_YData.end() );
+        QVector<double>::iterator yMaxIt1 = std::max_element( m_YData1.begin() , m_YData1.end() );
+        QVector<double>::iterator yMinIt1 = std::min_element( m_YData1.begin() , m_YData1.end() );
 
         qreal yPlotMin = *yMinIt;
         qreal yPlotMax = *yMaxIt;
-
+        qreal yPlotMin1 = *yMinIt1;
+        qreal yPlotMax1 = *yMaxIt1;
         qreal xPlotMin = *xMinIt;
         qreal xPlotMax = *xMaxIt;
 
@@ -191,12 +257,26 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         // space in the plot widget, and to keep a margin at the top, the same goes for xOffset
         qreal yOffset = 0.05 * ( yPlotMax - yPlotMin ) ;
         qreal xOffset = 0.05 *( xPlotMax - xPlotMin );
+        qreal yOffset1 = 0.05 * ( yPlotMax1 - yPlotMin1 ) ;
 
         if ( (time - oldtime) > 1.0)
         {
             oldtime = time;
             ui->myPlot->xAxis->setRange( xPlotMin , xPlotMax + xOffset );
-            ui->myPlot->yAxis->setRange(yPlotMin - yOffset, yPlotMax + yOffset);
+            ui->myPlot->xAxis2->setRange( xPlotMin , xPlotMax + xOffset );
+            if (left == 0)
+            {
+                ui->myPlot->yAxis->setRange(yPlotMin - yOffset, yPlotMax + yOffset);
+            }
+            else if (left == 1)
+            {
+                ui->myPlot->yAxis->setRange(yPlotMin1 - yOffset1, yPlotMax1 + yOffset1);
+            }
+
+            if (right == 1)
+            {
+                ui->myPlot->yAxis2->setRange(yPlotMin1 - yOffset1, yPlotMax1 + yOffset1);
+            }
         }
         ui->myPlot->replot();
     }
@@ -586,6 +666,29 @@ void MainWindow::on_actionSave_triggered()
                                  .arg(QDir::toNativeSeparators(fileName)));
     }
 }
+void MainWindow::on_checkBox_Position_clicked()
+{
+    if (ui->checkBox_Position->isChecked())
+    {
+        Enable_plot_position = true;
+    }
+    else
+    {
+        Enable_plot_position = false;
+    }
+}
+void MainWindow::on_checkBox_Velocity_clicked()
+{
+    if (ui->checkBox_Velocity->isChecked())
+    {
+        Enable_plot_velocity = true;
+    }
+    else
+    {
+        Enable_plot_velocity = false;
+    }
+}
+
 
 void MainWindow::on_checkBox_Dymamic_clicked()
 {
@@ -736,15 +839,4 @@ void MainWindow::on_btnConf_Read_clicked()
         emit sendToWorker("get break voltage",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                           kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
     }
-
-    ui->Slider_Limit_Min->setValue(bounds_min[moteus_id -1]);
-    ui->Counter_Limit_Min->setValue(bounds_min[moteus_id -1]);
-    ui->Slider_Limit_Max->setValue(bounds_max[moteus_id -1]);
-    ui->Counter_Limit_Max->setValue(bounds_max[moteus_id -1]);
-    ui->Counter_KP->setValue(kp[moteus_id -1]);
-    ui->Slider_KP->setValue(kp[moteus_id -1]);
-    ui->Counter_KD->setValue(kd[moteus_id -1]);
-    ui->Slider_KD->setValue(kd[moteus_id -1]);
-    ui->Counter_KI->setValue(ki[moteus_id -1]);
-    ui->Slider_KI->setValue(ki[moteus_id -1]);
 }
