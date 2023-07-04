@@ -666,9 +666,10 @@ void MainWindow::on_actionSave_triggered()
                                  .arg(QDir::toNativeSeparators(fileName)));
     }
 }
-void MainWindow::on_checkBox_Position_clicked()
+
+void MainWindow::on_actionPosition_changed()
 {
-    if (ui->checkBox_Position->isChecked())
+    if (ui->actionPosition->isChecked())
     {
         Enable_plot_position = true;
     }
@@ -676,10 +677,12 @@ void MainWindow::on_checkBox_Position_clicked()
     {
         Enable_plot_position = false;
     }
+
 }
-void MainWindow::on_checkBox_Velocity_clicked()
+
+void MainWindow::on_actionVelocity_changed()
 {
-    if (ui->checkBox_Velocity->isChecked())
+    if (ui->actionVelocity->isChecked())
     {
         Enable_plot_velocity = true;
     }
@@ -687,6 +690,7 @@ void MainWindow::on_checkBox_Velocity_clicked()
     {
         Enable_plot_velocity = false;
     }
+
 }
 
 
@@ -840,3 +844,4 @@ void MainWindow::on_btnConf_Read_clicked()
                           kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
     }
 }
+
