@@ -8,10 +8,19 @@ Caution: This program allows a sequence of user programmed motor movements to be
 https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/assets/10259360/dd57bec8-9009-4d42-a9e1-9305ce02af5a
 
 
-This is a QT GUI program which allows positions to be manually set for each motor and recorded along with other parameters such as velocity, torque and delay etc..
-Then you can play back the sequence in cycles. More movements can be added to the sequence without limit. Movements on different motors may be overlapped by setting the movement delay to zero on intermediate steps.
+This is a GUI Application which can be used to create a sequence of movements for multiple moteus controllers. Movements on different motors can be safely overlapped to make things less robotic. This is accomplished through the use of movement delays which can be as short as 0. If the same motor is accessed the software waits for the motor to finish before issuing the next command.
 
-The sequence can be saved to a file so it can be run later by opening the file. The file is in text format so it can be edited to change parameters or delete steps.
+The sequence can then run in cycles. Controller parameters are displayed and may be modified and sent to the controller.
+
+You can then dynamically change the movement parameters to see how to tune the movements.
+
+For example, you can manually move a motor to a position and press the Record Position button. The parameters on the screen will be recorded for that motor. This can be repeated for one or multiple motors.
+
+Then you can press run recorded and the sequence will be executed in any number of cycles.
+
+While running; if the dynamic check box is set, the parameters on the screen will be used instead of the recorded parameters. This allows the tuning of such things as Velocity Limit or Acceleration Limit to see how it can affect the movements. The position plot shows the position and or velocity feedback for the selected motor.
+
+The sequence can be saved to a text file, and later reloaded. The file can be edited to alter the sequence.
 
 Individule motors may also be commanded using position, status or stop buttons.
 
