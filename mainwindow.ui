@@ -6974,10 +6974,53 @@ background-color: #C5D5DB;
     <property name="geometry">
      <rect>
       <x>570</x>
-      <y>398</y>
+      <y>428</y>
       <width>521</width>
-      <height>297</height>
+      <height>267</height>
      </rect>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="checkBox_Position">
+    <property name="geometry">
+     <rect>
+      <x>570</x>
+      <y>398</y>
+      <width>141</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QCheckBox::indicator
+ {
+      width: 20px;
+      height: 20px;
+}</string>
+    </property>
+    <property name="text">
+     <string>Plot Position</string>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="checkBox_Velocity">
+    <property name="geometry">
+     <rect>
+      <x>720</x>
+      <y>398</y>
+      <width>141</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QCheckBox::indicator
+ {
+      width: 20px;
+      height: 20px;
+}</string>
+    </property>
+    <property name="text">
+     <string>Plot Velocity</string>
     </property>
    </widget>
   </widget>
