@@ -6974,53 +6974,10 @@ background-color: #C5D5DB;
     <property name="geometry">
      <rect>
       <x>570</x>
-      <y>428</y>
+      <y>402</y>
       <width>521</width>
-      <height>267</height>
+      <height>293</height>
      </rect>
-    </property>
-   </widget>
-   <widget class="QCheckBox" name="checkBox_Position">
-    <property name="geometry">
-     <rect>
-      <x>570</x>
-      <y>398</y>
-      <width>141</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">QCheckBox::indicator
- {
-      width: 20px;
-      height: 20px;
-}</string>
-    </property>
-    <property name="text">
-     <string>Plot Position</string>
-    </property>
-    <property name="checked">
-     <bool>true</bool>
-    </property>
-   </widget>
-   <widget class="QCheckBox" name="checkBox_Velocity">
-    <property name="geometry">
-     <rect>
-      <x>720</x>
-      <y>398</y>
-      <width>141</width>
-      <height>23</height>
-     </rect>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">QCheckBox::indicator
- {
-      width: 20px;
-      height: 20px;
-}</string>
-    </property>
-    <property name="text">
-     <string>Plot Velocity</string>
     </property>
    </widget>
   </widget>
@@ -7085,7 +7042,15 @@ background-color: #C5D5DB;
     <addaction name="actionAbout"/>
     <addaction name="actionHelp"/>
    </widget>
+   <widget class="QMenu" name="menuPlot">
+    <property name="title">
+     <string>Plot</string>
+    </property>
+    <addaction name="actionPosition"/>
+    <addaction name="actionVelocity"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuPlot"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusBar">
@@ -7172,6 +7137,25 @@ background-color: #C5D5DB;
    </property>
    <property name="shortcut">
     <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="actionPosition">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Position</string>
+   </property>
+  </action>
+  <action name="actionVelocity">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Velocity</string>
    </property>
   </action>
  </widget>
