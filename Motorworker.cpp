@@ -250,9 +250,11 @@ bool Motorworker::Check_Velocity(QString dev_name,int Motor_id)
 
     //read current velocity
     curr_state.EN_Position();
+    curr_state.EN_Velocity();
+    curr_state.EN_Torque();
 
     api.ReadState(curr_state);
-    emit sendMsg("get velocity",Motor_id,curr_state.position,0,0);
+    emit sendMsg("get velocity",Motor_id,curr_state.position,curr_state.velocity,curr_state.torque);
     return true;
 }
 void Motorworker::run_cycles()
