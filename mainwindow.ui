@@ -7048,6 +7048,7 @@ background-color: #C5D5DB;
     </property>
     <addaction name="actionPosition"/>
     <addaction name="actionVelocity"/>
+    <addaction name="actionTorque"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuPlot"/>
@@ -7156,6 +7157,14 @@ background-color: #C5D5DB;
    </property>
    <property name="text">
     <string>Velocity</string>
+   </property>
+  </action>
+  <action name="actionTorque">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Torque</string>
    </property>
   </action>
  </widget>
