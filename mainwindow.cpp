@@ -169,21 +169,27 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         Velocity[Motor_id-1] =  Value2;
         Torque[Motor_id-1]   =  Value3;
 
-        if (Enable_plot_velocity || Enable_plot_position)
+        if (Enable_plot_velocity || Enable_plot_position || Enable_plot_torque)
         {
+            ui->myPlot->graph(0)->setVisible(true);
             ui->myPlot->yAxis->setVisible(true);
         }
         else
         {
+            ui->myPlot->graph(0)->setVisible(false);
             ui->myPlot->yAxis->setVisible(false);
         }
 
-        if (Enable_plot_position && Enable_plot_velocity)
+        if ((Enable_plot_position && Enable_plot_velocity) ||
+            (Enable_plot_position && Enable_plot_torque) ||
+            (Enable_plot_velocity && Enable_plot_torque) )
         {
+            ui->myPlot->graph(1)->setVisible(true);
             ui->myPlot->yAxis2->setVisible(true);
         }
         else
         {
+            ui->myPlot->graph(1)->setVisible(false);
             ui->myPlot->yAxis2->setVisible(false);
         }
 
@@ -193,8 +199,7 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
 
         if (Enable_plot_velocity)
         {
-            ui->myPlot->graph(1)->setVisible(true);
-            if (!Enable_plot_position)
+            if (!Enable_plot_position && !Enable_plot_torque)
             {
                 left = 1;
                 ui->myPlot->yAxis->setLabel("Velocity");
@@ -205,20 +210,25 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
                 ui->myPlot->yAxis2->setLabel("Velocity");
             }
         }
-        else
+
+        if (Enable_plot_torque)
         {
-            ui->myPlot->graph(1)->setVisible(false);
+            if (!Enable_plot_position )
+            {
+                left = 2;
+                ui->myPlot->yAxis->setLabel("Torque");
+            }
+            else if (!Enable_plot_velocity)
+            {
+                right = 2;
+                ui->myPlot->yAxis2->setLabel("Torque");
+            }
         }
 
         if (Enable_plot_position)
         {
             ui->myPlot->yAxis->setLabel("Position");
-            ui->myPlot->graph(0)->setVisible(true);
             left = 0;
-        }
-        else
-        {
-            ui->myPlot->graph(0)->setVisible(false);
         }
 
         // Add the time the x data buffer
@@ -226,16 +236,37 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         m_YData.append( Position[moteus_id-1] );
         m_XData1.append( time );
         m_YData1.append( Velocity[moteus_id-1] );
+        m_XData2.append( time );
+        m_YData2.append( Torque[moteus_id-1] );
         if( m_XData.size() > 100 )
         {
             m_XData.remove( 0 );
             m_YData.remove( 0 );
             m_XData1.remove( 0 );
             m_YData1.remove( 0 );
+            m_XData2.remove( 0 );
+            m_YData2.remove( 0 );
         }
-
-        ui->myPlot->graph(0)->setData( m_XData , m_YData );
-        ui->myPlot->graph(1)->setData( m_XData1 , m_YData1 );
+        if (left == 0)
+        {
+            ui->myPlot->graph(0)->setData( m_XData , m_YData );
+        }
+        else if (left == 1)
+        {
+            ui->myPlot->graph(0)->setData( m_XData1 , m_YData1 );
+        }
+        else if (left == 2)
+        {
+            ui->myPlot->graph(0)->setData( m_XData2 , m_YData2 );
+        }
+        if (right == 1)
+        {
+            ui->myPlot->graph(1)->setData( m_XData1 , m_YData1 );
+        }
+        if (right == 2)
+        {
+            ui->myPlot->graph(1)->setData( m_XData2 , m_YData2 );
+        }
 
         // Set the range of the vertical and horizontal axis of the plot ( not the graph )
         // so all the data will be centered. first we get the min and max of the x and y data
@@ -245,19 +276,24 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         QVector<double>::iterator yMinIt = std::min_element( m_YData.begin() , m_YData.end() );
         QVector<double>::iterator yMaxIt1 = std::max_element( m_YData1.begin() , m_YData1.end() );
         QVector<double>::iterator yMinIt1 = std::min_element( m_YData1.begin() , m_YData1.end() );
+        QVector<double>::iterator yMaxIt2 = std::max_element( m_YData2.begin() , m_YData2.end() );
+        QVector<double>::iterator yMinIt2 = std::min_element( m_YData2.begin() , m_YData2.end() );
 
+        qreal xPlotMin = *xMinIt;
+        qreal xPlotMax = *xMaxIt;
         qreal yPlotMin = *yMinIt;
         qreal yPlotMax = *yMaxIt;
         qreal yPlotMin1 = *yMinIt1;
         qreal yPlotMax1 = *yMaxIt1;
-        qreal xPlotMin = *xMinIt;
-        qreal xPlotMax = *xMaxIt;
+        qreal yPlotMin2 = *yMinIt2;
+        qreal yPlotMax2 = *yMaxIt2;
 
         // The yOffset just to make sure that the graph won't take the whole
         // space in the plot widget, and to keep a margin at the top, the same goes for xOffset
-        qreal yOffset = 0.05 * ( yPlotMax - yPlotMin ) ;
         qreal xOffset = 0.05 *( xPlotMax - xPlotMin );
+        qreal yOffset = 0.05 * ( yPlotMax - yPlotMin ) ;
         qreal yOffset1 = 0.05 * ( yPlotMax1 - yPlotMin1 ) ;
+        qreal yOffset2 = 0.05 * ( yPlotMax2 - yPlotMin2 ) ;
 
         if ( (time - oldtime) > 1.0)
         {
@@ -272,10 +308,18 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
             {
                 ui->myPlot->yAxis->setRange(yPlotMin1 - yOffset1, yPlotMax1 + yOffset1);
             }
+            else if (left == 2)
+            {
+                ui->myPlot->yAxis->setRange(yPlotMin2 - yOffset2, yPlotMax2 + yOffset2);
+            }
 
             if (right == 1)
             {
                 ui->myPlot->yAxis2->setRange(yPlotMin1 - yOffset1, yPlotMax1 + yOffset1);
+            }
+            if (right == 2)
+            {
+                ui->myPlot->yAxis2->setRange(yPlotMin2 - yOffset2, yPlotMax2 + yOffset2);
             }
         }
         ui->myPlot->replot();
@@ -677,7 +721,6 @@ void MainWindow::on_actionPosition_changed()
     {
         Enable_plot_position = false;
     }
-
 }
 
 void MainWindow::on_actionVelocity_changed()
@@ -689,6 +732,17 @@ void MainWindow::on_actionVelocity_changed()
     else
     {
         Enable_plot_velocity = false;
+    }
+}
+void MainWindow::on_actionTorque_changed()
+{
+    if (ui->actionTorque->isChecked())
+    {
+        Enable_plot_torque = true;
+    }
+    else
+    {
+        Enable_plot_torque = false;
     }
 
 }
@@ -844,4 +898,3 @@ void MainWindow::on_btnConf_Read_clicked()
                           kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
     }
 }
-
