@@ -160,6 +160,7 @@ private slots:
     void on_btnRec_Break_voltage_clicked();
     void on_actionPosition_changed();
     void on_actionVelocity_changed();
+    void on_actionTorque_changed();
 };
 
 #endif // MAINWINDOW_H
