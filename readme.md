@@ -43,6 +43,14 @@ https://newbedev.com/install-qt-on-ubuntu
 
 How to Install libqwt-qt5-dev in Ubuntu 18.04
 https://www.howtoinstall.me/ubuntu/18-04/libqwt-qt5-dev/
+or
+https://linuxways.net/ubuntu/how-to-install-qt-on-ubuntu-20-04/
+
+install g++13 ubuntu. This code uses c++20 features such as std::format. which is now avalible.
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+sudo apt-get update
+sudo apt install gcc-13 gcc-13-base gcc-13-doc g++-13
+sudo apt install libstdc++-13-dev libstdc++-13-doc 
 
 At the terminal enter
 
