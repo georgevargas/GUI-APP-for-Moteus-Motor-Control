@@ -9,7 +9,7 @@
 #include <termios.h>  // POSIX terminal control definitions
 #include <unistd.h>   // UNIX standard function definitions
 #include <fstream>
-
+#include <format>
 using namespace mjbots;
 using namespace moteus;
 
@@ -358,24 +358,39 @@ void Motorworker::run_cycles()
                 out.str("");
                 if (Dynamic && Dynamic_Motor_id == list_Motor_id[current_list_index])
                 {
-                    out << "Position to: " << list_Position[current_list_index]
-                            << ", Velocity: " << l_velocity_limit
-                            << ", Accel: " << l_accel_limit
-                            << ", Motor: " << list_Motor_id[current_list_index]
-                            << ", Max torque: " << l_max_torque
-                            << ", Feedforward torque: " << l_feedforward_torque
-                            << ", KP scale: " << l_kp_scale
-                            << ", KD scale: " << l_kd_scale
+                    try
+                    {
+                        out << std::format("Position to: {:.3f}", list_Position[current_list_index])
+                            << std::format(", Velocity: {:.3f}", l_velocity_limit)
+                            << std::format(", Accel: {:.3f}", l_accel_limit)
+                            << std::format(", Motor: {}", list_Motor_id[current_list_index])
+                            << std::format(", Max torque: {:.3f}", l_max_torque)
+                            << std::format(", Feedforward torque: {:.3f}", l_feedforward_torque)
+                            << std::format(", KP scale: {:.3f}", l_kp_scale)
+                            << std::format(", KD scale: {:.3f}", l_kd_scale)
                             << endl;
+                    }
+                    catch(std::format_error& error)
+                    {
+                        cout  << error.what();
+                    }
+
                 }
                 else
                 {
-                    out << "Position to: " << list_Position[current_list_index]
-                        << ", Velocity: " << list_velocity_limit[current_list_index]
-                        << ", Accel: " << list_accel_limit[current_list_index]
-                        << ", Motor: " << list_Motor_id[current_list_index]
-                        << ", Delay: " << list_Delay[current_list_index]
-                        << endl;
+                    try
+                    {
+                        out << std::format("Position to: {:.3f}", list_Position[current_list_index])
+                            << std::format(", Velocity: {:.3f}", list_velocity_limit[current_list_index])
+                            << std::format(", Accel: {:.3f}", list_accel_limit[current_list_index])
+                            << std::format(", Motor: {}", list_Motor_id[current_list_index])
+                            << std::format(", Delay: {}", list_Delay[current_list_index])
+                            << endl;
+                    }
+                    catch(std::format_error& error)
+                    {
+                        cout  << error.what();
+                    }
                 }
                 emit sendToMain(QString::fromStdString(out.str()));
 
@@ -1104,7 +1119,14 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         //read current position
         curr_state.EN_Position();
         api.ReadState(curr_state);
-        out << "Motor: " << Motor_id << " Position:\t" << curr_state.position << endl;
+        try
+        {
+            out << std::format("Motor: {} Position:\t{:.6f}", Motor_id , curr_state.position) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
         emit sendToMain(QString::fromStdString(out.str()));
 
     }
@@ -1400,14 +1422,23 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         api.ReadState(curr_state);
 
         // print everyting
-        out << "Position:\t\t" << curr_state.position << endl;
-        out << "Velocity:\t\t" << curr_state.velocity << endl;
-        out << "Torque:\t\t" << curr_state.torque << endl;
-        out << "Q Current:\t\t" << curr_state.q_curr << endl;
-        out << "D Current:\t\t" << curr_state.d_curr << endl;
-        out << "Voltage:\t\t" << curr_state.voltage << endl;
-        out << "Temperature:\t" << curr_state.temperature << endl;
+        try
+        {
+            out << std::format("Position:\t\t{:.6f}", curr_state.position) << endl;
+            out << std::format("Velocity:\t\t{:.6f}", curr_state.velocity) << endl;
+            out << std::format("Torque:\t\t{:.6f}", curr_state.torque) << endl;
+            out << std::format("Q Current:\t\t{:.6f}", curr_state.q_curr) << endl;
+            out << std::format("D Current:\t\t{:.6f}", curr_state.d_curr) << endl;
+            out << std::format("Voltage:\t\t{:.2f}", curr_state.voltage) << endl;
+            out << std::format("Temperature:\t{:.2f}", curr_state.temperature) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
+
         out << "Trajectory Complete:\t";
+
         if  (curr_state.TrajectoryComplete != 0)
         {
             out << "True" << endl;
@@ -1416,8 +1447,10 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         {
             out << "False" << endl;
         }
+
         unsigned int fault = static_cast<unsigned int>(curr_state.fault);
-        switch (fault)  {
+        switch (fault)
+        {
             case 0:
                 out << "Fault:\t\t" << curr_state.fault << " = no fault" << endl;
                 break;
@@ -1450,7 +1483,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
                 out << "Fault:\t\t" << curr_state.fault << " = unknown fault" << endl;
         }
         unsigned int mode = static_cast<unsigned int>(curr_state.mode);
-        switch (mode)  {
+        switch (mode)
+        {
             case 0:
                 out << "Mode:\t\t" << curr_state.mode << " = Stopped" << endl;
                 break;
@@ -1509,3 +1543,10 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         emit sendToMain(msg);
     }
 }
+
+
+
+
+
+
+
