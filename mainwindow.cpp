@@ -14,7 +14,7 @@
 #include <QFileInfo>
 #include <QMessageBox>
 #include <QInputDialog>
-
+#include <format>
 
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -101,8 +101,15 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         bounds_max[Motor_id-1] =  Value2;
 
         out.str("");
-        out << "Motor: " << Motor_id << " limit min:\t" << bounds_min[Motor_id-1]
-        << "\tlimit max:\t" << bounds_max[Motor_id-1] << endl;
+        try
+        {
+            out << std::format("Motor: {} limit min:\t{:.3f}\tlimit max:\t{:.3f}" , Motor_id , bounds_min[Motor_id-1], bounds_max[Motor_id-1]) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
+
         ui->Slider_Limit_Min->setValue(bounds_min[moteus_id -1]);
         ui->Counter_Limit_Min->setValue(bounds_min[moteus_id -1]);
         ui->Slider_Limit_Max->setValue(bounds_max[moteus_id -1]);
@@ -126,11 +133,15 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         ui->Counter_KI->setValue(ki[moteus_id -1]);
 
         out.str("");
-        out << "Motor: " << Motor_id
-            << "\tkp: " << kp[Motor_id-1]
-            << "\tkd: " << kd[Motor_id-1]
-            << "\t ki: " << ki[Motor_id-1]
-            << endl;
+        try
+        {
+            out << std::format("Motor: {}\tkp: {:.1f}\tkd: {:.1f}\t ki: {:.1f}" , Motor_id , kp[Motor_id-1], kd[Motor_id-1],ki[Motor_id-1]) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
+
         MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
     }
     else if (msg == "get gear ratio")
@@ -143,9 +154,16 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         ui->Counter_Gear_Ratio->setValue(Gear_Ratio[moteus_id -1]);
 
         out.str("");
-        out << "Motor: " << Motor_id
-            << "\tGear Ratio: " << Gear_Ratio[Motor_id-1]
-            << endl;
+
+        try
+        {
+            out << std::format("Motor: {}\tGear Ratio: {:.6f}", Motor_id, Gear_Ratio[Motor_id-1]) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
+
         MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
     }
     else if (msg == "get Break Voltage")
@@ -158,9 +176,15 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         ui->Counter_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
 
         out.str("");
-        out << "Motor: " << Motor_id
-            << "\tBreak Voltage: " << Break_Voltage[Motor_id-1]
-            << endl;
+        try
+        {
+            out << std::format("Motor: {}\tBreak Voltage: {:.1f}", Motor_id, Break_Voltage[Motor_id-1]) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
+
         MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
     }
     else if (msg == "get velocity")
