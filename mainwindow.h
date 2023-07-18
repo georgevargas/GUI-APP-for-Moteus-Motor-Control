@@ -78,7 +78,7 @@ private:
     double Velocity[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
     double Position[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
     double Torque[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
-
+    double position_offset[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
 
     void setup();
     void Init_Motor();
@@ -161,6 +161,9 @@ private slots:
     void on_actionPosition_changed();
     void on_actionVelocity_changed();
     void on_actionTorque_changed();
+    void on_Counter_Position_Offset_valueChanged(double value);
+    void on_Slider_Position_Offset_valueChanged(double value);
+    void on_btnPosition_Offset_clicked();
 };
 
 #endif // MAINWINDOW_H
