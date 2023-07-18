@@ -758,6 +758,36 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
             }
         }
     }
+    else if (msg == "get Position Offset")
+    {
+        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        Rec_run_Enable = false;
+        Position_wait = false;
+        double value = std::numeric_limits<double>::quiet_NaN();
+
+        std::ostringstream out;
+
+        // get min break voltage
+        if (!api.SendDiagnosticCommand("conf get motor_position.output.offset\n"))
+        {
+            out.str("");
+            out << "error on read motor_position.output.offset. motor " << Motor_id << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+        }
+        else
+        {
+            if (!api.SendDiagnosticRead(value))
+            {
+                out.str("");
+                out << "error on read motor_position.output.offset " << Motor_id << endl;
+                emit sendToMain(QString::fromStdString(out.str()));
+            }
+            else
+            {
+                emit sendMsg("get Position Offset",Motor_id,value,0,0);
+            }
+        }
+    }
     else if (msg == "get motor limits")
     {
         MoteusAPI api(dev_name.toStdString(), Motor_id);
@@ -976,7 +1006,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         std::ostringstream out;
         out.str("");
 
-        // set min limit command
+        // set command
         out << "conf set motor_position.rotor_to_output_ratio " << feedforward_torque << endl;
         string text = out.str();
         if (!api.SendDiagnosticCommand(text))
@@ -1024,7 +1054,35 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         }
 
     }
-    else if (msg == "set motor limits")
+    else if (msg == "set Position Offset")
+    {
+
+        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        Rec_run_Enable = false;
+        Position_wait = false;
+
+        std::ostringstream out;
+        out.str("");
+
+        // set command
+        out << "conf set motor_position.output.offset 0 " << feedforward_torque << endl;
+        string text = out.str();
+        if (!api.SendDiagnosticCommand(text))
+        {
+            out.str("");
+            out << "error on set motor_position.output.offset. motor " << Motor_id << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+        }
+        else
+        {
+            out.str("");
+            out << "Motor: " << Motor_id
+                << "\t motor_position.output.offset: " << feedforward_torque
+                << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+        }
+
+    }    else if (msg == "set motor limits")
     {
         bool error = false;
 
@@ -1543,7 +1601,6 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         emit sendToMain(msg);
     }
 }
-
 
 
 
