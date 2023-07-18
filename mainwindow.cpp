@@ -166,6 +166,27 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
 
         MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
     }
+    else if (msg == "get Position Offset")
+    {
+        std::ostringstream out;
+
+        position_offset[Motor_id-1] =  Value1;
+
+        ui->Slider_Position_Offset->setValue(position_offset[moteus_id -1]);
+        ui->Counter_Position_Offset->setValue(position_offset[moteus_id -1]);
+
+        out.str("");
+        try
+        {
+            out << std::format("Motor: {}\tPosition Offset: {:.6f}", Motor_id, position_offset[Motor_id-1]) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
+
+        MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
+    }
     else if (msg == "get Break Voltage")
     {
         std::ostringstream out;
@@ -403,6 +424,11 @@ void MainWindow:: Init_Motor()
         for (int i = 1; i <= Number_of_Motors; i++)
         {
             emit sendToWorker("get break voltage",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                              kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+        }
+        for (int i = 1; i <= Number_of_Motors; i++)
+        {
+            emit sendToWorker("get Position Offset",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                               kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
         }
 }
@@ -650,6 +676,8 @@ void MainWindow::on_comboBox_currentIndexChanged(int index)
     ui->Counter_Gear_Ratio->setValue(Gear_Ratio[moteus_id -1]);
     ui->Slider_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
     ui->Counter_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
+    ui->Slider_Position_Offset->setValue(position_offset[moteus_id -1]);
+    ui->Counter_Position_Offset->setValue(position_offset[moteus_id -1]);
 }
 
 void MainWindow::on_Counter_Cycle_Start_Stop_valueChanged(double value)
@@ -809,6 +837,11 @@ void MainWindow::on_btnRun_update_KP_clicked()
     emit sendToWorker("set PID",QString::fromStdString(dev_name),moteus_id,accel_limit,position,velocity_limit,max_torque,ki[moteus_id -1],kp[moteus_id -1],
                       kd[moteus_id -1],bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
 }
+void MainWindow::on_btnPosition_Offset_clicked()
+{
+    emit sendToWorker("set Position Offset",QString::fromStdString(dev_name),moteus_id,accel_limit,position,velocity_limit,max_torque,position_offset[moteus_id -1],kp_scale,
+                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+}
 
 void MainWindow::on_Counter_Limit_Min_valueChanged(double value)
 {
@@ -891,6 +924,19 @@ void MainWindow::on_Slider_Break_voltage_valueChanged(double value)
 {
     Break_Voltage[moteus_id -1] = value;
     ui->Counter_Break_voltage->setValue(value);
+}
+
+void MainWindow::on_Counter_Position_Offset_valueChanged(double value)
+{
+        position_offset[moteus_id -1] = value;
+        ui->Slider_Position_Offset->setValue(value);
+}
+
+void MainWindow::on_Slider_Position_Offset_valueChanged(double value)
+{
+    position_offset[moteus_id -1] = value;
+    ui->Counter_Position_Offset->setValue(value);
+
 }
 
 void MainWindow::on_btnConf_Write_clicked()
