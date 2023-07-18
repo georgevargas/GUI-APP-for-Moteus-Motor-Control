@@ -24,12 +24,6 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-#       CONFIG+=c++2a
-
-        QMAKE_CXXFLAGS_CXX2A = -std:c++20
-        QMAKE_CXXFLAGS += -std=c++2a
-        QMAKE_CXX = g++-13
-
         SOURCES += \
         main.cpp \
         mainwindow.cpp \
@@ -48,10 +42,6 @@ FORMS += \
         mainwindow.ui
 
 INCLUDEPATH += /usr/include/qwt
-#                /usr/include/c++/13/
-
-#INCLUDEPATH += /usr/include/c++/13/
-
 
 LIBS += \
         -L/usr/local/lib \
@@ -62,5 +52,9 @@ LIBS += \
 
 RESOURCES += \
         resources.qrc
+
+        QMAKE_CXXFLAGS_CXX2A = -std:c++20
+        QMAKE_CXXFLAGS += -std=c++2a
+        QMAKE_CXX = g++-13
 
 DISTFILES +=
