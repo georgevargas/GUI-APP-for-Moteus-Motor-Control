@@ -105,9 +105,20 @@ private slots:
     void on_btnStop_Cycle_clicked();
     void on_btnRec_positions_clicked();
     void on_btnRun_Recorded_clicked();
+    void on_btnStep_Recorded_clicked();
     void on_btnClear_Recorded_clicked();
     void on_btnRead_Status_clicked();
     void on_comboBox_currentIndexChanged(int index);
+    void on_btnPosition_Offset_clicked();
+    void on_btnRec_Gear_Ratio_clicked();
+    void on_btnRec_update_limits_clicked();
+    void on_btnRun_update_KP_clicked();
+    void on_btnConf_Write_clicked();
+    void on_btnConf_Read_clicked();
+    void on_btnSetNearest_clicked();
+    void on_btnRec_Break_voltage_clicked();
+    void on_btnGo_To_Rest_Position_clicked();
+    void on_btnStart_Motor_clicked();
 
     void on_Slider_Accel_Limit_valueChanged(double value);
     void on_Slider_Position_valueChanged(double value);
@@ -118,6 +129,14 @@ private slots:
     void on_Slider_KD_Scale_valueChanged(double value);
     void on_Slider_Cycle_Start_Stop_valueChanged(double value);
     void on_Slider_Cycle_Delay_valueChanged(double value);
+    void on_Slider_Limit_Min_valueChanged(double value);
+    void on_Slider_Limit_Max_valueChanged(double value);
+    void on_Slider_KP_valueChanged(double value);
+    void on_Slider_KD_valueChanged(double value);
+    void on_Slider_KI_valueChanged(double value);
+    void on_Slider_Gear_Ratio_valueChanged(double value);
+    void on_Slider_Break_voltage_valueChanged(double value);
+    void on_Slider_Position_Offset_valueChanged(double value);
 
     void on_Counter_Accel_Limit_valueChanged(double value);
     void on_Counter_Position_valueChanged(double value);
@@ -128,42 +147,25 @@ private slots:
     void on_Counter_KD_Scale_valueChanged(double value);
     void on_Counter_Cycle_Start_Stop_valueChanged(double value);
     void on_Counter_Cycle_Delay_valueChanged(double value);
+    void on_Counter_Limit_Min_valueChanged(double value);
+    void on_Counter_Limit_Max_valueChanged(double value);
+    void on_Counter_KP_valueChanged(double value);
+    void on_Counter_KD_valueChanged(double value);
+    void on_Counter_KI_valueChanged(double value);
+    void on_Counter_Gear_Ratio_valueChanged(double value);
+    void on_Counter_Break_voltage_valueChanged(double value);
+    void on_Counter_Position_Offset_valueChanged(double value);
+
+    void on_checkBox_Dymamic_clicked();
 
     void on_actionExit_triggered();
     void on_actionAbout_triggered();
     void on_actionHelp_triggered();
     void on_actionOpen_triggered();
     void on_actionSave_triggered();
-    void on_btnStart_Motor_clicked();
-    void on_checkBox_Dymamic_clicked();
-    void on_btnSetNearest_clicked();
-    void on_btnGo_To_Rest_Position_clicked();
-    void on_btnRec_update_limits_clicked();
-    void on_btnRun_update_KP_clicked();
-    void on_Counter_Limit_Min_valueChanged(double value);
-    void on_Slider_Limit_Min_valueChanged(double value);
-    void on_Counter_Limit_Max_valueChanged(double value);
-    void on_Slider_Limit_Max_valueChanged(double value);
-    void on_Counter_KP_valueChanged(double value);
-    void on_Slider_KP_valueChanged(double value);
-    void on_btnConf_Write_clicked();
-    void on_Counter_KD_valueChanged(double value);
-    void on_Slider_KD_valueChanged(double value);
-    void on_Counter_KI_valueChanged(double value);
-    void on_Slider_KI_valueChanged(double value);
-    void on_btnConf_Read_clicked();
-    void on_Counter_Gear_Ratio_valueChanged(double value);
-    void on_Slider_Gear_Ratio_valueChanged(double value);
-    void on_btnRec_Gear_Ratio_clicked();
-    void on_Counter_Break_voltage_valueChanged(double value);
-    void on_Slider_Break_voltage_valueChanged(double value);
-    void on_btnRec_Break_voltage_clicked();
     void on_actionPosition_changed();
     void on_actionVelocity_changed();
     void on_actionTorque_changed();
-    void on_Counter_Position_Offset_valueChanged(double value);
-    void on_Slider_Position_Offset_valueChanged(double value);
-    void on_btnPosition_Offset_clicked();
 };
 
 #endif // MAINWINDOW_H
