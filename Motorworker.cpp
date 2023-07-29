@@ -259,7 +259,7 @@ bool Motorworker::Check_Velocity(QString dev_name,int Motor_id)
 }
 void Motorworker::run_cycles()
 {
-    if (!Rec_run_Enable && Position_wait)
+    if (!Step_Mode && !Rec_run_Enable && Position_wait)
     {
         // check TrajectoryComplete
         if (Check_TrajectoryComplete(Position_dev_name,position_Motor_id))
@@ -282,7 +282,7 @@ void Motorworker::run_cycles()
             emit sendToMain(QString::fromStdString(out.str()));
         }
     }
-    else if (Rec_run_Enable && l_Cycle <= l_Cycle_Start_Stop)
+    else if (Step_Mode || (Rec_run_Enable && l_Cycle <= l_Cycle_Start_Stop))
     {
         if (TrajectoryComplete_pause)
         {
@@ -400,22 +400,26 @@ void Motorworker::run_cycles()
                 {
                     // the list is done start the list over
                     current_list_index = 0;
-                    // start the next cycle if there is one
-                    l_Cycle += 1;
-                    if (l_Cycle >= l_Cycle_Start_Stop)
+                    if(Rec_run_Enable)
                     {
-                       Rec_run_Enable = false;
-                       out.str("");
-                       out << "Cycle:\t" << l_Cycle << "\tRun Cycles Done" << endl;
-                       emit sendToMain(QString::fromStdString(out.str()));
-                    }
-                    else
-                    {
-                        out.str("");
-                        out << "Cycle:\t" << l_Cycle << endl;
-                        emit sendToMain(QString::fromStdString(out.str()));
+                        // start the next cycle if there is one
+                        l_Cycle += 1;
+                        if (l_Cycle >= l_Cycle_Start_Stop)
+                        {
+                           Rec_run_Enable = false;
+                           out.str("");
+                           out << "Cycle:\t" << l_Cycle << "\tRun Cycles Done" << endl;
+                           emit sendToMain(QString::fromStdString(out.str()));
+                        }
+                        else
+                        {
+                            out.str("");
+                            out << "Cycle:\t" << l_Cycle << endl;
+                            emit sendToMain(QString::fromStdString(out.str()));
+                        }
                     }
                 }
+                Step_Mode =false;
             }
         }
         else
@@ -429,6 +433,8 @@ void Motorworker::receiveSetup()
 {
     TrajectoryComplete_pause = false;
     Rec_run_Enable = false;
+    Step_Mode = false;
+    current_list_index = 0;
     std::ostringstream out;
     out << " Run Cycles Stopped" << endl;
     emit sendToMain(QString::fromStdString(out.str()));
@@ -470,11 +476,13 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         }
 
         db.close();
+        current_list_index = 0;
 
     }
     else if (msg == "Open File")
     {
         Rec_run_Enable = false;
+        Step_Mode = false;
         Position_wait = false;
 
         std::ostringstream out;
@@ -577,6 +585,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         }
 
         file.close();
+        current_list_index = 0;
+
     }
     else if (msg == "Check Device")
     {
@@ -609,6 +619,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     else if (msg == "Clear_Recorded")
     {
         Rec_run_Enable = false;
+        Step_Mode = false;
         Position_wait = false;
 
         list_Position.clear();
@@ -620,6 +631,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         list_Kp_scale.clear();
         list_Kd_scale.clear();
         list_accel_limit.clear();
+        current_list_index = 0;
 
         emit sendToMain(msg);
     }
@@ -627,6 +639,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     {
         MoteusAPI api(dev_name.toStdString(), Motor_id);
         Rec_run_Enable = false;
+        Step_Mode = false;
         Position_wait = false;
 
         // define a state object
@@ -655,6 +668,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         list_Kp_scale.push_back(kp_scale);
         list_Kd_scale.push_back(kd_scale);
         list_accel_limit.push_back(accel_limit);
+        current_list_index = 0;
 
         out << "Current position: " << curr_state.position  << ", Velocity limit: " << velocity_limit << ", Accel limit: " << accel_limit << ", Motor: " << Motor_id << ", Delay: " << Delay << endl;
         emit sendToMain(QString::fromStdString(out.str()));
@@ -677,6 +691,32 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     else if (msg == "Run_Recorded")
     {
         Rec_run_Enable = false;
+        Step_Mode = false;
+        Position_wait = false;
+
+        l_velocity_limit = velocity_limit;
+        l_accel_limit = accel_limit;
+        l_max_torque = max_torque;
+        l_feedforward_torque = feedforward_torque;
+        l_kp_scale = kp_scale;
+        l_kd_scale = kd_scale;
+
+        l_dev_name = dev_name;
+        current_list_index = 0;
+        l_Cycle = 0;
+        // set l_Cycle_Delay and delay equal to cause first list load
+        l_Cycle_Delay = 1;
+        delay = 1;
+       if (!list_Position.empty()) // check if list is empty
+        {
+           TrajectoryComplete_pause = false;
+           Rec_run_Enable = true;
+        }
+    }
+    else if (msg == "Step_Recorded")
+    {
+        Rec_run_Enable = false;
+        Step_Mode = false;
         Position_wait = false;
 
         l_velocity_limit = velocity_limit;
@@ -688,14 +728,14 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
 
         l_Cycle_Start_Stop = Cycle;
         l_dev_name = dev_name;
-        current_list_index = 0;
         l_Cycle = 0;
+        // set l_Cycle_Delay and delay equal to cause first list load
         l_Cycle_Delay = 1;
         delay = 1;
        if (!list_Position.empty()) // check if list is empty
         {
            TrajectoryComplete_pause = false;
-           Rec_run_Enable = true;
+           Step_Mode = true;
         }
     }
     else if (msg == "get rotor_to_output_ratio")
