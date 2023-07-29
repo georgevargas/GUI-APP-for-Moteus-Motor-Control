@@ -49,6 +49,7 @@ private:
     bool   Enable_plot_position = true;
     bool   Enable_plot_velocity = false;
     bool   Enable_plot_torque = false;
+    bool   Enable_plot_temperature = false;
     double time = 0;
     double oldtime = 0;
     // Data buffers
@@ -58,6 +59,8 @@ private:
     QVector<qreal> m_XData1;
     QVector<qreal> m_YData2;
     QVector<qreal> m_XData2;
+    QVector<qreal> m_YData3;
+    QVector<qreal> m_XData3;
 
     // This object will hold the current value as a text
     // that will appear at the extreme right of the plot,
@@ -67,19 +70,19 @@ private:
     string dev_name = "/dev/ttyACM0";
     int moteus_id = 1;
     int Number_of_Motors = 3;
-    double Motor_rest_position[10] ={-0.005,-0.007,0.208496,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains rest positions for each motor
-    double bounds_min[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the minimum positions for each motor
-    double bounds_max[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
-    double kp[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
-    double kd[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
-    double ki[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
-    double Gear_Ratio[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
-    double Break_Voltage[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
-    double Velocity[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
-    double Position[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
-    double Torque[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
-    double position_offset[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the maximum positions for each motor
-
+    double Motor_rest_position[10] ={-0.005,-0.007,0.208496,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    double bounds_min[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    double bounds_max[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    double kp[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    double kd[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    double ki[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    double Gear_Ratio[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    double Break_Voltage[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    double Velocity[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    double Position[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    double Torque[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    double Temperature[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    double position_offset[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
     void setup();
     void Init_Motor();
 
@@ -94,7 +97,7 @@ signals:
          double kd_scale,double bounds_min,double bounds_max,double Cycle,double Delay);
 
 public slots:
-    void receiveMsg(QString  msg, int Motor_id, double Value1, double Value2, double Value3);
+    void receiveMsg(QString  msg, int Motor_id, double Value1, double Value2, double Value3,double value4);
     void getFromWorker(QString);
     void updateDiagram();
 
@@ -166,6 +169,7 @@ private slots:
     void on_actionPosition_changed();
     void on_actionVelocity_changed();
     void on_actionTorque_changed();
+    void on_actionTemperature_changed();
 };
 
 #endif // MAINWINDOW_H
