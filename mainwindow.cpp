@@ -717,6 +717,12 @@ void MainWindow::on_btnRun_Recorded_clicked()
                       kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
 }
 
+void MainWindow::on_btnStep_Recorded_clicked()
+{
+    emit sendToWorker("Step_Recorded",QString::fromStdString(dev_name),moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+}
+
 void MainWindow::on_btnClear_Recorded_clicked()
 {
     emit sendToWorker("Clear_Recorded",QString::fromStdString(dev_name),moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
