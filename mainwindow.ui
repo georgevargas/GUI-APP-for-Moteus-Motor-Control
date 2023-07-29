@@ -3505,8 +3505,8 @@ background-color: #C5D5DB;
    <widget class="QPushButton" name="btnStop_Cycle">
     <property name="geometry">
      <rect>
-      <x>430</x>
-      <y>80</y>
+      <x>570</x>
+      <y>20</y>
       <width>111</width>
       <height>25</height>
      </rect>
@@ -3519,24 +3519,24 @@ background-color: #C5D5DB;
      </font>
     </property>
     <property name="styleSheet">
-     <string notr="true">    QPushButton {
-        border: 1px solid #337E9F;
+     <string notr="true">   QPushButton {
+         border: 1px solid #337E9F;
         border-radius: 6px;
-        background-color: rgb(70, 130, 180);
+        background-color:  #4682B4;
         background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
-            stop: 0 #5DC1FA, stop: 1 #0F86CA); 
+            stop: 0 #FF9C43, stop: 1 #CC0000);
     }
     QPushButton:hover{
         border: 1px solid #333333;
         background-color: rgb(70, 130, 180);
         background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
-           stop: 0 #71CAFD, stop: 1 #41A2CC);
+            stop: 0 #FFEA43, stop: 1 #CC0000);
     }
     QPushButton:pressed {
         border: 1px solid #333333;
         background-color: rgb(70, 130, 180);
         background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
-            stop: 0 #11A5FA, stop: 1 #0F86CA);
+            stop: 0 #CF5C40, stop: 1 #A04731);
     };</string>
     </property>
     <property name="text">
@@ -3628,7 +3628,7 @@ background-color: #C5D5DB;
    <widget class="QPushButton" name="btnClear_Recorded">
     <property name="geometry">
      <rect>
-      <x>290</x>
+      <x>430</x>
       <y>80</y>
       <width>111</width>
       <height>25</height>
@@ -7379,6 +7379,47 @@ background-color: #C5D5DB;
     </property>
     <property name="text">
      <string>Set Pos Offset</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnStep_Recorded">
+    <property name="geometry">
+     <rect>
+      <x>290</x>
+      <y>80</y>
+      <width>111</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">    QPushButton {
+        border: 1px solid #337E9F;
+        border-radius: 6px;
+        background-color: rgb(70, 130, 180);
+        background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
+            stop: 0 #5DC1FA, stop: 1 #0F86CA); 
+    }
+    QPushButton:hover{
+        border: 1px solid #333333;
+        background-color: rgb(70, 130, 180);
+        background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
+           stop: 0 #71CAFD, stop: 1 #41A2CC);
+    }
+    QPushButton:pressed {
+        border: 1px solid #333333;
+        background-color: rgb(70, 130, 180);
+        background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
+            stop: 0 #11A5FA, stop: 1 #0F86CA);
+    };</string>
+    </property>
+    <property name="text">
+     <string>Step Rec</string>
     </property>
    </widget>
   </widget>
