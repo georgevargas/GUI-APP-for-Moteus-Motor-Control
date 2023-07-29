@@ -61,6 +61,7 @@ private:
     bool   Dynamic = false;
     bool   Motor_error = false;
     bool   TrajectoryComplete_error = false;
+    bool   Step_Mode = false;
     bool   TrajectoryComplete_pause = false;
     vector <double> list_Position;
     vector <int>    list_Motor_id;
@@ -78,3 +79,8 @@ private:
 };
 
 #endif // MOTORWORKER_H
+
+
+
+
+
