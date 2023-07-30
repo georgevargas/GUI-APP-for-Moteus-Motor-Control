@@ -65,7 +65,7 @@ void MainWindow::setup()
 
     connect(workerTrigger, SIGNAL(timeout()), worker, SLOT(run_cycles()));
     connect(this, SIGNAL(sendSetup()), worker, SLOT(receiveSetup()));
-    connect(worker, SIGNAL(sendMsg(QString,int,double,double,double,double)), this, SLOT(receiveMsg(QString,int,double,double,double,double)));
+    connect(worker, SIGNAL(sendMsg(QString,int,double,double,double,double,double)), this, SLOT(receiveMsg(QString,int,double,double,double,double,double)));
     connect(this,SIGNAL(sendToWorker(QString,QString,int,double,double,double,double,double,double,double,double,double,double,double)),worker,SLOT(getFromMain(QString,QString,int,double,
              double,double,double,double,double,double,double,double,double,double)));
     connect(worker,SIGNAL(sendToMain(QString)),this,SLOT(getFromWorker(QString)));
@@ -91,7 +91,7 @@ void MainWindow::updateDiagram()
                       kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
 }
 
-void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Value2 , double Value3,double Value4)
+void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Value2 , double Value3,double Value4,double Value5)
 {
     if (msg == "set motor limits")
     {
@@ -210,12 +210,13 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
     }
     else if (msg == "get velocity")
     {
-        Position[Motor_id-1]    =  Value1;
-        Velocity[Motor_id-1]    =  Value2;
-        Torque[Motor_id-1]      =  Value3;
-        Temperature[Motor_id-1] =  Value4;
+        Position[Motor_id-1]        =  Value1;
+        Velocity[Motor_id-1]        =  Value2;
+        Torque[Motor_id-1]          =  Value3;
+        Temperature[Motor_id-1]     =  Value4;
+        Q_Phase_Current[Motor_id-1]   =  Value5;
 
-        if (Enable_plot_velocity || Enable_plot_position || Enable_plot_torque || Enable_plot_temperature)
+        if (Enable_plot_velocity || Enable_plot_position || Enable_plot_torque || Enable_plot_temperature || Enable_plot_q_phase_current)
         {
             ui->myPlot->graph(0)->setVisible(true);
             ui->myPlot->yAxis->setVisible(true);
@@ -226,11 +227,17 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
             ui->myPlot->yAxis->setVisible(false);
         }
 
-        if ((Enable_plot_position && Enable_plot_velocity) ||
-            (Enable_plot_position && Enable_plot_torque) ||
-            (Enable_plot_position && Enable_plot_temperature) ||
-            (Enable_plot_velocity && Enable_plot_torque) ||
-            (Enable_plot_velocity && Enable_plot_temperature) )
+        if ((Enable_plot_position && Enable_plot_velocity)          ||
+            (Enable_plot_position && Enable_plot_torque)            ||
+            (Enable_plot_position && Enable_plot_temperature)       ||
+            (Enable_plot_position && Enable_plot_q_phase_current)   ||
+            (Enable_plot_velocity && Enable_plot_torque)            ||
+            (Enable_plot_velocity && Enable_plot_temperature)       ||
+            (Enable_plot_velocity && Enable_plot_q_phase_current)   ||
+            (Enable_plot_torque && Enable_plot_temperature)         ||
+            (Enable_plot_torque && Enable_plot_q_phase_current)     ||
+            (Enable_plot_temperature && Enable_plot_q_phase_current)
+            )
         {
             ui->myPlot->graph(1)->setVisible(true);
             ui->myPlot->yAxis2->setVisible(true);
@@ -280,10 +287,33 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
                 left = 3;
                 ui->myPlot->yAxis->setLabel("Temperature");
             }
-            else if (!Enable_plot_velocity && !Enable_plot_torque)
+            else if  (
+                     (Enable_plot_position && !Enable_plot_velocity && !Enable_plot_torque ) ||
+                     (!Enable_plot_position && Enable_plot_torque && !Enable_plot_velocity ) ||
+                     (!Enable_plot_position && Enable_plot_velocity && !Enable_plot_torque )
+                     )
             {
                 right = 3;
                 ui->myPlot->yAxis2->setLabel("Temperature");
+            }
+        }
+
+        if (Enable_plot_q_phase_current)
+        {
+            if (!Enable_plot_position && !Enable_plot_torque && !Enable_plot_velocity && !Enable_plot_temperature)
+            {
+                left = 4;
+                ui->myPlot->yAxis->setLabel("Q Phase Current");
+            }
+            else if  (
+                     (Enable_plot_position && !Enable_plot_velocity && !Enable_plot_torque && !Enable_plot_temperature) ||
+                     (!Enable_plot_position && Enable_plot_torque && !Enable_plot_velocity && !Enable_plot_temperature) ||
+                     (!Enable_plot_position && Enable_plot_temperature && !Enable_plot_torque && !Enable_plot_velocity ) ||
+                     (!Enable_plot_position && Enable_plot_velocity && !Enable_plot_temperature && !Enable_plot_torque )
+                     )
+            {
+                right = 4;
+                ui->myPlot->yAxis2->setLabel("Q Phase Current");
             }
         }
 
@@ -302,6 +332,9 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         m_YData2.append( Torque[moteus_id-1] );
         m_XData3.append( time );
         m_YData3.append( Temperature[moteus_id-1] );
+        m_XData4.append( time );
+        m_YData4.append( Q_Phase_Current[moteus_id-1] );
+
         if( m_XData.size() > 100 )
         {
             m_XData.remove( 0 );
@@ -312,35 +345,42 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
             m_YData2.remove( 0 );
             m_XData3.remove( 0 );
             m_YData3.remove( 0 );
+            m_XData4.remove( 0 );
+            m_YData4.remove( 0 );
         }
-        if (left == 0)
+        switch (left)
         {
-            ui->myPlot->graph(0)->setData( m_XData , m_YData );
-        }
-        else if (left == 1)
-        {
-            ui->myPlot->graph(0)->setData( m_XData1 , m_YData1 );
-        }
-        else if (left == 2)
-        {
-            ui->myPlot->graph(0)->setData( m_XData2 , m_YData2 );
-        }
-        else if (left == 3)
-        {
-            ui->myPlot->graph(0)->setData( m_XData3 , m_YData3 );
+            case 0:
+                ui->myPlot->graph(0)->setData( m_XData , m_YData );
+                break;
+            case 1:
+                ui->myPlot->graph(0)->setData( m_XData1 , m_YData1 );
+                break;
+            case 2:
+                ui->myPlot->graph(0)->setData( m_XData2 , m_YData2 );
+                break;
+            case 3:
+                ui->myPlot->graph(0)->setData( m_XData3 , m_YData3 );
+                break;
+            case 4:
+                ui->myPlot->graph(0)->setData( m_XData4 , m_YData4 );
+                break;
         }
 
-        if (right == 1)
+        switch (right)
         {
-            ui->myPlot->graph(1)->setData( m_XData1 , m_YData1 );
-        }
-        else if (right == 2)
-        {
-            ui->myPlot->graph(1)->setData( m_XData2 , m_YData2 );
-        }
-        else if (right == 3)
-        {
-            ui->myPlot->graph(1)->setData( m_XData3 , m_YData3 );
+            case 1:
+                ui->myPlot->graph(1)->setData( m_XData1 , m_YData1 );
+                break;
+            case 2:
+                ui->myPlot->graph(1)->setData( m_XData2 , m_YData2 );
+                break;
+            case 3:
+                ui->myPlot->graph(1)->setData( m_XData3 , m_YData3 );
+                break;
+            case 4:
+                ui->myPlot->graph(1)->setData( m_XData4 , m_YData4 );
+                break;
         }
 
         // Set the range of the vertical and horizontal axis of the plot ( not the graph )
@@ -355,6 +395,8 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         QVector<double>::iterator yMinIt2 = std::min_element( m_YData2.begin() , m_YData2.end() );
         QVector<double>::iterator yMaxIt3 = std::max_element( m_YData3.begin() , m_YData3.end() );
         QVector<double>::iterator yMinIt3 = std::min_element( m_YData3.begin() , m_YData3.end() );
+        QVector<double>::iterator yMaxIt4 = std::max_element( m_YData4.begin() , m_YData4.end() );
+        QVector<double>::iterator yMinIt4 = std::min_element( m_YData4.begin() , m_YData4.end() );
 
         qreal xPlotMin = *xMinIt;
         qreal xPlotMax = *xMaxIt;
@@ -366,6 +408,8 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         qreal yPlotMax2 = *yMaxIt2;
         qreal yPlotMin3 = *yMinIt3;
         qreal yPlotMax3 = *yMaxIt3;
+        qreal yPlotMin4 = *yMinIt4;
+        qreal yPlotMax4 = *yMaxIt4;
 
         // The yOffset just to make sure that the graph won't take the whole
         // space in the plot widget, and to keep a margin at the top, the same goes for xOffset
@@ -374,40 +418,47 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         qreal yOffset1 = 0.05 * ( yPlotMax1 - yPlotMin1 ) ;
         qreal yOffset2 = 0.05 * ( yPlotMax2 - yPlotMin2 ) ;
         qreal yOffset3 = 0.05 * ( yPlotMax3 - yPlotMin3 ) ;
+        qreal yOffset4 = 0.05 * ( yPlotMax4 - yPlotMin4 ) ;
 
         if ( (time - oldtime) > 1.0)
         {
             oldtime = time;
             ui->myPlot->xAxis->setRange( xPlotMin , xPlotMax + xOffset );
             ui->myPlot->xAxis2->setRange( xPlotMin , xPlotMax + xOffset );
-            if (left == 0)
+
+            switch (left)
             {
-                ui->myPlot->yAxis->setRange(yPlotMin - yOffset, yPlotMax + yOffset);
-            }
-            else if (left == 1)
-            {
-                ui->myPlot->yAxis->setRange(yPlotMin1 - yOffset1, yPlotMax1 + yOffset1);
-            }
-            else if (left == 2)
-            {
-                ui->myPlot->yAxis->setRange(yPlotMin2 - yOffset2, yPlotMax2 + yOffset2);
-            }
-            else if (left == 3)
-            {
-                ui->myPlot->yAxis->setRange(yPlotMin3 - yOffset3, yPlotMax3 + yOffset3);
+                case 0:
+                    ui->myPlot->yAxis->setRange(yPlotMin - yOffset, yPlotMax + yOffset);
+                    break;
+                case 1:
+                    ui->myPlot->yAxis->setRange(yPlotMin1 - yOffset1, yPlotMax1 + yOffset1);
+                    break;
+                case 2:
+                    ui->myPlot->yAxis->setRange(yPlotMin2 - yOffset2, yPlotMax2 + yOffset2);
+                    break;
+                case 3:
+                    ui->myPlot->yAxis->setRange(yPlotMin3 - yOffset3, yPlotMax3 + yOffset3);
+                    break;
+                case 4:
+                    ui->myPlot->yAxis->setRange(yPlotMin4 - yOffset4, yPlotMax4 + yOffset4);
+                    break;
             }
 
-            if (right == 1)
+            switch (right)
             {
-                ui->myPlot->yAxis2->setRange(yPlotMin1 - yOffset1, yPlotMax1 + yOffset1);
-            }
-            else if (right == 2)
-            {
-                ui->myPlot->yAxis2->setRange(yPlotMin2 - yOffset2, yPlotMax2 + yOffset2);
-            }
-            else if (right == 3)
-            {
-                ui->myPlot->yAxis2->setRange(yPlotMin3 - yOffset3, yPlotMax3 + yOffset3);
+                case 1:
+                    ui->myPlot->yAxis2->setRange(yPlotMin1 - yOffset1, yPlotMax1 + yOffset1);
+                    break;
+                case 2:
+                    ui->myPlot->yAxis2->setRange(yPlotMin2 - yOffset2, yPlotMax2 + yOffset2);
+                    break;
+                case 3:
+                    ui->myPlot->yAxis2->setRange(yPlotMin3 - yOffset3, yPlotMax3 + yOffset3);
+                    break;
+                case 4:
+                    ui->myPlot->yAxis2->setRange(yPlotMin4 - yOffset4, yPlotMax4 + yOffset4);
+                    break;
             }
         }
         ui->myPlot->replot();
@@ -856,6 +907,18 @@ void MainWindow::on_actionTemperature_changed()
     {
         Enable_plot_temperature = false;
     }
+}
+void MainWindow::on_actionQ_Phase_Current_changed()
+{
+    if (ui->actionQ_Phase_Current->isChecked())
+    {
+        Enable_plot_q_phase_current = true;
+    }
+    else
+    {
+        Enable_plot_q_phase_current = false;
+    }
+
 }
 
 void MainWindow::on_checkBox_Dymamic_clicked()
