@@ -22,7 +22,7 @@ public:
     ~Motorworker();
 
 signals:
-    void sendMsg(QString  msg,int Motor_id,double value1,double value2,double value3,double value4);
+    void sendMsg(QString  msg,int Motor_id,double value1,double value2,double value3,double value4,double value5);
     void sendToMain(QString);
 
 public slots:
