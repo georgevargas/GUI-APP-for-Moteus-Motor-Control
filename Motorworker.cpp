@@ -253,9 +253,10 @@ bool Motorworker::Check_Velocity(QString dev_name,int Motor_id)
     curr_state.EN_Velocity();
     curr_state.EN_Torque();
     curr_state.EN_Temp();
+    curr_state.EN_QCurr();
 
     api.ReadState(curr_state);
-    emit sendMsg("get velocity",Motor_id,curr_state.position,curr_state.velocity,curr_state.torque,curr_state.temperature);
+    emit sendMsg("get velocity",Motor_id,curr_state.position,curr_state.velocity,curr_state.torque,curr_state.temperature,curr_state.q_curr);
     return true;
 }
 void Motorworker::run_cycles()
@@ -765,7 +766,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
             }
             else
             {
-                emit sendMsg("get gear ratio",Motor_id,value,0,0,0);
+                emit sendMsg("get gear ratio",Motor_id,value,0,0,0,0);
             }
         }
     }
@@ -795,7 +796,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
             }
             else
             {
-                emit sendMsg("get Break Voltage",Motor_id,value,0,0,0);
+                emit sendMsg("get Break Voltage",Motor_id,value,0,0,0,0);
             }
         }
     }
@@ -825,7 +826,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
             }
             else
             {
-                emit sendMsg("get Position Offset",Motor_id,value,0,0,0);
+                emit sendMsg("get Position Offset",Motor_id,value,0,0,0,0);
             }
         }
     }
@@ -886,7 +887,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         }
 
         if (!error)
-            emit sendMsg("set motor limits",Motor_id,l_bounds_min[Motor_id-1],l_bounds_max[Motor_id-1],0,0);
+            emit sendMsg("set motor limits",Motor_id,l_bounds_min[Motor_id-1],l_bounds_max[Motor_id-1],0,0,0);
     }
     else if (msg == "conf write")
     {
@@ -974,7 +975,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
                             }
                             else
                             {
-                                emit sendMsg("get PID",Motor_id,value1,value2,value3,0);
+                                emit sendMsg("get PID",Motor_id,value1,value2,value3,0,0);
                             }
                         }
                     }
