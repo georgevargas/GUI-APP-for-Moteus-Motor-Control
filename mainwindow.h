@@ -50,6 +50,7 @@ private:
     bool   Enable_plot_velocity = false;
     bool   Enable_plot_torque = false;
     bool   Enable_plot_temperature = false;
+    bool   Enable_plot_q_phase_current = false;
     double time = 0;
     double oldtime = 0;
     // Data buffers
@@ -61,6 +62,8 @@ private:
     QVector<qreal> m_XData2;
     QVector<qreal> m_YData3;
     QVector<qreal> m_XData3;
+    QVector<qreal> m_YData4;
+    QVector<qreal> m_XData4;
 
     // This object will hold the current value as a text
     // that will appear at the extreme right of the plot,
@@ -82,6 +85,7 @@ private:
     double Position[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
     double Torque[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
     double Temperature[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    double Q_Phase_Current[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
     double position_offset[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
     void setup();
     void Init_Motor();
@@ -97,7 +101,7 @@ signals:
          double kd_scale,double bounds_min,double bounds_max,double Cycle,double Delay);
 
 public slots:
-    void receiveMsg(QString  msg, int Motor_id, double Value1, double Value2, double Value3,double value4);
+    void receiveMsg(QString  msg, int Motor_id, double Value1, double Value2, double Value3,double value4,double value5);
     void getFromWorker(QString);
     void updateDiagram();
 
@@ -170,6 +174,7 @@ private slots:
     void on_actionVelocity_changed();
     void on_actionTorque_changed();
     void on_actionTemperature_changed();
+    void on_actionQ_Phase_Current_changed();
 };
 
 #endif // MAINWINDOW_H
