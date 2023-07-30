@@ -7492,6 +7492,7 @@ background-color: #C5D5DB;
     <addaction name="actionVelocity"/>
     <addaction name="actionTorque"/>
     <addaction name="actionTemperature"/>
+    <addaction name="actionQ_Phase_Current"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuPlot"/>
@@ -7616,6 +7617,14 @@ background-color: #C5D5DB;
    </property>
    <property name="text">
     <string>Temperature</string>
+   </property>
+  </action>
+  <action name="actionQ_Phase_Current">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Q_Phase_Current</string>
    </property>
   </action>
  </widget>
