@@ -227,101 +227,89 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
             ui->myPlot->yAxis->setVisible(false);
         }
 
-        if ((Enable_plot_position && Enable_plot_velocity)          ||
-            (Enable_plot_position && Enable_plot_torque)            ||
-            (Enable_plot_position && Enable_plot_temperature)       ||
-            (Enable_plot_position && Enable_plot_q_phase_current)   ||
-            (Enable_plot_velocity && Enable_plot_torque)            ||
-            (Enable_plot_velocity && Enable_plot_temperature)       ||
-            (Enable_plot_velocity && Enable_plot_q_phase_current)   ||
-            (Enable_plot_torque && Enable_plot_temperature)         ||
-            (Enable_plot_torque && Enable_plot_q_phase_current)     ||
-            (Enable_plot_temperature && Enable_plot_q_phase_current)
-            )
-        {
-            ui->myPlot->graph(1)->setVisible(true);
-            ui->myPlot->yAxis2->setVisible(true);
-        }
-        else
-        {
-            ui->myPlot->graph(1)->setVisible(false);
-            ui->myPlot->yAxis2->setVisible(false);
-        }
 
-        int left = 0;
-        int right = 0;
+        // set left and right to -1 which is unused
+        int left = -1;
+        int right = -1;
 
-
-        if (Enable_plot_velocity)
-        {
-            if (!Enable_plot_position && !Enable_plot_torque)
-            {
-                left = 1;
-                ui->myPlot->yAxis->setLabel("Velocity");
-            }
-            else
-            {
-                right = 1;
-                ui->myPlot->yAxis2->setLabel("Velocity");
-            }
-        }
-
-        if (Enable_plot_torque)
-        {
-            if (!Enable_plot_position )
-            {
-                left = 2;
-                ui->myPlot->yAxis->setLabel("Torque");
-            }
-            else if (!Enable_plot_velocity)
-            {
-                right = 2;
-                ui->myPlot->yAxis2->setLabel("Torque");
-            }
-        }
-
-        if (Enable_plot_temperature)
-        {
-            if (!Enable_plot_position && !Enable_plot_torque && !Enable_plot_velocity)
-            {
-                left = 3;
-                ui->myPlot->yAxis->setLabel("Temperature");
-            }
-            else if  (
-                     (Enable_plot_position && !Enable_plot_velocity && !Enable_plot_torque ) ||
-                     (!Enable_plot_position && Enable_plot_torque && !Enable_plot_velocity ) ||
-                     (!Enable_plot_position && Enable_plot_velocity && !Enable_plot_torque )
-                     )
-            {
-                right = 3;
-                ui->myPlot->yAxis2->setLabel("Temperature");
-            }
-        }
-
-        if (Enable_plot_q_phase_current)
-        {
-            if (!Enable_plot_position && !Enable_plot_torque && !Enable_plot_velocity && !Enable_plot_temperature)
-            {
-                left = 4;
-                ui->myPlot->yAxis->setLabel("Q Phase Current");
-            }
-            else if  (
-                     (Enable_plot_position && !Enable_plot_velocity && !Enable_plot_torque && !Enable_plot_temperature) ||
-                     (!Enable_plot_position && Enable_plot_torque && !Enable_plot_velocity && !Enable_plot_temperature) ||
-                     (!Enable_plot_position && Enable_plot_temperature && !Enable_plot_torque && !Enable_plot_velocity ) ||
-                     (!Enable_plot_position && Enable_plot_velocity && !Enable_plot_temperature && !Enable_plot_torque )
-                     )
-            {
-                right = 4;
-                ui->myPlot->yAxis2->setLabel("Q Phase Current");
-            }
-        }
 
         if (Enable_plot_position)
         {
             ui->myPlot->yAxis->setLabel("Position");
             left = 0;
         }
+
+        if (Enable_plot_velocity)
+        {
+            if (left == -1)
+            {
+                left = 1;
+                ui->myPlot->yAxis->setLabel("Velocity");
+            }
+            else if (right == -1)
+            {
+                right = 1;
+                ui->myPlot->yAxis2->setLabel("Velocity");
+                ui->myPlot->graph(1)->setVisible(true);
+                ui->myPlot->yAxis2->setVisible(true);
+            }
+        }
+
+        if (Enable_plot_torque)
+        {
+            if (left == -1)
+            {
+                left = 2;
+                ui->myPlot->yAxis->setLabel("Torque");
+            }
+            else if (right == -1)
+            {
+                right = 2;
+                ui->myPlot->yAxis2->setLabel("Torque");
+                ui->myPlot->graph(1)->setVisible(true);
+                ui->myPlot->yAxis2->setVisible(true);
+            }
+        }
+
+        if (Enable_plot_temperature)
+        {
+            if (left == -1)
+            {
+                left = 3;
+                ui->myPlot->yAxis->setLabel("Temperature");
+            }
+            else if (right == -1)
+            {
+                right = 3;
+                ui->myPlot->yAxis2->setLabel("Temperature");
+                ui->myPlot->graph(1)->setVisible(true);
+                ui->myPlot->yAxis2->setVisible(true);
+            }
+        }
+
+        if (Enable_plot_q_phase_current)
+        {
+            if (left == -1)
+            {
+                left = 4;
+                ui->myPlot->yAxis->setLabel("Q Phase Current");
+            }
+            else if (right == -1)
+            {
+                right = 4;
+                ui->myPlot->yAxis2->setLabel("Q Phase Current");
+                ui->myPlot->graph(1)->setVisible(true);
+                ui->myPlot->yAxis2->setVisible(true);
+            }
+        }
+
+        if (right == -1)
+        {
+            // turn  off rightb axis
+            ui->myPlot->graph(1)->setVisible(false);
+            ui->myPlot->yAxis2->setVisible(false);
+        }
+
 
         // Add the time the x data buffer
         m_XData.append( time );
