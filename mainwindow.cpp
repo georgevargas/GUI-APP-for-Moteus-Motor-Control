@@ -47,7 +47,8 @@ void MainWindow::setup()
 
     ui->myPlot->yAxis2->setRange(0,3);
     ui->myPlot->graph(1)->setPen(QPen(Qt::red));
-
+    ui->myPlot->yAxis2->setLabelColor(Qt::red);
+    ui->myPlot->yAxis->setLabelColor(Qt::blue);
 
     //init time
     time = 0.0;
