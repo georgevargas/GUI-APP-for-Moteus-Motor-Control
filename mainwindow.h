@@ -52,7 +52,6 @@ private:
     bool   Enable_plot_temperature = false;
     bool   Enable_plot_q_phase_current = false;
     double time = 0;
-    double oldtime = 0;
     // Data buffers
     QVector<qreal> m_YData;
     QVector<qreal> m_XData;
