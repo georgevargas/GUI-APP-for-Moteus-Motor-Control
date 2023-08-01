@@ -212,11 +212,50 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
     }
     else if (msg == "get velocity")
     {
-        Position[Motor_id-1]        =  Value1;
-        Velocity[Motor_id-1]        =  Value2;
-        Torque[Motor_id-1]          =  Value3;
-        Temperature[Motor_id-1]     =  Value4;
-        Q_Phase_Current[Motor_id-1]   =  Value5;
+        std::ostringstream out;
+        std::istringstream iss;
+        QString line;
+        try
+        {
+            out.str("");
+            iss.str("");
+            out << std::format("{:.3f}" , Value1) << endl;
+            line =  QString::fromStdString(out.str());
+            iss.str(line.toStdString());
+            iss >> Position[Motor_id-1];
+
+            out.str("");
+            iss.str("");
+            out << std::format("{:.3f}" , Value2) << endl;
+            line =  QString::fromStdString(out.str());
+            iss.str(line.toStdString());
+            iss >> Velocity[Motor_id-1];
+
+            out.str("");
+            iss.str("");
+            out << std::format("{:.3f}" , Value3) << endl;
+            line =  QString::fromStdString(out.str());
+            iss.str(line.toStdString());
+            iss >> Torque[Motor_id-1];
+
+            out.str("");
+            iss.str("");
+            out << std::format("{:.3f}" , Value4) << endl;
+            line =  QString::fromStdString(out.str());
+            iss.str(line.toStdString());
+            iss >> Temperature[Motor_id-1];
+
+            out.str("");
+            iss.str("");
+            out << std::format("{:.3f}" , Value5) << endl;
+            line =  QString::fromStdString(out.str());
+            iss.str(line.toStdString());
+            iss >> Q_Phase_Current[Motor_id-1];
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
 
         if (Enable_plot_velocity || Enable_plot_position || Enable_plot_torque || Enable_plot_temperature || Enable_plot_q_phase_current)
         {
