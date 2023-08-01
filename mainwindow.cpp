@@ -40,7 +40,7 @@ void MainWindow::setup()
 {
     //Setup my diagram
     ui->myPlot->addGraph();
-    ui->myPlot->addGraph(ui->myPlot->xAxis2, ui->myPlot->yAxis2);
+    ui->myPlot->addGraph(ui->myPlot->xAxis, ui->myPlot->yAxis2);
     ui->myPlot->xAxis->setLabel("Time");
     ui->myPlot->xAxis->setRange(0,2);
     ui->myPlot->yAxis->setRange(-.4,-.1);
@@ -49,6 +49,7 @@ void MainWindow::setup()
     ui->myPlot->graph(1)->setPen(QPen(Qt::red));
     ui->myPlot->yAxis2->setLabelColor(Qt::red);
     ui->myPlot->yAxis->setLabelColor(Qt::blue);
+    ui->myPlot->xAxis->setTickLabels(false);
 
     //init time
     time = 0.0;
@@ -227,7 +228,6 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
             ui->myPlot->graph(0)->setVisible(false);
             ui->myPlot->yAxis->setVisible(false);
         }
-
 
         // set left and right to -1 which is unused
         int left = -1;
@@ -409,46 +409,41 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         qreal yOffset3 = 0.05 * ( yPlotMax3 - yPlotMin3 ) ;
         qreal yOffset4 = 0.05 * ( yPlotMax4 - yPlotMin4 ) ;
 
-        if ( (time - oldtime) > 1.0)
+        ui->myPlot->xAxis->setRange( xPlotMin - xOffset , xPlotMax  + xOffset);
+
+        switch (left)
         {
-            oldtime = time;
-            ui->myPlot->xAxis->setRange( xPlotMin , xPlotMax + xOffset );
-            ui->myPlot->xAxis2->setRange( xPlotMin , xPlotMax + xOffset );
+            case 0:
+                ui->myPlot->yAxis->setRange(yPlotMin - yOffset, yPlotMax + yOffset);
+                break;
+            case 1:
+                ui->myPlot->yAxis->setRange(yPlotMin1 - yOffset1, yPlotMax1 + yOffset1);
+                break;
+            case 2:
+                ui->myPlot->yAxis->setRange(yPlotMin2 - yOffset2, yPlotMax2 + yOffset2);
+                break;
+            case 3:
+                ui->myPlot->yAxis->setRange(yPlotMin3 - yOffset3, yPlotMax3 + yOffset3);
+                break;
+            case 4:
+                ui->myPlot->yAxis->setRange(yPlotMin4 - yOffset4, yPlotMax4 + yOffset4);
+                break;
+        }
 
-            switch (left)
-            {
-                case 0:
-                    ui->myPlot->yAxis->setRange(yPlotMin - yOffset, yPlotMax + yOffset);
-                    break;
-                case 1:
-                    ui->myPlot->yAxis->setRange(yPlotMin1 - yOffset1, yPlotMax1 + yOffset1);
-                    break;
-                case 2:
-                    ui->myPlot->yAxis->setRange(yPlotMin2 - yOffset2, yPlotMax2 + yOffset2);
-                    break;
-                case 3:
-                    ui->myPlot->yAxis->setRange(yPlotMin3 - yOffset3, yPlotMax3 + yOffset3);
-                    break;
-                case 4:
-                    ui->myPlot->yAxis->setRange(yPlotMin4 - yOffset4, yPlotMax4 + yOffset4);
-                    break;
-            }
-
-            switch (right)
-            {
-                case 1:
-                    ui->myPlot->yAxis2->setRange(yPlotMin1 - yOffset1, yPlotMax1 + yOffset1);
-                    break;
-                case 2:
-                    ui->myPlot->yAxis2->setRange(yPlotMin2 - yOffset2, yPlotMax2 + yOffset2);
-                    break;
-                case 3:
-                    ui->myPlot->yAxis2->setRange(yPlotMin3 - yOffset3, yPlotMax3 + yOffset3);
-                    break;
-                case 4:
-                    ui->myPlot->yAxis2->setRange(yPlotMin4 - yOffset4, yPlotMax4 + yOffset4);
-                    break;
-            }
+        switch (right)
+        {
+            case 1:
+                ui->myPlot->yAxis2->setRange(yPlotMin1 - yOffset1, yPlotMax1 + yOffset1);
+                break;
+            case 2:
+                ui->myPlot->yAxis2->setRange(yPlotMin2 - yOffset2, yPlotMax2 + yOffset2);
+                break;
+            case 3:
+                ui->myPlot->yAxis2->setRange(yPlotMin3 - yOffset3, yPlotMax3 + yOffset3);
+                break;
+            case 4:
+                ui->myPlot->yAxis2->setRange(yPlotMin4 - yOffset4, yPlotMax4 + yOffset4);
+                break;
         }
         ui->myPlot->replot();
     }
