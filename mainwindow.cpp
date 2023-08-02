@@ -224,7 +224,7 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
             iss.str(std::format("{:.3f}\n" , Value3));
             iss >> Torque[Motor_id-1];
 
-            iss.str(std::format("{:.3f}\n" , Value4));
+            iss.str(std::format("{:.1f}\n" , Value4));
             iss >> Temperature[Motor_id-1];
 
             iss.str(std::format("{:.3f}\n" , Value5));
@@ -434,13 +434,25 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
                 ui->myPlot->yAxis->setRange(yPlotMin - yOffset, yPlotMax + yOffset);
                 break;
             case 1:
-                ui->myPlot->yAxis->setRange(yPlotMin1 - yOffset1, yPlotMax1 + yOffset1);
+                if (yPlotMax1 < 0.5)
+                    ui->myPlot->yAxis->setRange(-0.5, 0.5);
+                else if (yPlotMax1 < 1)
+                    ui->myPlot->yAxis->setRange(-1, 1);
+                else if (yPlotMax1 < 5)
+                    ui->myPlot->yAxis->setRange(-5, 5);
+                else if (yPlotMax1 < 10)
+                    ui->myPlot->yAxis->setRange(-10, 10);
+                else
+                    ui->myPlot->yAxis->setRange(yPlotMin1 - yOffset1, yPlotMax1 + yOffset1);
                 break;
             case 2:
                 ui->myPlot->yAxis->setRange(yPlotMin2 - yOffset2, yPlotMax2 + yOffset2);
                 break;
             case 3:
-                ui->myPlot->yAxis->setRange(yPlotMin3 - yOffset3, yPlotMax3 + yOffset3);
+                if (yPlotMax3 < 70)
+                    ui->myPlot->yAxis->setRange(15, 70);
+                else
+                    ui->myPlot->yAxis->setRange(yPlotMin3 - yOffset3, yPlotMax3 + yOffset3);
                 break;
             case 4:
                 ui->myPlot->yAxis->setRange(yPlotMin4 - yOffset4, yPlotMax4 + yOffset4);
@@ -450,13 +462,25 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         switch (right)
         {
             case 1:
-                ui->myPlot->yAxis2->setRange(yPlotMin1 - yOffset1, yPlotMax1 + yOffset1);
+                if (yPlotMax1 < 0.5)
+                    ui->myPlot->yAxis2->setRange(-0.5, 0.5);
+                else if (yPlotMax1 < 1)
+                    ui->myPlot->yAxis2->setRange(-1, 1);
+                else if (yPlotMax1 < 5)
+                    ui->myPlot->yAxis2->setRange(-5, 5);
+                else if (yPlotMax1 < 10)
+                    ui->myPlot->yAxis2->setRange(-10, 10);
+                else
+                    ui->myPlot->yAxis2->setRange(yPlotMin1 - yOffset1, yPlotMax1 + yOffset1);
                 break;
             case 2:
                 ui->myPlot->yAxis2->setRange(yPlotMin2 - yOffset2, yPlotMax2 + yOffset2);
                 break;
             case 3:
-                ui->myPlot->yAxis2->setRange(yPlotMin3 - yOffset3, yPlotMax3 + yOffset3);
+                if (yPlotMax3 < 70)
+                    ui->myPlot->yAxis2->setRange(15, 70);
+                else
+                    ui->myPlot->yAxis2->setRange(yPlotMin3 - yOffset3, yPlotMax3 + yOffset3);
                 break;
             case 4:
                 ui->myPlot->yAxis2->setRange(yPlotMin4 - yOffset4, yPlotMax4 + yOffset4);
