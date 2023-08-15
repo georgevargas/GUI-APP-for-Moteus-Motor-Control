@@ -31,6 +31,18 @@
 
 using namespace std;
 
+enum class Fault {
+  kNoFault = 0,
+  kCalibrationFault = 32,
+  kMotorDriverFault = 33,
+  kOverVoltageFault = 34,
+  kEncoderFault = 35,
+  kMotorNotConfiguredFault = 36,
+  kPwmCycleOverrunFault = 37,
+  kOverTemperatureFault = 38,
+  kOutsideLimitFault = 39,
+};
+
 struct State {
   double position = NAN;
   double velocity = NAN;
@@ -44,17 +56,19 @@ struct State {
   double mode = NAN;
   bool TrajectoryComplete = false;
   // flags
+  bool mode_flag = false;
   bool position_flag = false;
   bool velocity_flag = false;
   bool torque_flag = false;
   bool q_curr_flag = false;
   bool d_curr_flag = false;
-  bool rezero_state_flag = false;
+  bool abs_position_flag = false;
+  bool motor_temperature_flag = false;
   bool TrajectoryComplete_flag = false;
+  bool home_state_flag = false;
   bool voltage_flag = false;
   bool temperature_flag = false;
   bool fault_flag = false;
-  bool mode_flag = false;
 
   State& EN_Position() {
     position_flag = true;
@@ -76,12 +90,20 @@ struct State {
     d_curr_flag = true;
     return *this;
   }
+  State& EN_abs_position() {
+    abs_position_flag = true;
+    return *this;
+  }
+  State& motor_temperature() {
+    motor_temperature_flag = true;
+    return *this;
+  }
   State& EN_TrajectoryComplete() {
     TrajectoryComplete_flag = true;
     return *this;
   }
-  State& EN_Rezerostate() {
-    rezero_state_flag = true;
+  State& EN_home_state() {
+    home_state_flag = true;
     return *this;
   }
   State& EN_Voltage() {
@@ -107,7 +129,9 @@ struct State {
     torque_flag = false;
     q_curr_flag = false;
     d_curr_flag = false;
-    rezero_state_flag = false;
+    abs_position_flag = false;
+    motor_temperature_flag = false;
+    home_state_flag = false;
     voltage_flag = false;
     temperature_flag = false;
     fault_flag = false;
@@ -131,22 +155,9 @@ class MoteusAPI {
                            double velocity, // end velocity
                            double watchdog_timer = NAN) const;
 
-  bool SendWithinCommand(double bounds_min,
-                         double bounds_max,
-                         double feedforward_torque,
-                         double kp_scale,
-                         double kd_scale,
-                         double max_torque,
-                         double stop_position = NAN,
-                         double timeout = NAN) const;
-
   bool SendStopCommand();
 
   bool SendDiagnosticCommand(string msg);
-
-  bool SendDiagnosticRead(double& value);
-
-  bool SendSetOutputNearest(double value);
 
   void ReadState(State& curr_state) const;
 
