@@ -10,6 +10,8 @@
 #include <unistd.h>   // UNIX standard function definitions
 #include <fstream>
 #include <format>
+#include "moteus.h"
+
 using namespace mjbots;
 using namespace moteus;
 
@@ -127,11 +129,14 @@ bool Motorworker::Check_Motor(QString dev_name,int Motor_id)
             case Mode::kZeroVelocity:
                 out << "Mode:\t\t" << curr_state.mode << " = Zero Velocity" << endl;
                 break;
-            case Mode::kStayWithinBounds:
+            case Mode::kStayWithin:
                 out << "Mode:\t\t" << curr_state.mode << " = Stay Within Bounds" << endl;
                 break;
-            case Mode::kMeasureInductance:
+            case Mode::kMeasureInd:
                 out << "Mode:\t\t" << curr_state.mode << " = Measure Inductance" << endl;
+                break;
+            case Mode::kBrake:
+                out << "Mode:\t\t" << curr_state.mode << " = Break" << endl;
                 break;
 
             default:
@@ -743,36 +748,29 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     else if (msg == "get rotor_to_output_ratio")
     {
         MoteusAPI api(dev_name.toStdString(), Motor_id);
+        moteus::Controller::Options options;
+        options.id = Motor_id;
+        moteus::Controller controller(options);
+
         Rec_run_Enable = false;
         Position_wait = false;
         double value = std::numeric_limits<double>::quiet_NaN();
 
         std::ostringstream out;
-
+        value = 12.34;
         // get rotor_to_output_ratio
-        if (!api.SendDiagnosticCommand("conf get motor_position.rotor_to_output_ratio\n"))
-        {
-            out.str("");
-            out << "error on read rotor_to_output_ratio. motor " << Motor_id << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else
-        {
-            if (!api.SendDiagnosticRead(value))
-            {
-                out.str("");
-                out << "error on read rotor_to_output_ratio. motor " << Motor_id << endl;
-                emit sendToMain(QString::fromStdString(out.str()));
-            }
-            else
-            {
-                emit sendMsg("get gear ratio",Motor_id,value,0,0,0,0);
-            }
-        }
+            value = std::stod(
+                controller.DiagnosticCommand("conf get motor_position.rotor_to_output_ratio",
+                                             moteus::Controller::kExpectSingleLine));
+       emit sendMsg("get gear ratio",Motor_id,value,0,0,0,0);
+
     }
     else if (msg == "get break voltage")
     {
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        moteus::Controller::Options options;
+        options.id = Motor_id;
+        moteus::Controller controller(options);
+
         Rec_run_Enable = false;
         Position_wait = false;
         double value = std::numeric_limits<double>::quiet_NaN();
@@ -780,29 +778,19 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         std::ostringstream out;
 
         // get min break voltage
-        if (!api.SendDiagnosticCommand("conf get servo.flux_brake_min_voltage\n"))
-        {
-            out.str("");
-            out << "error on read flux_brake_min_voltage. motor " << Motor_id << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else
-        {
-            if (!api.SendDiagnosticRead(value))
-            {
-                out.str("");
-                out << "error on read flux_brake_min_voltage " << Motor_id << endl;
-                emit sendToMain(QString::fromStdString(out.str()));
-            }
-            else
-            {
-                emit sendMsg("get Break Voltage",Motor_id,value,0,0,0,0);
-            }
-        }
+        value = std::stod(
+            controller.DiagnosticCommand("conf get servo.flux_brake_min_voltage",
+                                         moteus::Controller::kExpectSingleLine));
+
+        emit sendMsg("get Break Voltage",Motor_id,value,0,0,0,0);
     }
     else if (msg == "get Position Offset")
     {
         MoteusAPI api(dev_name.toStdString(), Motor_id);
+        moteus::Controller::Options options;
+        options.id = Motor_id;
+        moteus::Controller controller(options);
+
         Rec_run_Enable = false;
         Position_wait = false;
         double value = std::numeric_limits<double>::quiet_NaN();
@@ -810,88 +798,38 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         std::ostringstream out;
 
         // get min break voltage
-        if (!api.SendDiagnosticCommand("conf get motor_position.output.offset\n"))
-        {
-            out.str("");
-            out << "error on read motor_position.output.offset. motor " << Motor_id << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else
-        {
-            if (!api.SendDiagnosticRead(value))
-            {
-                out.str("");
-                out << "error on read motor_position.output.offset " << Motor_id << endl;
-                emit sendToMain(QString::fromStdString(out.str()));
-            }
-            else
-            {
-                emit sendMsg("get Position Offset",Motor_id,value,0,0,0,0);
-            }
-        }
+        value = std::stod(
+            controller.DiagnosticCommand("conf get motor_position.output.offset",
+                                         moteus::Controller::kExpectSingleLine));
+        emit sendMsg("get Position Offset",Motor_id,value,0,0,0,0);
     }
     else if (msg == "get motor limits")
     {
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        moteus::Controller::Options options;
+        options.id = Motor_id;
+        moteus::Controller controller(options);
+
         Rec_run_Enable = false;
         Position_wait = false;
-        bool error = false;
-        double value = std::numeric_limits<double>::quiet_NaN();
-
-        std::ostringstream out;
 
         // get min limit command
-        if (!api.SendDiagnosticCommand("conf get servopos.position_min\n"))
-        {
-            error = true;
-            out.str("");
-            out << "error on read position_min value. motor " << Motor_id << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else
-        {
-            if (!api.SendDiagnosticRead(value))
-            {
-                error = true;
-                out.str("");
-                out << "error on read position_min value. motor " << Motor_id << endl;
-                emit sendToMain(QString::fromStdString(out.str()));
-            }
-            else
-            {
-                l_bounds_min[Motor_id-1] = value;
-            }
-        }
+        l_bounds_min[Motor_id-1] = std::stod(
+            controller.DiagnosticCommand("conf get servopos.position_min",
+                                         moteus::Controller::kExpectSingleLine));
 
         // get max limit command
-        if (!api.SendDiagnosticCommand("conf get servopos.position_max\n"))
-        {
-            error = true;
-            out.str("");
-            out << "error on read position_max value. motor " << Motor_id << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else
-        {
-            if (!api.SendDiagnosticRead(value))
-            {
-                error = true;
-                out.str("");
-                out << "error on read position_max value. motor " << Motor_id << endl;
-                emit sendToMain(QString::fromStdString(out.str()));
-            }
-            else
-            {
-                l_bounds_max[Motor_id-1] = value;
-            }
-        }
+        l_bounds_max[Motor_id-1] = std::stod(
+            controller.DiagnosticCommand("conf get servopos.position_max",
+                                         moteus::Controller::kExpectSingleLine));
 
-        if (!error)
-            emit sendMsg("set motor limits",Motor_id,l_bounds_min[Motor_id-1],l_bounds_max[Motor_id-1],0,0,0);
+        emit sendMsg("set motor limits",Motor_id,l_bounds_min[Motor_id-1],l_bounds_max[Motor_id-1],0,0,0);
     }
     else if (msg == "conf write")
     {
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        moteus::Controller::Options options;
+        options.id = Motor_id;
+        moteus::Controller controller(options);
+
         Rec_run_Enable = false;
         Position_wait = false;
 
@@ -899,22 +837,17 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         out.str("");
 
         // save conf
-        if (!api.SendDiagnosticCommand("conf write\n"))
-        {
-            out.str("");
-            out << "error on send conf write. motor " << Motor_id << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else
-        {
-            out.str("");
-            out << "configuration write" << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
+        controller.DiagnosticCommand("conf write");
+        out.str("");
+        out << "configuration write" << endl;
+        emit sendToMain(QString::fromStdString(out.str()));
     }
     else if (msg == "get PID")
     {
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        moteus::Controller::Options options;
+        options.id = Motor_id;
+        moteus::Controller controller(options);
+
         Rec_run_Enable = false;
         Position_wait = false;
 
@@ -922,70 +855,27 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         double value2 = std::numeric_limits<double>::quiet_NaN();
         double value3 = std::numeric_limits<double>::quiet_NaN();
 
-        std::ostringstream out;
-
         // get kp command
-        if (!api.SendDiagnosticCommand("conf get servo.pid_position.kp\n"))
-        {
-            out.str("");
-            out << "error on read KP value. motor " << Motor_id << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else
-        {
-            if (!api.SendDiagnosticRead(value1))
-            {
-                out.str("");
-                out << "error on read KP value. motor " << Motor_id << endl;
-                emit sendToMain(QString::fromStdString(out.str()));
-            }
-            else
-            {
-                // get kd command
-                if (!api.SendDiagnosticCommand("conf get servo.pid_position.kd\n"))
-                {
-                    out.str("");
-                    out << "error on read KD value. motor " << Motor_id << endl;
-                    emit sendToMain(QString::fromStdString(out.str()));
-                }
-                else
-                {
-                    if (!api.SendDiagnosticRead(value2))
-                    {
-                        out.str("");
-                        out << "error on read KD value. motor " << Motor_id << endl;
-                        emit sendToMain(QString::fromStdString(out.str()));
-                    }
-                    else
-                    {
-                        // get ki command
-                        if (!api.SendDiagnosticCommand("conf get servo.pid_position.ki\n"))
-                        {
-                            out.str("");
-                            out << "error on read KI value. motor " << Motor_id << endl;
-                            emit sendToMain(QString::fromStdString(out.str()));
-                        }
-                        else
-                        {
-                            if (!api.SendDiagnosticRead(value3))
-                            {
-                                out.str("");
-                                out << "error on read KI value. motor " << Motor_id << endl;
-                                emit sendToMain(QString::fromStdString(out.str()));
-                            }
-                            else
-                            {
-                                emit sendMsg("get PID",Motor_id,value1,value2,value3,0,0);
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        value1 = std::stod(
+            controller.DiagnosticCommand("conf get servo.pid_position.kp",
+                                         moteus::Controller::kExpectSingleLine));
+        // get kd command
+        value2 = std::stod(
+            controller.DiagnosticCommand("conf get servo.pid_position.kd",
+                                         moteus::Controller::kExpectSingleLine));
+        // get ki command
+        value3 = std::stod(
+            controller.DiagnosticCommand("conf get servo.pid_position.ki",
+                                         moteus::Controller::kExpectSingleLine));
+
+        emit sendMsg("get PID",Motor_id,value1,value2,value3,0,0);
     }
     else if (msg == "set PID")
     {
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        moteus::Controller::Options options;
+        options.id = Motor_id;
+        moteus::Controller controller(options);
+
         Rec_run_Enable = false;
         Position_wait = false;
 
@@ -994,54 +884,33 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         // set KP command
         out.str("");
         out << "conf set servo.pid_position.kp " << kp_scale << endl;
-        string text = out.str();
-        if (!api.SendDiagnosticCommand(text))
-        {
-            out.str("");
-            out << "error on set KP value. motor " << Motor_id << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else
-        {
-            // set KD command
-            out.str("");
-            out << "conf set servo.pid_position.kd " << kd_scale << endl;
-            string text = out.str();
-            if (!api.SendDiagnosticCommand(text))
-            {
-                out.str("");
-                out << "error on set KD value. motor " << Motor_id << endl;
-                emit sendToMain(QString::fromStdString(out.str()));
-            }
-            else
-            {
-                // set Ki command
-                out.str("");
-                out << "conf set servo.pid_position.ki " << feedforward_torque << endl;
-                string text = out.str();
-                if (!api.SendDiagnosticCommand(text))
-                {
-                    out.str("");
-                    out << "error on set KI value. motor " << Motor_id << endl;
-                    emit sendToMain(QString::fromStdString(out.str()));
-                }
-                else
-                {
-                    out.str("");
-                    out << "Motor: " << Motor_id
-                        << "\tkp: " << kp_scale
-                        << "\tkd: " << kd_scale
-                        << "\t ki: " << feedforward_torque
-                        << endl;
-                    emit sendToMain(QString::fromStdString(out.str()));
-                }
-            }
-        }
+        controller.DiagnosticCommand(out.str());
+
+        // set KD command
+        out.str("");
+        out << "conf set servo.pid_position.kd " << kd_scale << endl;
+        controller.DiagnosticCommand(out.str());
+
+        // set Ki command
+        out.str("");
+        out << "conf set servo.pid_position.ki " << feedforward_torque << endl;
+        controller.DiagnosticCommand(out.str());
+
+        out.str("");
+        out << "Motor: " << Motor_id
+            << "\tkp: " << kp_scale
+            << "\tkd: " << kd_scale
+            << "\t ki: " << feedforward_torque
+            << endl;
+        emit sendToMain(QString::fromStdString(out.str()));
     }
     else if (msg == "set rotor_to_output_ratio")
     {
 
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        moteus::Controller::Options options;
+        options.id = Motor_id;
+        moteus::Controller controller(options);
+
         Rec_run_Enable = false;
         Position_wait = false;
 
@@ -1050,27 +919,20 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
 
         // set command
         out << "conf set motor_position.rotor_to_output_ratio " << feedforward_torque << endl;
-        string text = out.str();
-        if (!api.SendDiagnosticCommand(text))
-        {
-            out.str("");
-            out << "error on set motor_position.rotor_to_output_ratio value. motor " << Motor_id << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else
-        {
+        controller.DiagnosticCommand(out.str());
             out.str("");
             out << "Motor: " << Motor_id
                 << "\t Gear Ratio: " << feedforward_torque
                 << endl;
             emit sendToMain(QString::fromStdString(out.str()));
-        }
-
     }
     else if (msg == "set break voltage")
     {
 
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        moteus::Controller::Options options;
+        options.id = Motor_id;
+        moteus::Controller controller(options);
+
         Rec_run_Enable = false;
         Position_wait = false;
 
@@ -1079,27 +941,19 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
 
         // set min limit command
         out << "conf set servo.flux_brake_min_voltage " << feedforward_torque << endl;
-        string text = out.str();
-        if (!api.SendDiagnosticCommand(text))
-        {
-            out.str("");
-            out << "error on set flux_brake_min_voltage value. motor " << Motor_id << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else
-        {
-            out.str("");
-            out << "Motor: " << Motor_id
-                << "\t Break Min Voltage: " << feedforward_torque
-                << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
-
+        controller.DiagnosticCommand(out.str());
+        out.str("");
+        out << "Motor: " << Motor_id
+            << "\t Break Min Voltage: " << feedforward_torque
+            << endl;
+        emit sendToMain(QString::fromStdString(out.str()));
     }
     else if (msg == "set Position Offset")
     {
+        moteus::Controller::Options options;
+        options.id = Motor_id;
+        moteus::Controller controller(options);
 
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
         Rec_run_Enable = false;
         Position_wait = false;
 
@@ -1108,27 +962,21 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
 
         // set command
         out << "conf set motor_position.output.offset 0 " << feedforward_torque << endl;
-        string text = out.str();
-        if (!api.SendDiagnosticCommand(text))
-        {
-            out.str("");
-            out << "error on set motor_position.output.offset. motor " << Motor_id << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else
-        {
-            out.str("");
-            out << "Motor: " << Motor_id
-                << "\t motor_position.output.offset: " << feedforward_torque
-                << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
+        controller.DiagnosticCommand(out.str());
 
-    }    else if (msg == "set motor limits")
+        out.str("");
+        out << "Motor: " << Motor_id
+            << "\t motor_position.output.offset: " << feedforward_torque
+            << endl;
+        emit sendToMain(QString::fromStdString(out.str()));
+    }
+    else if (msg == "set motor limits")
     {
-        bool error = false;
 
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        moteus::Controller::Options options;
+        options.id = Motor_id;
+        moteus::Controller controller(options);
+
         Rec_run_Enable = false;
         Position_wait = false;
 
@@ -1137,51 +985,33 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
 
         // set min limit command
         out << "conf set servopos.position_min " << bounds_min << endl;
-        string text = out.str();
-        if (!api.SendDiagnosticCommand(text))
-        {
-            error = true;
-            out.str("");
-            out << "error on  set servopos.position_min value. motor " << Motor_id << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else
-        {
-            l_bounds_min[Motor_id-1] = bounds_min;
-        }
+        controller.DiagnosticCommand(out.str());
+        l_bounds_min[Motor_id-1] = bounds_min;
         // set max limit command
         out.str("");
         out << "conf set servopos.position_max " << bounds_max << endl;
-        text = out.str();
-        if (!api.SendDiagnosticCommand(text))
-        {
-            error = true;
-            out.str("");
-            out << "error on set servopos.position_max value. motor " << Motor_id << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else
-        {
-            l_bounds_max[Motor_id-1] = bounds_max;
-        }
+        controller.DiagnosticCommand(out.str());
+        l_bounds_max[Motor_id-1] = bounds_max;
 
-        if (!error)
-        {
-            out.str("");
-            out << "Motor: " << Motor_id
-                << " limit min:\t" << l_bounds_min[Motor_id-1]
-                << "\tlimit max:\t" << l_bounds_max[Motor_id-1] << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
+        out.str("");
+        out << "Motor: " << Motor_id
+            << " limit min:\t" << l_bounds_min[Motor_id-1]
+            << "\tlimit max:\t" << l_bounds_max[Motor_id-1] << endl;
+        emit sendToMain(QString::fromStdString(out.str()));
+
     }
     else if (msg == "Send Stop")
     {
         MoteusAPI api(dev_name.toStdString(), Motor_id);
+        moteus::Controller::Options options;
+        options.id = Motor_id;
+        moteus::Controller controller(options);
+
         Rec_run_Enable = false;
         Position_wait = false;
 
-        // send one stop command
-        api.SendStopCommand();
+        // Command a stop to the controller in order to clear any faults.
+        controller.SetStop();
 
         // define a state object
         State curr_state;
@@ -1203,10 +1033,18 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     else if (msg == "Set Output Nearest")
     {
         MoteusAPI api(dev_name.toStdString(), Motor_id);
+        moteus::Controller::Options options;
+        options.id = Motor_id;
+        moteus::Controller controller(options);
+
         Rec_run_Enable = false;
         Position_wait = false;
 
-        api.SendSetOutputNearest(0.0);
+        moteus::OutputNearest::Command cmd;
+        cmd.position = 0.0;
+
+        // Command OutputNearest
+        controller.SetOutputNearest(cmd);
 
         // define a state object
         State curr_state;
@@ -1327,44 +1165,10 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
             out << "error on posiion command " << Motor_id << endl;
             emit sendToMain(QString::fromStdString(out.str()));
         }
-        curr_state.EN_Fault();
-        curr_state.EN_Mode();
-        curr_state.EN_TrajectoryComplete();
-        api.ReadState(curr_state);
-
-        Fault fault = static_cast<Fault>(curr_state.fault);
-        Mode mode = static_cast<Mode>(curr_state.mode);
-        bool TrajectoryComplete = static_cast<bool>(curr_state.TrajectoryComplete);
-        int count = Trajectory_Timeout_2; // 10 sec
-        if (fault == Fault::kNoFault && mode == Mode::kPosition && !TrajectoryComplete)
-        {
-            while (count > 0 && fault == Fault::kNoFault && mode == Mode::kPosition && !TrajectoryComplete)
-            {
-                QThread::msleep(100);  //Blocking delay 100ms
-                curr_state.EN_Fault();
-                curr_state.EN_Mode();
-                curr_state.EN_TrajectoryComplete();
-                api.ReadState(curr_state);
-                fault = static_cast<Fault>(curr_state.fault);
-                mode = static_cast<Mode>(curr_state.mode);
-                TrajectoryComplete = static_cast<bool>(curr_state.TrajectoryComplete);
-                count--;
-            }
-        }
-        if (!(count > 0) )
-        {
-            out.str("");
-            out << "Timeout waiting for Trajectory Complete, Motor: " << Motor_id<< endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else if (fault != Fault::kNoFault || mode == Mode::kFault || mode == Mode::kPositionTimeout)
-        {
-            out.str("");
-            out << "Fault detected, while waiting for Trajectory Complete"  << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
         else
         {
+            Wait_TrajectoryComplete(dev_name,Motor_id);
+
             //read current position
             curr_state.Reset();
             curr_state.EN_Position();
@@ -1516,7 +1320,6 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         curr_state.EN_Fault();
         curr_state.EN_Mode();
         curr_state.EN_TrajectoryComplete();
-        curr_state.EN_Rezerostate();
 
         // read registers
         api.ReadState(curr_state);
@@ -1643,9 +1446,3 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         emit sendToMain(msg);
     }
 }
-
-
-
-
-
-
