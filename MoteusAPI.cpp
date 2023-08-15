@@ -21,6 +21,10 @@
 #include <sys/ioctl.h>
 #include <termios.h>  // POSIX terminal control definitions
 #include <unistd.h>   // UNIX standard function definitions
+#include "MoteusAPI.h"
+
+#include <iostream>
+#include "moteus.h"
 
 using namespace mjbots;
 using namespace moteus;
@@ -41,236 +45,67 @@ bool MoteusAPI::SendPositionCommand(double position,
                                     double kd_scale,
                                     double velocity,
                                     double watchdog_timer) const {
-  mjbots::moteus::PositionCommand p_com;
-  p_com.position = position;
-  p_com.velocity = velocity;
-  p_com.maximum_torque = max_torque;
-  p_com.stop_position = std::numeric_limits<double>::quiet_NaN();
-  p_com.kp_scale = kp_scale;
-  p_com.kd_scale = kd_scale;
-  p_com.feedforward_torque = feedforward_torque;
-  p_com.velocity_limit = velocity_limit;
-  p_com.accel_limit = accel_limit;
-  p_com.watchdog_timeout = watchdog_timer;
-  mjbots::moteus::CanFrame frame;
-  mjbots::moteus::WriteCanFrame write_frame(&frame);
-  mjbots::moteus::PositionResolution pres;
-  mjbots::moteus::EmitPositionCommand(&write_frame, p_com, pres);
+    moteus::PositionMode::Command cmd;
+    cmd.position = position;
+    cmd.velocity = velocity;
+    cmd.maximum_torque = max_torque;
+    cmd.stop_position = std::numeric_limits<double>::quiet_NaN();
+    cmd.kp_scale = kp_scale;
+    cmd.kd_scale = kd_scale;
+    cmd.feedforward_torque = feedforward_torque;
+    cmd.velocity_limit = velocity_limit;
+    cmd.accel_limit = accel_limit;
+    cmd.watchdog_timeout = watchdog_timer;
 
-  // Encode message to hex
-  stringstream ss;
-  ss << "can send 80" << std::setfill('0') << std::setw(2) << std::hex
-     << moteus_id_ << " ";
-  for (uint ii = 0; ii < (uint)frame.size; ii++) {
-    ss << std::setfill('0') << std::setw(2) << std::hex << (int)frame.data[ii];
-  }
-  ss << '\n';
+    moteus::PositionMode::Format res;
+    res.position = mjbots::moteus::Resolution::kFloat;
+    res.velocity = mjbots::moteus::Resolution::kFloat;
+    res.feedforward_torque = mjbots::moteus::Resolution::kFloat;
+    res.kp_scale = mjbots::moteus::Resolution::kFloat;
+    res.kd_scale = mjbots::moteus::Resolution::kFloat;
+    res.maximum_torque = mjbots::moteus::Resolution::kFloat;
+    res.stop_position = mjbots::moteus::Resolution::kFloat;
+    res.watchdog_timeout = mjbots::moteus::Resolution::kFloat;
+    res.velocity_limit = mjbots::moteus::Resolution::kFloat;
+    res.accel_limit = mjbots::moteus::Resolution::kFloat;
+    res.fixed_voltage_override = mjbots::moteus::Resolution::kIgnore;
 
-  if (!WriteDev(ss.str()))
-    throw std::runtime_error("Failiur: could not WriteDev.");
+    moteus::Controller::Options options;
+    options.id = moteus_id_;
+    moteus::Controller controller(options);
 
-  // process response
-  string resp;
-  if (!((ExpectResponse("OK", resp) && ExpectResponse("rcv", resp)))) {
-    return false;
-  }
+    controller.SetPosition(cmd,&res);
+    return true;
 
-  return true;
-}
-bool MoteusAPI::SendDiagnosticRead(double& value) {
-  mjbots::moteus::CanFrame frame;
-  mjbots::moteus::WriteCanFrame write_frame(&frame);
-  mjbots::moteus::EmitDiagnosticRead(&write_frame);
-
-  // Encode message to hex
-  stringstream ss;
-  ss << "can send 80" << std::setfill('0') << std::setw(2) << std::hex
-     << moteus_id_ << " ";
-  for (uint ii = 0; ii < (uint)frame.size; ii++) {
-    ss << std::setfill('0') << std::setw(2) << std::hex << (int)frame.data[ii];
-  }
-  ss << '\n';
-  //cout << ss.str() << endl;
-
-  if (!WriteDev(ss.str()))
-    throw std::runtime_error("Failiur: could not WriteDev.");
-
-  // process response
-  string resp;
-  if (!((ExpectResponse("OK", resp) && ExpectResponse("rcv", resp)))) {
-    return false;
-  }
-  istringstream iss(resp);
-  vector<string> words;
-  copy(istream_iterator<string>(iss), istream_iterator<string>(),
-       back_inserter(words));
-
-  uint8_t decoded[readbuffsize];
-  string respstr(words.at(2));
-
-  if (respstr.substr(0 , 2) != "41")
-       return false; // not equal to ServerToClient
-
-  if (respstr.substr(2 , 2) != "01")
-        return false; // not equal to 1 parameter
-
-  std::stringstream stream;
-  stream << respstr.substr(4 , 2);
-
-  // get the number size
-  uint loopsize = 0;
-  stream >> std::hex >> loopsize;
-
-  if (loopsize == 0 || loopsize > (respstr.size()/2 -3))
-      return false; // size 0 or too large for response size
-
-  // convert hex to a number
-  for (uint ii = 0 ,  offset = 3; ii < loopsize; ii++ , offset++)
-  {
-    std::stringstream stream;
-    stream << respstr.substr( offset * 2, 2);
-    int tmp;
-    stream >> std::hex >> tmp;
-    decoded[ii] = (uint8_t)tmp;
-  }
-  std::stringstream num;
-  for (uint ii = 0; ii < loopsize; ii++)
-  {
-    num << decoded[ii];
-  }
-  string str;
-  str = num.str();
-  value = stod(str);
-  return true;
-}
-bool MoteusAPI::SendDiagnosticCommand(string msg) {
-    mjbots::moteus::CanFrame frame;
-    mjbots::moteus::WriteCanFrame write_frame(&frame);
-    mjbots::moteus::EmitDiagnosticCommand(&write_frame,msg.size());
-
-  // Encode message to hex
-  stringstream ss;
-  ss << "can send 80" << std::setfill('0') << std::setw(2) << std::hex
-     << moteus_id_ << " ";
-
-  for (uint ii = 0; ii < (uint)frame.size; ii++) {
-    ss << std::setfill('0') << std::setw(2) << std::hex << (int)frame.data[ii];
-  }
-
-  for (uint ii = 0; ii < (uint)msg.size(); ii++) {
-    ss << std::setfill('0') << std::setw(2) << std::hex << (uint)msg[ii];
-  }
-  ss << '\n';
-
-  //cout << ss.str() << endl;
-
-  if (!WriteDev(ss.str()))
-    throw std::runtime_error("Failiur: could not WriteDev.");
-
-  // process response
-  string resp;
-  if (!((ExpectResponse("OK", resp) && ExpectResponse("rcv", resp)))) {
-    return false;
-  }
-  return true;
 }
 
 bool MoteusAPI::SendStopCommand() {
-  mjbots::moteus::CanFrame frame;
-  mjbots::moteus::WriteCanFrame write_frame(&frame);
-  mjbots::moteus::EmitStopCommand(&write_frame);
+    moteus::Controller::Options options;
+    options.id = moteus_id_;
+    moteus::Controller controller(options);
 
-  // Encode message to hex
-  stringstream ss;
-  ss << "can send 80" << std::setfill('0') << std::setw(2) << std::hex
-     << moteus_id_ << " ";
-  for (uint ii = 0; ii < (uint)frame.size; ii++) {
-    ss << std::setfill('0') << std::setw(2) << std::hex << (int)frame.data[ii];
-  }
-  ss << '\n';
-
-  if (!WriteDev(ss.str()))
-    throw std::runtime_error("Failiur: could not WriteDev.");
-
-  // process response
-  string resp;
-  if (!((ExpectResponse("OK", resp) && ExpectResponse("rcv", resp)))) {
-    return false;
-  }
-
-  return true;
-}
-
-bool MoteusAPI::SendSetOutputNearest(double value) {
-  mjbots::moteus::CanFrame frame;
-  mjbots::moteus::WriteCanFrame write_frame(&frame);
-  mjbots::moteus::EmitSetOutputNearest(&write_frame,value);
-
-  // Encode message to hex
-  stringstream ss;
-  ss << "can send 80" << std::setfill('0') << std::setw(2) << std::hex
-     << moteus_id_ << " ";
-  for (uint ii = 0; ii < (uint)frame.size; ii++) {
-    ss << std::setfill('0') << std::setw(2) << std::hex << (int)frame.data[ii];
-  }
-  ss << '\n';
-  //cout << ss.str() << endl;
-
-
-  if (!WriteDev(ss.str()))
-    throw std::runtime_error("Failiur: could not WriteDev.");
-
-  // process response
-  string resp;
-  if (!((ExpectResponse("OK", resp) && ExpectResponse("rcv", resp)))) {
-    return false;
-  }
-
-  return true;
-}
-
-bool MoteusAPI::SendWithinCommand(double bounds_min, double bounds_max,
-                                  double feedforward_torque, double kp_scale,
-                                  double kd_scale, double max_torque,
-                                  double stop_position, double timeout) const {
-  mjbots::moteus::WithinCommand p_com;
-  p_com.bounds_min = bounds_min;
-  p_com.bounds_max = bounds_max;
-  p_com.feedforward_torque = feedforward_torque;
-  p_com.kp_scale = kp_scale;
-  p_com.kd_scale = kd_scale;
-  p_com.maximum_torque = max_torque;
-  p_com.stop_position = stop_position;
-  p_com.watchdog_timeout = timeout;
-  mjbots::moteus::CanFrame frame;
-  mjbots::moteus::WriteCanFrame write_frame(&frame);
-  // default resolutions are used modify if necessary.
-  mjbots::moteus::WithinResolution pres;
-  mjbots::moteus::EmitWithinCommand(&write_frame, p_com, pres);
-
-  // Encode message to hex
-  stringstream ss;
-  ss << "can send 80" << std::setfill('0') << std::setw(2) << std::hex
-     << moteus_id_ << " ";
-  for (uint ii = 0; ii < (uint)frame.size; ii++) {
-    ss << std::setfill('0') << std::setw(2) << std::hex << (int)frame.data[ii];
-  }
-  ss << '\n';
-
-  if (!WriteDev(ss.str()))
-    throw std::runtime_error("Failiur: could not WriteDev.");
-
-  // process response
-  string resp;
-  if (!((ExpectResponse("OK", resp) && ExpectResponse("rcv", resp)))) {
-    return false;
-  }
+    // Command a stop to the controller in order to clear any faults.
+    controller.SetStop();
 
   return true;
 }
 
 void MoteusAPI::ReadState(State& curr_state) const {
-  mjbots::moteus::QueryCommand q_com;
+    moteus::Query::Format q_com;
+    q_com.mode = mjbots::moteus::Resolution::kInt8;
+    q_com.position = mjbots::moteus::Resolution::kFloat;
+    q_com.velocity = mjbots::moteus::Resolution::kFloat;
+    q_com.torque = mjbots::moteus::Resolution::kFloat;
+    q_com.q_current = mjbots::moteus::Resolution::kFloat;
+    q_com.d_current = mjbots::moteus::Resolution::kFloat;
+    q_com.abs_position = mjbots::moteus::Resolution::kFloat;
+    q_com.motor_temperature = mjbots::moteus::Resolution::kFloat;
+    q_com.trajectory_complete = mjbots::moteus::Resolution::kInt16;
+    q_com.home_state = mjbots::moteus::Resolution::kIgnore;
+    q_com.voltage = mjbots::moteus::Resolution::kFloat;
+    q_com.temperature = mjbots::moteus::Resolution::kFloat;
+    q_com.fault = mjbots::moteus::Resolution::kInt8;
+
   if (!curr_state.position_flag)
     q_com.position = mjbots::moteus::Resolution::kIgnore;
   if (!curr_state.velocity_flag)
@@ -281,10 +116,14 @@ void MoteusAPI::ReadState(State& curr_state) const {
     q_com.q_current = mjbots::moteus::Resolution::kIgnore;
   if (!curr_state.d_curr_flag)
     q_com.d_current = mjbots::moteus::Resolution::kIgnore;
-  if (!curr_state.rezero_state_flag)
-    q_com.rezero_state = mjbots::moteus::Resolution::kIgnore;
+  if (!curr_state.abs_position_flag)
+    q_com.abs_position = mjbots::moteus::Resolution::kIgnore;
+  if (!curr_state.motor_temperature_flag)
+    q_com.motor_temperature = mjbots::moteus::Resolution::kIgnore;
+  if (!curr_state.home_state_flag)
+    q_com.home_state = mjbots::moteus::Resolution::kIgnore;
   if (!curr_state.TrajectoryComplete_flag)
-    q_com.TrajectoryComplete = mjbots::moteus::Resolution::kIgnore;
+    q_com.trajectory_complete = mjbots::moteus::Resolution::kIgnore;
   if (!curr_state.voltage_flag)
     q_com.voltage = mjbots::moteus::Resolution::kIgnore;
   if (!curr_state.temperature_flag)
@@ -294,47 +133,12 @@ void MoteusAPI::ReadState(State& curr_state) const {
   if (!curr_state.mode_flag)
     q_com.mode = mjbots::moteus::Resolution::kIgnore;
 
-  mjbots::moteus::CanFrame frame;
-  mjbots::moteus::WriteCanFrame wcan_frame(&frame);
-  mjbots::moteus::EmitQueryCommand(&wcan_frame, q_com);
-  // Encode message to hex
-  stringstream ss;
-  ss << "can send 80" << std::setfill('0') << std::setw(2) << std::hex
-     << moteus_id_ << " ";
-  for (uint ii = 0; ii < (uint)frame.size; ii++) {
-    ss << std::setfill('0') << std::setw(2) << std::hex << (int)frame.data[ii];
-  }
-  ss << '\n';
+  moteus::Controller::Options options;
+  options.id = moteus_id_;
+  moteus::Controller controller(options);
 
-  if (!WriteDev(ss.str()))
-    throw std::runtime_error("Failiur: could not WriteDev.");
-
-  string resp;
-  if (!((ExpectResponse("OK", resp) && ExpectResponse("rcv", resp)))) {
-    return;
-  }
-  // cout << "resp is :" << resp << endl;
-
-  /// parse response
-  istringstream iss(resp);
-  vector<string> words;
-  copy(istream_iterator<string>(iss), istream_iterator<string>(),
-       back_inserter(words));
-
-  uint8_t decoded[readbuffsize];
-  string respstr(words.at(2));
-  uint loopsize = respstr.size() / 2;
-
-  for (uint ii = 0; ii < loopsize; ii++) {
-    std::stringstream stream;
-    stream << respstr.substr(ii * 2, 2);
-    int tmp;
-    stream >> std::hex >> tmp;
-    decoded[ii] = (uint8_t)tmp;
-  }
-
-  mjbots::moteus::QueryResult qr =
-      mjbots::moteus::ParseQueryResult(decoded, loopsize);
+  const auto maybe_result = controller.SetQuery(&q_com);
+  const auto qr = maybe_result->values;
   curr_state.position = qr.position;
   curr_state.velocity = qr.velocity;
   curr_state.torque = qr.torque;
@@ -344,7 +148,7 @@ void MoteusAPI::ReadState(State& curr_state) const {
   curr_state.temperature = qr.temperature;
   curr_state.fault = qr.fault;
   curr_state.mode = static_cast<float>(qr.mode);
-  curr_state.TrajectoryComplete = qr.TrajectoryComplete;
+  curr_state.TrajectoryComplete = qr.trajectory_complete;
 }
 
 bool MoteusAPI::ExpectResponse(const string& exp_string,
