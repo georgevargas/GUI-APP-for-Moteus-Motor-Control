@@ -750,6 +750,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         MoteusAPI api(dev_name.toStdString(), Motor_id);
         moteus::Controller::Options options;
         options.id = Motor_id;
+        options.default_query = false;
         moteus::Controller controller(options);
 
         Rec_run_Enable = false;
@@ -769,6 +770,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     {
         moteus::Controller::Options options;
         options.id = Motor_id;
+        options.default_query = false;
         moteus::Controller controller(options);
 
         Rec_run_Enable = false;
@@ -789,6 +791,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         MoteusAPI api(dev_name.toStdString(), Motor_id);
         moteus::Controller::Options options;
         options.id = Motor_id;
+        options.default_query = false;
         moteus::Controller controller(options);
 
         Rec_run_Enable = false;
@@ -807,6 +810,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     {
         moteus::Controller::Options options;
         options.id = Motor_id;
+        options.default_query = false;
         moteus::Controller controller(options);
 
         Rec_run_Enable = false;
@@ -828,6 +832,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     {
         moteus::Controller::Options options;
         options.id = Motor_id;
+        options.default_query = false;
         moteus::Controller controller(options);
 
         Rec_run_Enable = false;
@@ -846,6 +851,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     {
         moteus::Controller::Options options;
         options.id = Motor_id;
+        options.default_query = false;
         moteus::Controller controller(options);
 
         Rec_run_Enable = false;
@@ -874,6 +880,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     {
         moteus::Controller::Options options;
         options.id = Motor_id;
+        options.default_query = false;
         moteus::Controller controller(options);
 
         Rec_run_Enable = false;
@@ -909,6 +916,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
 
         moteus::Controller::Options options;
         options.id = Motor_id;
+        options.default_query = false;
         moteus::Controller controller(options);
 
         Rec_run_Enable = false;
@@ -931,6 +939,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
 
         moteus::Controller::Options options;
         options.id = Motor_id;
+        options.default_query = false;
         moteus::Controller controller(options);
 
         Rec_run_Enable = false;
@@ -952,6 +961,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     {
         moteus::Controller::Options options;
         options.id = Motor_id;
+        options.default_query = false;
         moteus::Controller controller(options);
 
         Rec_run_Enable = false;
@@ -975,6 +985,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
 
         moteus::Controller::Options options;
         options.id = Motor_id;
+        options.default_query = false;
         moteus::Controller controller(options);
 
         Rec_run_Enable = false;
@@ -1005,6 +1016,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         MoteusAPI api(dev_name.toStdString(), Motor_id);
         moteus::Controller::Options options;
         options.id = Motor_id;
+        options.default_query = false;
         moteus::Controller controller(options);
 
         Rec_run_Enable = false;
@@ -1035,6 +1047,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         MoteusAPI api(dev_name.toStdString(), Motor_id);
         moteus::Controller::Options options;
         options.id = Motor_id;
+        options.default_query = false;
         moteus::Controller controller(options);
 
         Rec_run_Enable = false;
