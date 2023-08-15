@@ -34,8 +34,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 HEADERS += \
         mainwindow.h \
         Motorworker.h \
+        moteus.h \
+        moteus_multiplex.h \
+        moteus_optional.h \
         moteus_protocol.h \
         MoteusAPI.h \
+        moteus_tokenizer.h \
+        moteus_transport.h \
         qcustomplot.h
 
 FORMS += \
