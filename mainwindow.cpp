@@ -530,16 +530,19 @@ void MainWindow:: Init_Motor()
             emit sendToWorker("get motor limits",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                               kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
         }
+
         for (int i = 1; i <= Number_of_Motors; i++)
         {
             emit sendToWorker("get PID",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                               kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
         }
+
         for (int i = 1; i <= Number_of_Motors; i++)
         {
             emit sendToWorker("get rotor_to_output_ratio",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                               kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
         }
+
         for (int i = 1; i <= Number_of_Motors; i++)
         {
             emit sendToWorker("get break voltage",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
@@ -550,6 +553,7 @@ void MainWindow:: Init_Motor()
             emit sendToWorker("get Position Offset",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                               kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
         }
+
 }
 
 void MainWindow::on_btnRead_Status_clicked()
@@ -582,8 +586,9 @@ void MainWindow::on_btnGo_To_Rest_Position_clicked()
 
     for (int i = Number_of_Motors; i > 0 ; i--)
     {
-    emit sendToWorker("Go To Rest Position",QString::fromStdString(dev_name),i,accel_limit,Motor_rest_position[i-1],velocity_limit,max_torque,feedforward_torque,kp_scale,
+        emit sendToWorker("Go To Rest Position",QString::fromStdString(dev_name),i,accel_limit,Motor_rest_position[i-1],velocity_limit,max_torque,feedforward_torque,kp_scale,
                       kd_scale,bounds_min[i -1],bounds_max[i -1],Cycle_Start_Stop,Cycle_Delay);
+//        QThread::msleep(3000);  //Blocking delay 100ms
     }
     for (int i = 1; i <= Number_of_Motors; i++)
     {
