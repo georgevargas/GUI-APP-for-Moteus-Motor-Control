@@ -130,7 +130,12 @@ class Controller {
   // Query
 
   CanFdFrame MakeQuery(const Query::Format* format_override = nullptr) {
-    return MakeFrame(EmptyMode(), {}, {}, format_override);
+    // We force there to always be an override for the query format,
+    // because if we're directly asking for a query, we should get it
+    // no matter the Options::default_query state.
+    return MakeFrame(EmptyMode(), {}, {},
+                     format_override == nullptr ?
+                     &options_.query_format : format_override);
   }
 
   Optional<Result> SetQuery(const Query::Format* format_override = nullptr) {
@@ -218,15 +223,15 @@ class Controller {
         query_override == nullptr ? options_.query_format : *query_override;
     query_format.trajectory_complete = kInt8;
 
-    bool first = true;
+    int count = 2;
     while (true) {
       auto maybe_result = SetPosition(cmd, command_override, &query_format);
-      if (!first) {
-        if (!!maybe_result && maybe_result->values.trajectory_complete) {
-          return *maybe_result;
-        }
-      } else if (maybe_result) {
-        first = false;
+      if (!!maybe_result) { count = std::max(count - 1, 0); }
+
+      if (count == 0 &&
+          !!maybe_result &&
+          maybe_result->values.trajectory_complete) {
+        return *maybe_result;
       }
 
       ::usleep(static_cast<int>(period_s * 1e6));
@@ -884,6 +889,7 @@ class Controller {
                        const typename CommandType::Format& fmt,
                        const Query::Format* query_format_override = nullptr) {
     auto result = DefaultFrame(
+        query_format_override != nullptr ? kReplyRequired :
         options_.default_query ? kReplyRequired : kNoReply);
 
     WriteCanData write_frame(result.data, &result.size);
