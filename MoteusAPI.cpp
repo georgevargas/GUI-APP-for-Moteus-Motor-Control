@@ -72,6 +72,7 @@ bool MoteusAPI::SendPositionCommand(double position,
 
     moteus::Controller::Options options;
     options.id = moteus_id_;
+    options.default_query = false;
     moteus::Controller controller(options);
 
     controller.SetPosition(cmd,&res);
@@ -82,6 +83,7 @@ bool MoteusAPI::SendPositionCommand(double position,
 bool MoteusAPI::SendStopCommand() {
     moteus::Controller::Options options;
     options.id = moteus_id_;
+    options.default_query = false;
     moteus::Controller controller(options);
 
     // Command a stop to the controller in order to clear any faults.
@@ -135,6 +137,7 @@ void MoteusAPI::ReadState(State& curr_state) const {
 
   moteus::Controller::Options options;
   options.id = moteus_id_;
+  options.default_query = false;
   moteus::Controller controller(options);
 
   const auto maybe_result = controller.SetQuery(&q_com);
