@@ -564,19 +564,23 @@ void MainWindow::on_btnRead_Status_clicked()
 
 void MainWindow::on_btnSetNearest_clicked()
 {
-    for (int i = 1; i <= Number_of_Motors; i++)
+    if (true)
     {
-        emit sendToWorker("Set Output Nearest",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+        for (int i = 1; i <= Number_of_Motors; i++)
+        {
+            emit sendToWorker("Set Output Nearest",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                              kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+        }
+    }
+    else
+    {
+        MoteusAPI api(dev_name, moteus_id);
+        api.TestCommand();
     }
 }
 
 void MainWindow::on_btnStop_Motor_clicked()
 {
-    if( thread->isRunning() )
-    {
-//                thread->requestInterruption();
-    }
     emit sendToWorker("Send Stop",QString::fromStdString(dev_name),moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                       kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
 }
