@@ -607,12 +607,18 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         if (fd == -1) {
             out << "Warning: Unable to open port, is the fdcanusb device plugged in?" << endl;
             emit sendToMain(QString::fromStdString(out.str()));
+            emit sendMsg("Check Device",0,0,0,0,0,0);
         }
         else if (tcgetattr(fd, &toptions) < 0) {
             out << "Warning: Couldn't get term attributes" << endl;
             emit sendToMain(QString::fromStdString(out.str()));
+            emit sendMsg("Check Device",0,0,0,0,0,0);
         }
-        else close(fd);
+        else
+        {
+            close(fd);
+            emit sendMsg("Check Device",1,0,0,0,0,0);
+        }
     }
     else if (msg == "Set Dynamic")
     {
