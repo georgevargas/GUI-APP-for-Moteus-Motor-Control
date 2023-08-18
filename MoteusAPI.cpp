@@ -91,6 +91,31 @@ bool MoteusAPI::SendStopCommand() {
 
   return true;
 }
+bool MoteusAPI::TestCommand() {
+    moteus::Controller::Options options;
+    options.id = moteus_id_;
+    options.default_query = false;
+    moteus::Controller controller(options);
+
+      moteus::Query::Format q_com;
+
+      const auto maybe_result = controller.SetQuery(&q_com);
+      if (maybe_result)
+      {
+        const auto r = maybe_result->values;
+        printf("Mode\t=\t%3d\nPosition\t=\t%7.6f\nVelocity\t=\t%7.6f\nTorque\t=\t%7.6f\nVoltage\t= \t%5.1f\nTemperature\t= \t%5.1f\nFault\t= \t%3d\n",
+               static_cast<int>(r.mode),
+               r.position,
+               r.velocity,
+               r.torque,
+               r.voltage,
+               r.temperature,
+               r.fault);
+        ::fflush(stdout);
+      }
+
+  return true;
+}
 
 void MoteusAPI::ReadState(State& curr_state) const {
     moteus::Query::Format q_com;
