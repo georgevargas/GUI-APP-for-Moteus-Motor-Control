@@ -525,6 +525,8 @@ void MainWindow:: Init_Motor()
             }
         }
 
+        MoteusAPI api(dev_name, moteus_id); // set to initialize MoteusAPI
+
         for (int i = 1; i <= Number_of_Motors; i++)
         {
             emit sendToWorker("get motor limits",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
