@@ -157,6 +157,8 @@ class MoteusAPI {
 
   bool SendStopCommand();
 
+  bool TestCommand();
+
   bool SendDiagnosticCommand(string msg);
 
   void ReadState(State& curr_state) const;
