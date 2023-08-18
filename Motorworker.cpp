@@ -644,10 +644,11 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     }
     else if (msg == "Record Position")
     {
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
         Rec_run_Enable = false;
         Step_Mode = false;
         Position_wait = false;
+
+        MoteusAPI api(dev_name.toStdString(), Motor_id);
 
         // define a state object
         State curr_state;
@@ -747,18 +748,20 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     }
     else if (msg == "get rotor_to_output_ratio")
     {
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        Rec_run_Enable = false;
+        Position_wait = false;
+
         moteus::Controller::Options options;
         options.id = Motor_id;
         options.default_query = false;
         moteus::Controller controller(options);
 
-        Rec_run_Enable = false;
-        Position_wait = false;
+        controller.DiagnosticCommand("tel stop");
+        controller.DiagnosticFlush();
+
         double value = std::numeric_limits<double>::quiet_NaN();
 
         std::ostringstream out;
-        value = 12.34;
         // get rotor_to_output_ratio
             value = std::stod(
                 controller.DiagnosticCommand("conf get motor_position.rotor_to_output_ratio",
@@ -768,13 +771,17 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     }
     else if (msg == "get break voltage")
     {
+        Rec_run_Enable = false;
+        Position_wait = false;
+
         moteus::Controller::Options options;
         options.id = Motor_id;
         options.default_query = false;
         moteus::Controller controller(options);
 
-        Rec_run_Enable = false;
-        Position_wait = false;
+        controller.DiagnosticCommand("tel stop");
+        controller.DiagnosticFlush();
+
         double value = std::numeric_limits<double>::quiet_NaN();
 
         std::ostringstream out;
@@ -788,14 +795,19 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     }
     else if (msg == "get Position Offset")
     {
+        Rec_run_Enable = false;
+        Position_wait = false;
+
         MoteusAPI api(dev_name.toStdString(), Motor_id);
+
         moteus::Controller::Options options;
         options.id = Motor_id;
         options.default_query = false;
         moteus::Controller controller(options);
 
-        Rec_run_Enable = false;
-        Position_wait = false;
+        controller.DiagnosticCommand("tel stop");
+        controller.DiagnosticFlush();
+
         double value = std::numeric_limits<double>::quiet_NaN();
 
         std::ostringstream out;
@@ -808,13 +820,17 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     }
     else if (msg == "get motor limits")
     {
+        Rec_run_Enable = false;
+        Position_wait = false;
+
         moteus::Controller::Options options;
         options.id = Motor_id;
         options.default_query = false;
         moteus::Controller controller(options);
 
-        Rec_run_Enable = false;
-        Position_wait = false;
+
+        controller.DiagnosticCommand("tel stop");
+        controller.DiagnosticFlush();
 
         // get min limit command
         l_bounds_min[Motor_id-1] = std::stod(
@@ -830,32 +846,39 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     }
     else if (msg == "conf write")
     {
+        Rec_run_Enable = false;
+        Position_wait = false;
+
         moteus::Controller::Options options;
         options.id = Motor_id;
         options.default_query = false;
         moteus::Controller controller(options);
 
-        Rec_run_Enable = false;
-        Position_wait = false;
+        controller.DiagnosticCommand("tel stop");
+        controller.DiagnosticFlush();
 
         std::ostringstream out;
         out.str("");
 
         // save conf
         controller.DiagnosticCommand("conf write");
+
         out.str("");
         out << "configuration write" << endl;
         emit sendToMain(QString::fromStdString(out.str()));
     }
     else if (msg == "get PID")
     {
+        Rec_run_Enable = false;
+        Position_wait = false;
+
         moteus::Controller::Options options;
         options.id = Motor_id;
         options.default_query = false;
         moteus::Controller controller(options);
 
-        Rec_run_Enable = false;
-        Position_wait = false;
+        controller.DiagnosticCommand("tel stop");
+        controller.DiagnosticFlush();
 
         double value1 = std::numeric_limits<double>::quiet_NaN();
         double value2 = std::numeric_limits<double>::quiet_NaN();
@@ -878,13 +901,16 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     }
     else if (msg == "set PID")
     {
+        Rec_run_Enable = false;
+        Position_wait = false;
+
         moteus::Controller::Options options;
         options.id = Motor_id;
         options.default_query = false;
         moteus::Controller controller(options);
 
-        Rec_run_Enable = false;
-        Position_wait = false;
+        controller.DiagnosticCommand("tel stop");
+        controller.DiagnosticFlush();
 
         std::ostringstream out;
 
@@ -913,44 +939,51 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     }
     else if (msg == "set rotor_to_output_ratio")
     {
+        Rec_run_Enable = false;
+        Position_wait = false;
 
         moteus::Controller::Options options;
         options.id = Motor_id;
         options.default_query = false;
         moteus::Controller controller(options);
 
-        Rec_run_Enable = false;
-        Position_wait = false;
+
+        controller.DiagnosticCommand("tel stop");
+        controller.DiagnosticFlush();
 
         std::ostringstream out;
         out.str("");
 
-        // set command
+        // set rotor_to_output_ratiocommand
         out << "conf set motor_position.rotor_to_output_ratio " << feedforward_torque << endl;
         controller.DiagnosticCommand(out.str());
-            out.str("");
-            out << "Motor: " << Motor_id
-                << "\t Gear Ratio: " << feedforward_torque
-                << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
+
+        out.str("");
+        out << "Motor: " << Motor_id
+            << "\t Gear Ratio: " << feedforward_torque
+            << endl;
+        emit sendToMain(QString::fromStdString(out.str()));
     }
     else if (msg == "set break voltage")
     {
+        Rec_run_Enable = false;
+        Position_wait = false;
 
         moteus::Controller::Options options;
         options.id = Motor_id;
         options.default_query = false;
         moteus::Controller controller(options);
 
-        Rec_run_Enable = false;
-        Position_wait = false;
+        controller.DiagnosticCommand("tel stop");
+        controller.DiagnosticFlush();
 
         std::ostringstream out;
         out.str("");
 
-        // set min limit command
+        // set break voltage command
         out << "conf set servo.flux_brake_min_voltage " << feedforward_torque << endl;
         controller.DiagnosticCommand(out.str());
+
         out.str("");
         out << "Motor: " << Motor_id
             << "\t Break Min Voltage: " << feedforward_torque
@@ -959,18 +992,21 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     }
     else if (msg == "set Position Offset")
     {
+        Rec_run_Enable = false;
+        Position_wait = false;
+
         moteus::Controller::Options options;
         options.id = Motor_id;
         options.default_query = false;
         moteus::Controller controller(options);
 
-        Rec_run_Enable = false;
-        Position_wait = false;
+        controller.DiagnosticCommand("tel stop");
+        controller.DiagnosticFlush();
 
         std::ostringstream out;
         out.str("");
 
-        // set command
+        // set Position Offset command
         out << "conf set motor_position.output.offset 0 " << feedforward_torque << endl;
         controller.DiagnosticCommand(out.str());
 
@@ -982,14 +1018,16 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     }
     else if (msg == "set motor limits")
     {
+        Rec_run_Enable = false;
+        Position_wait = false;
 
         moteus::Controller::Options options;
         options.id = Motor_id;
         options.default_query = false;
         moteus::Controller controller(options);
 
-        Rec_run_Enable = false;
-        Position_wait = false;
+        controller.DiagnosticCommand("tel stop");
+        controller.DiagnosticFlush();
 
         std::ostringstream out;
         out.str("");
@@ -998,6 +1036,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         out << "conf set servopos.position_min " << bounds_min << endl;
         controller.DiagnosticCommand(out.str());
         l_bounds_min[Motor_id-1] = bounds_min;
+
         // set max limit command
         out.str("");
         out << "conf set servopos.position_max " << bounds_max << endl;
@@ -1009,18 +1048,21 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
             << " limit min:\t" << l_bounds_min[Motor_id-1]
             << "\tlimit max:\t" << l_bounds_max[Motor_id-1] << endl;
         emit sendToMain(QString::fromStdString(out.str()));
-
     }
     else if (msg == "Send Stop")
     {
+        Rec_run_Enable = false;
+        Position_wait = false;
+
         MoteusAPI api(dev_name.toStdString(), Motor_id);
+
         moteus::Controller::Options options;
         options.id = Motor_id;
         options.default_query = false;
         moteus::Controller controller(options);
 
-        Rec_run_Enable = false;
-        Position_wait = false;
+        controller.DiagnosticCommand("tel stop");
+        controller.DiagnosticFlush();
 
         // Command a stop to the controller in order to clear any faults.
         controller.SetStop();
@@ -1044,14 +1086,18 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     }
     else if (msg == "Set Output Nearest")
     {
+        Rec_run_Enable = false;
+        Position_wait = false;
+
         MoteusAPI api(dev_name.toStdString(), Motor_id);
+
         moteus::Controller::Options options;
         options.id = Motor_id;
         options.default_query = false;
         moteus::Controller controller(options);
 
-        Rec_run_Enable = false;
-        Position_wait = false;
+        controller.DiagnosticCommand("tel stop");
+        controller.DiagnosticFlush();
 
         moteus::OutputNearest::Command cmd;
         cmd.position = 0.0;
@@ -1083,9 +1129,11 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     }
     else if (msg == "Send Start")
     {
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
         Rec_run_Enable = false;
         Position_wait = false;
+
+        MoteusAPI api(dev_name.toStdString(), Motor_id);
+
         if (!Check_Motor(dev_name,Motor_id))
         {
            if (Motor_error)
@@ -1134,9 +1182,10 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
      }
     else if (msg == "Go To Rest Position")
     {
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
         Rec_run_Enable = false;
         Position_wait = false;
+
+        MoteusAPI api(dev_name.toStdString(), Motor_id);
 
         if (!Check_Motor(dev_name,Motor_id))
         {
@@ -1193,9 +1242,10 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     }
     else if (msg == "Go To Position")
     {
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
         Rec_run_Enable = false;
         Position_wait = false;
+
+        MoteusAPI api(dev_name.toStdString(), Motor_id);
 
         if (!Check_Motor(dev_name,Motor_id))
         {
@@ -1253,10 +1303,10 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     }
     else if (msg == "Run Forever")
     {
-
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
         Rec_run_Enable = false;
         Position_wait = false;
+
+        MoteusAPI api(dev_name.toStdString(), Motor_id);
 
         if (!Check_Motor(dev_name,Motor_id))
         {
@@ -1311,7 +1361,6 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     }
     else if (msg == "Read_Status")
     {
-
         MoteusAPI api(dev_name.toStdString(), Motor_id);
 
         // define a state object
