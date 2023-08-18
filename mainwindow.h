@@ -45,6 +45,7 @@ private:
     double Cycle_Start_Stop = 100;
     double Cycle_Delay = 1.1;
     bool   Dynamic = false;
+    bool   Device_enable = false;
     bool   Enable_startup_nearest_commands = false;
     bool   Enable_plot_position = true;
     bool   Enable_plot_velocity = false;
