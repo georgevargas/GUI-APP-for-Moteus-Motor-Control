@@ -89,6 +89,7 @@ void MainWindow::getFromWorker(QString msg) //slot implementation
 void MainWindow::updateDiagram()
 {
     time += 0.05;
+    if (Device_enable)
     emit sendToWorker("Update Velocity",QString::fromStdString(dev_name),moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                       kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
 }
@@ -188,6 +189,56 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         }
 
         MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
+    }
+    else if (msg == "Check Device")
+    {
+        std::ostringstream out;
+
+        if (Motor_id == 0)
+            Device_enable = false;
+        else
+        {
+            Device_enable = true;
+            if (Enable_startup_nearest_commands)
+            {
+                for (int i = 1; i <= Number_of_Motors; i++)
+                {
+                    emit sendToWorker("Set Output Nearest",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+                }
+            }
+
+            MoteusAPI api(dev_name, moteus_id); // set to initialize MoteusAPI
+
+            for (int i = 1; i <= Number_of_Motors; i++)
+            {
+                emit sendToWorker("get motor limits",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                  kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+            }
+
+            for (int i = 1; i <= Number_of_Motors; i++)
+            {
+                emit sendToWorker("get PID",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                  kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+            }
+
+            for (int i = 1; i <= Number_of_Motors; i++)
+            {
+                emit sendToWorker("get rotor_to_output_ratio",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                  kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+            }
+
+            for (int i = 1; i <= Number_of_Motors; i++)
+            {
+                emit sendToWorker("get break voltage",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                  kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+            }
+            for (int i = 1; i <= Number_of_Motors; i++)
+            {
+                emit sendToWorker("get Position Offset",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                  kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+            }
+        }
     }
     else if (msg == "get Break Voltage")
     {
@@ -515,47 +566,6 @@ void MainWindow:: Init_Motor()
 
         emit sendToWorker("Check Device",QString::fromStdString(dev_name),moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                           kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
-
-        if (Enable_startup_nearest_commands)
-        {
-            for (int i = 1; i <= Number_of_Motors; i++)
-            {
-                emit sendToWorker("Set Output Nearest",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                  kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
-            }
-        }
-
-        MoteusAPI api(dev_name, moteus_id); // set to initialize MoteusAPI
-
-        for (int i = 1; i <= Number_of_Motors; i++)
-        {
-            emit sendToWorker("get motor limits",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                              kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
-        }
-
-        for (int i = 1; i <= Number_of_Motors; i++)
-        {
-            emit sendToWorker("get PID",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                              kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
-        }
-
-        for (int i = 1; i <= Number_of_Motors; i++)
-        {
-            emit sendToWorker("get rotor_to_output_ratio",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                              kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
-        }
-
-        for (int i = 1; i <= Number_of_Motors; i++)
-        {
-            emit sendToWorker("get break voltage",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                              kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
-        }
-        for (int i = 1; i <= Number_of_Motors; i++)
-        {
-            emit sendToWorker("get Position Offset",QString::fromStdString(dev_name),i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                              kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
-        }
-
 }
 
 void MainWindow::on_btnRead_Status_clicked()
