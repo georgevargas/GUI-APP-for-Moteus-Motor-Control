@@ -96,7 +96,7 @@ class Controller {
     transport_ = options.transport;
 
     WriteCanData query_write(&query_frame_);
-    Query::Make(&query_write, options_.query_format);
+    query_reply_size_ = Query::Make(&query_write, options_.query_format);
   }
 
   Transport* transport() {
@@ -107,16 +107,20 @@ class Controller {
     return transport_.get();
   }
 
+  /// Make a transport given the cmdline arguments.
   static std::shared_ptr<Transport> MakeSingletonTransport(
       const std::vector<std::string>& args) {
-    static std::shared_ptr<Transport> g_transport;
+    auto result = ArgumentProcessHelper(args);
+    return result.first;
+  }
 
-    if (g_transport) { return g_transport; }
-
-    // For now, we only know about trying to find a system Fdcanusb.
-    std::vector<char*> argv;
-    g_transport = TransportRegistry::singleton().make(args);
-
+  /// Require that a default global transport have already been
+  /// created and return it.
+  static std::shared_ptr<Transport> RequireSingletonTransport() {
+    auto& g_transport = *GlobalTransport();
+    if (!g_transport) {
+      throw std::logic_error("Unexpectedly cannot find global transport");
+    }
     return g_transport;
   }
 
@@ -589,25 +593,24 @@ class Controller {
   //////////////////////////////////////////////////
 
   Optional<Result> ExecuteSingleCommand(const CanFdFrame& cmd) {
-    std::vector<CanFdFrame> replies;
+    single_command_replies_.resize(0);
 
-    transport()->BlockingCycle(&cmd, 1, &replies);
+    transport()->BlockingCycle(&cmd, 1, &single_command_replies_);
 
-    return FindResult(replies);
+    return FindResult(single_command_replies_);
   }
 
   void AsyncStartSingleCommand(const CanFdFrame& cmd,
                                Result* result,
                                CompletionCallback callback) {
-    auto context = std::make_shared<std::vector<CanFdFrame>>();
     auto t = transport();
     output_frame_ = cmd;
     t->Cycle(
         &output_frame_,
         1,
-        context.get(),
-        [context, callback, result, this, t](int) {
-          auto maybe_result = this->FindResult(*context);
+        &single_command_replies_,
+        [callback, result, this, t](int) {
+          auto maybe_result = this->FindResult(single_command_replies_);
           if (maybe_result) { *result = *maybe_result; }
 
           t->Post(
@@ -623,6 +626,10 @@ class Controller {
     return name;
   }
 
+  /// This may be called to allow users to configure a default
+  /// transport.  It handles "-h" and "--help" by printing and
+  /// exiting, so is not suitable for cases where any other command
+  /// line arguments need to be handled.
   static void DefaultArgProcess(int argc, char** argv) {
     std::vector<std::string> args;
     for (int i = 0; i < argc; i++) { args.push_back(argv[i]); }
@@ -630,13 +637,16 @@ class Controller {
     DefaultArgProcess(args);
   }
 
+  /// The same as the above function, but accepts its arguments in a
+  /// std::vector form.
   static void DefaultArgProcess(const std::vector<std::string>& args) {
-    if (std::find(args.begin(), args.end(), "--help") != args.end()) {
+    if (std::find(args.begin() + 1, args.end(), "--help") != args.end() ||
+        std::find(args.begin() + 1, args.end(), "-h") != args.end()) {
       std::cout << "Usage: " << FinalName(args[0]) << "\n";
       auto help_strs =
           moteus::TransportRegistry::singleton().cmdline_arguments();
       help_strs.insert(help_strs.begin(),
-                       {"--help", "Display this usage message"});
+                       {"--help", 0, "Display this usage message"});
 
       int max_item = 0;
       for (const auto& item : help_strs) {
@@ -654,10 +664,48 @@ class Controller {
       std::exit(0);
     }
 
-    MakeSingletonTransport(args);
+    ArgumentProcessHelper(args);
+  }
+
+  /// Configure the default transport according to the given command
+  /// line arguments.  Return the command line arguments with all
+  /// processed commands removed.
+  ///
+  /// This is an optional call, and is only required if you want to
+  /// give a user the ability to configure the default transport from
+  /// the command line.
+  ///
+  /// "-h" and "--help" are not handled here in any way.  Thus this
+  /// method can be used in applications that want to perform
+  /// additional processing on the command line arguments after.
+  static std::vector<std::string>
+  ProcessTransportArgs(const std::vector<std::string>& args) {
+    return ArgumentProcessHelper(args).second;
+  }
+
+  /// If your application wants to support configuring the default
+  /// transport from the cmdline and also have application level
+  /// options, this list can be used to populate --help content.
+  static std::vector<TransportFactory::Argument> cmdline_arguments() {
+    return TransportRegistry::singleton().cmdline_arguments();
   }
 
  private:
+  static TransportFactory::TransportArgPair
+  ArgumentProcessHelper(const std::vector<std::string>& args) {
+    auto& g_transport = *GlobalTransport();
+    if (g_transport) { return std::make_pair(g_transport, args); }
+
+    auto result = TransportRegistry::singleton().make(args);
+    g_transport = result.first;
+    return result;
+  }
+
+  static std::shared_ptr<Transport>* GlobalTransport() {
+    static std::shared_ptr<Transport> g_transport;
+    return &g_transport;
+  };
+
   // A helper context to maintain asynchronous state while performing
   // diagnostic channel commands.
   struct AsyncDiagnosticCommandContext
@@ -893,15 +941,17 @@ class Controller {
         options_.default_query ? kReplyRequired : kNoReply);
 
     WriteCanData write_frame(result.data, &result.size);
-    CommandType::Make(&write_frame, cmd, fmt);
+    result.expected_reply_size = CommandType::Make(&write_frame, cmd, fmt);
 
     if (query_format_override) {
-      Query::Make(&write_frame, *query_format_override);
+      result.expected_reply_size =
+          Query::Make(&write_frame, *query_format_override);
     } else if (options_.default_query) {
       std::memcpy(&result.data[result.size],
                   &query_frame_.data[0],
                   query_frame_.size);
       result.size += query_frame_.size;
+      result.expected_reply_size = query_reply_size_;
     }
 
     return result;
@@ -910,7 +960,12 @@ class Controller {
   const Options options_;
   std::shared_ptr<Transport> transport_;
   CanData query_frame_;
+  uint8_t query_reply_size_ = 0;
   CanFdFrame output_frame_;
+
+  // This is a member variable so we can avoid re-allocating it on
+  // every call.
+  std::vector<CanFdFrame> single_command_replies_;
 };
 
 
