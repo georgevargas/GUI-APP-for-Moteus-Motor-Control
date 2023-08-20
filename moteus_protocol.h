@@ -75,8 +75,17 @@ struct CanFdFrame {
 
   int8_t destination = 0;
   int8_t source = 0;
-  bool reply_required = false;
   uint16_t can_prefix = 0x0000;  // A 13 bit CAN prefix
+
+  ////////////////////////////////////////
+  /// Finally other hinting data.
+
+  // Whether this frame is expected to elicit a response.
+  bool reply_required = false;
+
+  // If this frame does elicit a response, how large is it expected to
+  // be.
+  uint8_t expected_reply_size = 0;
 };
 
 
@@ -236,7 +245,9 @@ enum class HomeState {
 struct EmptyMode {
   struct Command {};
   struct Format {};
-  static void Make(WriteCanData*, const Command&, const Format&) {}
+  static uint8_t Make(WriteCanData*, const Command&, const Format&) {
+    return 0;
+  }
 };
 
 struct Query {
@@ -245,7 +256,11 @@ struct Query {
     double value = 0.0;
   };
 
+#ifndef ARDUINO
   static constexpr int16_t kMaxExtra = 16;
+#else
+  static constexpr int16_t kMaxExtra = 8;
+#endif
 
   struct Result {
     Mode mode = Mode::kStopped;
@@ -285,33 +300,29 @@ struct Query {
     Resolution position = kFloat;
     Resolution velocity = kFloat;
     Resolution torque = kFloat;
-    Resolution q_current = kFloat;     // was kIgnore
-    Resolution d_current = kFloat;     // was kIgnore
-    Resolution abs_position = kFloat;     // was kIgnore
-    Resolution motor_temperature = kFloat;     // was kIgnore
-    Resolution trajectory_complete = kInt16;  // was kIgnore
+    Resolution q_current = kIgnore;
+    Resolution d_current = kIgnore;
+    Resolution abs_position = kIgnore;
+    Resolution motor_temperature = kIgnore;
+    Resolution trajectory_complete = kIgnore;
     Resolution home_state = kIgnore;
-    Resolution voltage = kFloat;
-    Resolution temperature = kFloat;
+    Resolution voltage = kInt8;
+    Resolution temperature = kInt8;
     Resolution fault = kInt8;
 
     Resolution aux1_gpio = kIgnore;
     Resolution aux2_gpio = kIgnore;
 
+    // Any values here must be sorted by register number.
     ItemFormat extra[kMaxExtra];
 
     // gcc bug 92385 again
     Format() : extra() {}
   };
 
-  static int ItemFormatSort(const void* lhs_in, const void* rhs_in) {
-    const auto* lhs = reinterpret_cast<const ItemFormat*>(lhs_in);
-    const auto* rhs = reinterpret_cast<const ItemFormat*>(rhs_in);
+  static uint8_t Make(WriteCanData* frame, const Format& format) {
+    uint8_t reply_size = 0;
 
-    return lhs->register_number - rhs->register_number;
-  }
-
-  static void Make(WriteCanData* frame, const Format& format) {
     {
       const Resolution kResolutions[] = {
         format.mode,
@@ -329,6 +340,7 @@ struct Query {
       for (uint16_t i = 0; i < kResolutionsSize; i++) {
         combiner.MaybeWrite();
       }
+      reply_size += combiner.reply_size();
     }
 
     {
@@ -347,6 +359,7 @@ struct Query {
       for (uint16_t i = 0; i < kResolutionsSize; i++) {
         combiner.MaybeWrite();
       }
+      reply_size += combiner.reply_size();
     }
 
     {
@@ -361,16 +374,13 @@ struct Query {
       for (uint16_t i = 0; i < kResolutionsSize; i++) {
         combiner.MaybeWrite();
       }
+      reply_size += combiner.reply_size();
     }
 
     {
-      ItemFormat sorted_values[kMaxExtra] = {};
-      ::memcpy(&sorted_values[0], &(format.extra[0]), sizeof(format.extra));
-      ::qsort(&sorted_values[0], kMaxExtra, sizeof(ItemFormat), ItemFormatSort);
-
       const int16_t size = [&]() {
         for (int16_t i = 0; i < kMaxExtra; i++) {
-          if (sorted_values[i].register_number ==
+          if (format.extra[i].register_number ==
               detail::numeric_limits<int16_t>::max()) {
             return i;
           }
@@ -378,9 +388,9 @@ struct Query {
         return kMaxExtra;
       }();
 
-      if (size == 0) { return; }
-      const int16_t min_register_number = sorted_values[0].register_number;
-      const int16_t max_register_number = sorted_values[size - 1].register_number;
+      if (size == 0) { return reply_size; }
+      const int16_t min_register_number = format.extra[0].register_number;
+      const int16_t max_register_number = format.extra[size - 1].register_number;
 
       const uint16_t required_registers =
           max_register_number - min_register_number + 1;
@@ -395,9 +405,9 @@ struct Query {
       for (int16_t this_register = min_register_number, index = 0;
            this_register <= max_register_number;
            this_register++) {
-        if (sorted_values[index].register_number == this_register) {
+        if (format.extra[index].register_number == this_register) {
           resolutions[this_register - min_register_number] =
-              sorted_values[index].resolution;
+              format.extra[index].resolution;
           index++;
         } else {
           resolutions[this_register - min_register_number] = kIgnore;
@@ -409,7 +419,10 @@ struct Query {
       for (uint16_t i = 0; i < required_registers; i++) {
         combiner.MaybeWrite();
       }
+      reply_size += combiner.reply_size();
     }
+
+    return reply_size;
   }
 
   static Result Parse(const uint8_t* data, uint8_t size) {
@@ -516,111 +529,140 @@ struct Query {
                              int16_t register_number,
                              Resolution resolution) {
     const auto res = resolution;
+
     using R = Register;
-    switch (static_cast<Register>(register_number)) {
-      case R::kMode:      { return parser->ReadInt(res); }
-      case R::kPosition:  { return parser->ReadPosition(res); }
-      case R::kVelocity:  { return parser->ReadVelocity(res); }
-      case R::kTorque:    { return parser->ReadTorque(res); }
-      case R::kQCurrent:  { return parser->ReadCurrent(res); }
-      case R::kDCurrent:  { return parser->ReadCurrent(res); }
-      case R::kAbsPosition: { return parser->ReadPosition(res); }
+    using MP = MultiplexParser;
 
-      case R::kMotorTemperature: { return parser->ReadTemperature(res); }
-      case R::kTrajectoryComplete: { return parser->ReadInt(res); }
-      case R::kHomeState: { return parser->ReadInt(res); }
-      case R::kVoltage:   { return parser->ReadVoltage(res); }
-      case R::kTemperature: { return parser->ReadTemperature(res); }
-      case R::kFault:     { return parser->ReadInt(res); }
+    struct RegisterDefinition {
+      uint16_t register_number;
+      uint8_t block_size;
+      int8_t concrete;
+    };
+#ifndef ARDUINO
+    static constexpr RegisterDefinition kRegisterDefinitions[] = {
+#else
+    static constexpr RegisterDefinition PROGMEM kRegisterDefinitions[] = {
+#endif
+      { R::kMode,        1, MP::kInt, },
+      { R::kPosition,    1, MP::kPosition, },
+      { R::kVelocity,    1, MP::kVelocity, },
+      { R::kTorque,      1, MP::kTorque, },
+      { R::kQCurrent,    2, MP::kCurrent, },
+      // { R::kDCurrent,  1,  MP::kCurrent, },
+      { R::kAbsPosition, 1, MP::kPosition, },
+      { R::kMotorTemperature, 1, MP::kTemperature, },
+      { R::kTrajectoryComplete, 2, MP::kInt, },
+      // { R::kHomeState,  1, MP::kInt, },
+      { R::kVoltage,     1, MP::kVoltage, },
+      { R::kTemperature, 1, MP::kTemperature, },
+      { R::kFault,       1, MP::kInt, },
 
-      case R::kPwmPhaseA: { return parser->ReadPwm(res); }
-      case R::kPwmPhaseB: { return parser->ReadPwm(res); }
-      case R::kPwmPhaseC: { return parser->ReadPwm(res); }
+      { R::kPwmPhaseA,   3, MP::kPwm, },
+      // { R::kPwmPhaseB,  1, MP::kPwm, },
+      // { R::kPwmPhaseC,  1, MP::kPwm, },
 
-      case R::kVoltagePhaseA: { return parser->ReadVoltage(res); }
-      case R::kVoltagePhaseB: { return parser->ReadVoltage(res); }
-      case R::kVoltagePhaseC: { return parser->ReadVoltage(res); }
+      { R::kVoltagePhaseA, 3, MP::kVoltage, },
+      // { R::kVoltagePhaseB, 1, MP::kVoltage, },
+      // { R::kVoltagePhaseC, 1, MP::kVoltage, },
 
-      case R::kVFocTheta: { return parser->ReadPwm(res) * M_PI; }
-      case R::kVFocVoltage: { return parser->ReadVoltage(res); }
-      case R::kVoltageDqD: { return parser->ReadVoltage(res); }
-      case R::kVoltageDqQ: { return parser->ReadVoltage(res); }
+      { R::kVFocTheta,     1, MP::kTheta, },
+      { R::kVFocVoltage,   3, MP::kVoltage, },
+      // { R::kVoltageDqD,  1,  MP::kVoltage, },
+      // { R::kVoltageDqQ,  1,  MP::kVoltage, },
 
-      case R::kCommandQCurrent: { return parser->ReadCurrent(res); }
-      case R::kCommandDCurrent: { return parser->ReadCurrent(res); }
+      { R::kCommandQCurrent, 2, MP::kCurrent, },
+      // { R::kCommandDCurrent, 1, MP::kCurrent, },
 
-      case R::kCommandPosition: { return parser->ReadPosition(res); }
-      case R::kCommandVelocity: { return parser->ReadVelocity(res); }
-      case R::kCommandFeedforwardTorque: { return parser->ReadTorque(res); }
-      case R::kCommandKpScale: { return parser->ReadPwm(res); }
-      case R::kCommandKdScale: { return parser->ReadPwm(res); }
-      case R::kCommandPositionMaxTorque: { return parser->ReadTorque(res); }
-      case R::kCommandStopPosition: { return parser->ReadPosition(res); }
-      case R::kCommandTimeout: { return parser->ReadTime(res); }
+      { R::kCommandPosition, 1, MP::kPosition, },
+      { R::kCommandVelocity, 1, MP::kVelocity, },
+      { R::kCommandFeedforwardTorque, 1, MP::kTorque, },
+      { R::kCommandKpScale,  2, MP::kPwm, },
+      // { R::kCommandKdScale, 1, MP::kPwm, },
+      { R::kCommandPositionMaxTorque, 1, MP::kTorque, },
+      { R::kCommandStopPosition, 1, MP::kPosition, },
+      { R::kCommandTimeout, 1, MP::kTime, },
 
-      case R::kPositionKp: { return parser->ReadTorque(res); }
-      case R::kPositionKi: { return parser->ReadTorque(res); }
-      case R::kPositionKd: { return parser->ReadTorque(res); }
-      case R::kPositionFeedforward: { return parser->ReadTorque(res); }
-      case R::kPositionCommand: { return parser->ReadTorque(res); }
+      { R::kPositionKp, 5, MP::kTorque, },
+      // { R::kPositionKi, 1, MP::kTorque, },
+      // { R::kPositionKd, 1, MP::kTorque, },
+      // { R::kPositionFeedforward, 1, MP::kTorque, },
+      // { R::kPositionCommand, 1, MP::kTorque, },
 
-      case R::kControlPosition: { return parser->ReadPosition(res); }
-      case R::kControlVelocity: { return parser->ReadVelocity(res); }
-      case R::kControlTorque: { return parser->ReadTorque(res); }
-      case R::kControlPositionError: { return parser->ReadPosition(res); }
-      case R::kControlVelocityError: { return parser->ReadVelocity(res); }
-      case R::kControlTorqueError: { return parser->ReadTorque(res); }
+      { R::kControlPosition, 1, MP::kPosition, },
+      { R::kControlVelocity, 1, MP::kVelocity, },
+      { R::kControlTorque, 1, MP::kTorque, },
+      { R::kControlPositionError, 1, MP::kPosition, },
+      { R::kControlVelocityError, 1, MP::kVelocity, },
+      { R::kControlTorqueError, 1, MP::kTorque, },
 
-      case R::kCommandStayWithinLowerBound: { return parser->ReadPosition(res); }
-      case R::kCommandStayWithinUpperBound: { return parser->ReadPosition(res); }
-      case R::kCommandStayWithinFeedforwardTorque: { return parser->ReadTorque(res); }
-      case R::kCommandStayWithinKpScale: { return parser->ReadPwm(res); }
-      case R::kCommandStayWithinKdScale: { return parser->ReadPwm(res); }
-      case R::kCommandStayWithinPositionMaxTorque: { return parser->ReadTorque(res); }
-      case R::kCommandStayWithinTimeout: { return parser->ReadTime(res); }
+      { R::kCommandStayWithinLowerBound, 2, MP::kPosition, },
+      // { R::kCommandStayWithinUpperBound, 1, MP::kPosition, },
+      { R::kCommandStayWithinFeedforwardTorque, 1, MP::kTorque, },
+      { R::kCommandStayWithinKpScale, 2, MP::kPwm, },
+      // { R::kCommandStayWithinKdScale, 1, MP::kPwm, },
+      { R::kCommandStayWithinPositionMaxTorque, 1, MP::kTorque, },
+      { R::kCommandStayWithinTimeout, 1, MP::kTime, },
 
-      case R::kEncoder0Position: { return parser->ReadPosition(res); }
-      case R::kEncoder0Velocity: { return parser->ReadVelocity(res); }
-      case R::kEncoder1Position: { return parser->ReadPosition(res); }
-      case R::kEncoder1Velocity: { return parser->ReadVelocity(res); }
-      case R::kEncoder2Position: { return parser->ReadPosition(res); }
-      case R::kEncoder2Velocity: { return parser->ReadVelocity(res); }
+      { R::kEncoder0Position, 1, MP::kPosition, },
+      { R::kEncoder0Velocity, 1, MP::kVelocity, },
+      { R::kEncoder1Position, 1, MP::kPosition, },
+      { R::kEncoder1Velocity, 1, MP::kVelocity, },
+      { R::kEncoder2Position, 1, MP::kPosition, },
+      { R::kEncoder2Velocity, 1, MP::kVelocity, },
 
-      case R::kEncoderValidity: { return parser->ReadInt(res); }
+      { R::kEncoderValidity, 1, MP::kInt, },
 
-      case R::kAux1GpioCommand: { return parser->ReadInt(res); }
-      case R::kAux2GpioCommand: { return parser->ReadInt(res); }
-      case R::kAux1GpioStatus: { return parser->ReadInt(res); }
-      case R::kAux2GpioStatus: { return parser->ReadInt(res); }
+      { R::kAux1GpioCommand, 4, MP::kInt, },
+      // { R::kAux2GpioCommand, 1, MP::kInt, },
+      // { R::kAux1GpioStatus, 1, MP::kInt, },
+      // { R::kAux2GpioStatus, 1, MP::kInt, },
 
-      case R::kAux1AnalogIn1: { return parser->ReadPwm(res); }
-      case R::kAux1AnalogIn2: { return parser->ReadPwm(res); }
-      case R::kAux1AnalogIn3: { return parser->ReadPwm(res); }
-      case R::kAux1AnalogIn4: { return parser->ReadPwm(res); }
-      case R::kAux1AnalogIn5: { return parser->ReadPwm(res); }
+      { R::kAux1AnalogIn1, 5, MP::kPwm, },
+      // { R::kAux1AnalogIn2, 1, MP::kPwm, },
+      // { R::kAux1AnalogIn3, 1, MP::kPwm, },
+      // { R::kAux1AnalogIn4, 1, MP::kPwm, },
+      // { R::kAux1AnalogIn5, 1, MP::kPwm, },
 
-      case R::kAux2AnalogIn1: { return parser->ReadPwm(res); }
-      case R::kAux2AnalogIn2: { return parser->ReadPwm(res); }
-      case R::kAux2AnalogIn3: { return parser->ReadPwm(res); }
-      case R::kAux2AnalogIn4: { return parser->ReadPwm(res); }
-      case R::kAux2AnalogIn5: { return parser->ReadPwm(res); }
+      { R::kAux2AnalogIn1, 5, MP::kPwm, },
+      // { R::kAux2AnalogIn2, 1, MP::kPwm, },
+      // { R::kAux2AnalogIn3, 1, MP::kPwm, },
+      // { R::kAux2AnalogIn4, 1, MP::kPwm, },
+      // { R::kAux2AnalogIn5, 1, MP::kPwm, },
 
-      case R::kMillisecondCounter: { return parser->ReadInt(res); }
-      case R::kClockTrim: { return parser->ReadInt(res); }
+      { R::kMillisecondCounter, 2, MP::kInt, },
+      // { R::kClockTrim, 1, MP::kInt, },
 
-      case R::kRegisterMapVersion: { return parser->ReadInt(res); }
-      case R::kSerialNumber1: { return parser->ReadInt(res); }
-      case R::kSerialNumber2: { return parser->ReadInt(res); }
-      case R::kSerialNumber3: { return parser->ReadInt(res); }
+      { R::kRegisterMapVersion, 1, MP::kInt, },
+      { R::kSerialNumber1,  3, MP::kInt, },
+      // { R::kSerialNumber2, 1, MP::kInt, },
+      // { R::kSerialNumber3, 1, MP::kInt, },
 
-      case R::kSetOutputNearest: { return parser->ReadInt(res); }
-      case R::kSetOutputExact: { return parser->ReadInt(res); }
-      case R::kRequireReindex: { return parser->ReadInt(res); }
+      { R::kSetOutputNearest, 3, MP::kInt, },
+      // { R::kSetOutputExact, 1, MP::kInt, },
+      // { R::kRequireReindex, 1, MP::kInt, },
 
-      case R::kDriverFault1: { return parser->ReadInt(res); }
-      case R::kDriverFault2: { return parser->ReadInt(res); }
+      { R::kDriverFault1, 2, MP::kInt, },
+      // { R::kDriverFault2, 1, MP::kInt, },
+
+    };
+    for (uint16_t i = 0;
+         i < sizeof(kRegisterDefinitions) / sizeof (*kRegisterDefinitions);
+         i ++) {
+
+#ifndef ARDUINO
+      const int16_t start_reg = kRegisterDefinitions[i].register_number;
+      const uint8_t block_size = kRegisterDefinitions[i].block_size;
+      const int8_t concrete_type = kRegisterDefinitions[i].concrete;
+#else
+      const int16_t start_reg = pgm_read_word_near(&kRegisterDefinitions[i].register_number);
+      const uint8_t block_size = pgm_read_byte_near(&kRegisterDefinitions[i].block_size);
+      const int8_t concrete_type = pgm_read_byte_near(kRegisterDefinitions[i].concrete);
+#endif
+      if (register_number >= start_reg &&
+          register_number < (start_reg + block_size)) {
+        return parser->ReadConcrete(res, concrete_type);
+      }
     }
-
     return parser->ReadInt(res);
   }
 };
@@ -647,6 +689,7 @@ struct GenericQuery {
   };
 
   struct Format {
+    // These values must be sorted by register number.
     ItemFormat values[kMaxItems] = {};
   };
 
@@ -657,14 +700,10 @@ struct GenericQuery {
     return lhs->register_number - rhs->register_number;
   }
 
-  static void Make(WriteCanData* frame, const Command&, const Format& format) {
-    ItemFormat sorted_values[64] = {};
-    ::memcpy(&sorted_values[0], &(format.values[0]), sizeof(format.values));
-    ::qsort(&sorted_values[0], kMaxItems, sizeof(ItemFormat), ItemFormatSort);
-
+  static uint8_t Make(WriteCanData* frame, const Command&, const Format& format) {
     const int16_t size = [&]() {
       for (int16_t i = 0; i < kMaxItems; i++) {
-        if (sorted_values[i].register_number ==
+        if (format.values[i].register_number ==
             detail::numeric_limits<int16_t>::max()) {
           return i;
         }
@@ -672,9 +711,9 @@ struct GenericQuery {
       return kMaxItems;
     }();
 
-    if (size == 0) { return; }
-    const int16_t min_register_number = sorted_values[0].register_number;
-    const int16_t max_register_number = sorted_values[size - 1].register_number;
+    if (size == 0) { return 0; }
+    const int16_t min_register_number = format.values[0].register_number;
+    const int16_t max_register_number = format.values[size - 1].register_number;
 
     const uint16_t required_registers = max_register_number - min_register_number + 1;
 
@@ -688,9 +727,9 @@ struct GenericQuery {
     for (int16_t this_register = min_register_number, index = 0;
          this_register <= max_register_number;
          this_register++) {
-      if (sorted_values[index].register_number == this_register) {
+      if (format.values[index].register_number == this_register) {
         resolutions[this_register - min_register_number] =
-            sorted_values[index].resolution;
+            format.values[index].resolution;
         index++;
       } else {
         resolutions[this_register - min_register_number] = kIgnore;
@@ -702,6 +741,8 @@ struct GenericQuery {
     for (uint16_t i = 0; i < required_registers; i++) {
       combiner.MaybeWrite();
     }
+
+    return combiner.reply_size();
   }
 
   static Result Parse(const uint8_t* data, uint8_t size) {
@@ -765,7 +806,7 @@ struct PositionMode {
     Resolution fixed_voltage_override = kIgnore;
   };
 
-  static void Make(WriteCanData* frame,
+  static uint8_t Make(WriteCanData* frame,
                    const Command& command,
                    const Format& format) {
     frame->Write<int8_t>(Multiplex::kWriteInt8 | 0x01);
@@ -827,6 +868,7 @@ struct PositionMode {
       frame->WriteVoltage(command.fixed_voltage_override,
                           format.fixed_voltage_override);
     }
+    return 0;
   }
 };
 
@@ -844,9 +886,9 @@ struct VFOCMode {
     Resolution theta_rad_rate = kFloat;
   };
 
-  static void Make(WriteCanData* frame,
-                   const Command& command,
-                   const Format& format) {
+  static uint8_t Make(WriteCanData* frame,
+                      const Command& command,
+                      const Format& format) {
     frame->Write<int8_t>(Multiplex::kWriteInt8 | 0x01);
     frame->Write<int8_t>(Register::kMode);
     frame->Write<int8_t>(Mode::kVoltageFoc);
@@ -887,6 +929,8 @@ struct VFOCMode {
     if (combiner.MaybeWrite()) {
       frame->WriteVelocity(command.theta_rad_rate / M_PI, format.theta_rad_rate);
     }
+
+    return 0;
   }
 };
 
@@ -902,9 +946,9 @@ struct CurrentMode {
     Resolution q_A = kFloat;
   };
 
-  static void Make(WriteCanData* frame,
-                   const Command& command,
-                   const Format& format) {
+  static uint8_t Make(WriteCanData* frame,
+                      const Command& command,
+                      const Format& format) {
     frame->Write<int8_t>(Multiplex::kWriteInt8 | 0x01);
     frame->Write<int8_t>(Register::kMode);
     frame->Write<int8_t>(Mode::kCurrent);
@@ -926,6 +970,8 @@ struct CurrentMode {
     if (combiner.MaybeWrite()) {
       frame->WriteCurrent(command.d_A, format.d_A);
     }
+
+    return 0;
   }
 };
 
@@ -950,9 +996,9 @@ struct StayWithinMode {
     Resolution watchdog_timeout = kIgnore;
   };
 
-  static void Make(WriteCanData* frame,
-                   const Command& command,
-                   const Format& format) {
+  static uint8_t Make(WriteCanData* frame,
+                      const Command& command,
+                      const Format& format) {
     frame->Write<int8_t>(Multiplex::kWriteInt8 | 0x01);
     frame->Write<int8_t>(Register::kMode);
     frame->Write<int8_t>(Mode::kStayWithin);
@@ -995,6 +1041,7 @@ struct StayWithinMode {
     if (combiner.MaybeWrite()) {
       frame->WriteTime(command.watchdog_timeout, format.watchdog_timeout);
     }
+    return 0;
   }
 };
 
@@ -1002,12 +1049,13 @@ struct BrakeMode {
   struct Command {};
   struct Format {};
 
-  static void Make(WriteCanData* frame,
-                   const Command&,
-                   const Format&) {
+  static uint8_t Make(WriteCanData* frame,
+                      const Command&,
+                      const Format&) {
     frame->Write<int8_t>(Multiplex::kWriteInt8 | 0x01);
     frame->Write<int8_t>(Register::kMode);
     frame->Write<int8_t>(Mode::kBrake);
+    return 0;
   }
 };
 
@@ -1015,12 +1063,13 @@ struct StopMode {
   struct Command {};
   struct Format {};
 
-  static void Make(WriteCanData* frame,
-                   const Command&,
-                   const Format&) {
+  static uint8_t Make(WriteCanData* frame,
+                      const Command&,
+                      const Format&) {
     frame->Write<int8_t>(Multiplex::kWriteInt8 | 0x01);
     frame->Write<int8_t>(Register::kMode);
     frame->Write<int8_t>(Mode::kStopped);
+    return 0;
   }
 };
 
@@ -1035,9 +1084,9 @@ struct GpioWrite {
     Resolution aux2 = kInt8;
   };
 
-  static void Make(WriteCanData* frame,
-                   const Command& command,
-                   const Format& format) {
+  static uint8_t Make(WriteCanData* frame,
+                      const Command& command,
+                      const Format& format) {
     const Resolution kResolutions[] = {
       format.aux1,
       format.aux2,
@@ -1055,6 +1104,7 @@ struct GpioWrite {
     if (combiner.MaybeWrite()) {
       frame->WriteInt(command.aux2, format.aux2);
     }
+    return 0;
   }
 };
 
@@ -1065,10 +1115,11 @@ struct OutputNearest {
 
   struct Format {};
 
-  static void Make(WriteCanData* frame, const Command& command, const Format&) {
+  static uint8_t Make(WriteCanData* frame, const Command& command, const Format&) {
     frame->Write<int8_t>(Multiplex::kWriteFloat | 0x01);
     frame->WriteVaruint(Register::kSetOutputNearest);
     frame->Write<float>(command.position);
+    return 0;
   }
 };
 
@@ -1079,10 +1130,11 @@ struct OutputExact {
 
   struct Format {};
 
-  static void Make(WriteCanData* frame, const Command& command, const Format&) {
+  static uint8_t Make(WriteCanData* frame, const Command& command, const Format&) {
     frame->Write<int8_t>(Multiplex::kWriteFloat | 0x01);
     frame->WriteVaruint(Register::kSetOutputExact);
     frame->Write<float>(command.position);
+    return 0;
   }
 };
 
@@ -1090,10 +1142,11 @@ struct RequireReindex {
   struct Command {};
   struct Format {};
 
-  static void Make(WriteCanData* frame, const Command&, const Format&) {
+  static uint8_t Make(WriteCanData* frame, const Command&, const Format&) {
     frame->Write<int8_t>(Multiplex::kWriteInt8 | 0x01);
     frame->WriteVaruint(Register::kRequireReindex);
     frame->Write<int8_t>(1);
+    return 0;
   }
 };
 
@@ -1106,11 +1159,12 @@ struct DiagnosticWrite {
 
   struct Format {};
 
-  static void Make(WriteCanData* frame, const Command& command, const Format&) {
+  static uint8_t Make(WriteCanData* frame, const Command& command, const Format&) {
     frame->Write<int8_t>(Multiplex::kClientToServer);
     frame->Write<int8_t>(command.channel);
     frame->Write<int8_t>(command.size);
     frame->Write(command.data, command.size);
+    return 0;
   }
 };
 
@@ -1122,10 +1176,11 @@ struct DiagnosticRead {
 
   struct Format {};
 
-  static void Make(WriteCanData* frame, const Command& command, const Format&) {
+  static uint8_t Make(WriteCanData* frame, const Command& command, const Format&) {
     frame->Write<int8_t>(Multiplex::kClientPollServer);
     frame->Write<int8_t>(command.channel);
     frame->Write<int8_t>(command.max_length);
+    return command.max_length + 3;
   }
 };
 
@@ -1169,10 +1224,11 @@ struct ClockTrim {
 
   struct Format {};
 
-  static void Make(WriteCanData* frame, const Command& command, const Format&) {
+  static uint8_t Make(WriteCanData* frame, const Command& command, const Format&) {
     frame->Write<int8_t>(Multiplex::kWriteInt32 | 0x01);
     frame->WriteVaruint(Register::kClockTrim);
     frame->Write<int32_t>(command.trim);
+    return 0;
   }
 };
 
