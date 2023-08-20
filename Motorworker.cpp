@@ -597,28 +597,21 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     }
     else if (msg == "Check Device")
     {
-        struct termios toptions;
-        int fd;
         std::ostringstream out;
         out.str("");
 
-        fd = open((dev_name.toStdString()).c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
-
-        if (fd == -1) {
+        bool device_evable = false;
+         try {
+            moteus::Controller::ProcessTransportArgs({});
+            device_evable = true;
+         } catch (std::exception& e) {
+            cout << "Could not open moteus transport: " << e.what() << "\n";
+            device_evable = false;
             out << "Warning: Unable to open port, is the fdcanusb device plugged in?" << endl;
             emit sendToMain(QString::fromStdString(out.str()));
-            emit sendMsg("Check Device",0,0,0,0,0,0);
-        }
-        else if (tcgetattr(fd, &toptions) < 0) {
-            out << "Warning: Couldn't get term attributes" << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-            emit sendMsg("Check Device",0,0,0,0,0,0);
-        }
-        else
-        {
-            close(fd);
-            emit sendMsg("Check Device",1,0,0,0,0,0);
-        }
+         }
+
+        emit sendMsg("Check Device",device_evable,0,0,0,0,0);
     }
     else if (msg == "Set Dynamic")
     {
