@@ -30,7 +30,7 @@ namespace mjbots {
 namespace moteus {
 
 /// Each value can be sent or received as one of the following.
-enum Resolution {
+enum Resolution : int8_t {
   kInt8 = 0,
   kInt16 = 1,
   kInt32 = 2,
@@ -145,16 +145,19 @@ class WriteCanData {
   WriteCanData(CanData* frame) : data_(&frame->data[0]), size_(&frame->size) {}
   WriteCanData(uint8_t* data, uint8_t* size) : data_(data), size_(size) {}
 
+  uint8_t size() const { return *size_; }
+
   template <typename T, typename X>
   void Write(X value_in) {
+#ifndef __ORDER_LITTLE_ENDIAN__
+#error "only little endian architectures supported"
+#endif
+
     T value = static_cast<T>(value_in);
     if (sizeof(value) + *size_ > 64) {
       abort();
     }
 
-#ifndef __ORDER_LITTLE_ENDIAN__
-#error "only little endian architectures supported"
-#endif
     ::memcpy(&data_[*size_],
              reinterpret_cast<const char*>(&value),
              sizeof(value));
@@ -276,89 +279,6 @@ class WriteCanData {
  private:
   uint8_t* const data_;
   uint8_t* const size_;
-};
-
-/// Determines how to group registers when encoding them to minimize
-/// the required bytes.
-class WriteCombiner {
- public:
-  WriteCombiner(WriteCanData* frame,
-                int8_t base_command,
-                uint16_t start_register,
-                const Resolution* resolutions,
-                uint16_t resolutions_size)
-      : frame_(frame),
-        base_command_(base_command),
-        start_register_(start_register),
-        resolutions_(resolutions),
-        resolutions_size_(resolutions_size) {}
-
-  ~WriteCombiner() {
-    if (offset_ != resolutions_size_) {
-      ::abort();
-    }
-  }
-
-  bool MaybeWrite() {
-    const auto this_offset = offset_;
-    offset_++;
-
-    if (current_resolution_ == resolutions_[this_offset]) {
-      // We don't need to write any register operations here, and the
-      // value should go out only if requested.
-      return current_resolution_ != Resolution::kIgnore;
-    }
-    // We need to do some kind of framing.  See how far ahead the new
-    // resolution goes.
-    const auto new_resolution = resolutions_[this_offset];
-    current_resolution_ = new_resolution;
-
-    // We are now in a new block of ignores.
-    if (new_resolution == Resolution::kIgnore) {
-      return false;
-    }
-
-    int16_t count = 1;
-    for (uint16_t i = this_offset + 1;
-         i < resolutions_size_ && resolutions_[i] == new_resolution;
-         i++) {
-      count++;
-    }
-
-    int8_t write_command = base_command_ + [&]() {
-      switch (new_resolution) {
-        case Resolution::kInt8: return 0x00;
-        case Resolution::kInt16: return 0x04;
-        case Resolution::kInt32: return 0x08;
-        case Resolution::kFloat: return 0x0c;
-        case Resolution::kIgnore: {
-          abort();
-        }
-      }
-      return 0x00;
-    }();
-
-    if (count <= 3) {
-      // Use the shorthand formulation.
-      frame_->Write<int8_t>(write_command + count);
-    } else {
-      // Nope, the long form.
-      frame_->Write<int8_t>(write_command);
-      frame_->Write<int8_t>(count);
-    }
-    frame_->WriteVaruint(start_register_ + this_offset);
-    return true;
-  }
-
- private:
-  WriteCanData* const frame_;
-  int8_t base_command_ = 0;
-  uint16_t start_register_ = 0;
-  const Resolution* const resolutions_;
-  uint16_t resolutions_size_ = 0;
-
-  Resolution current_resolution_ = Resolution::kIgnore;
-  uint16_t offset_ = 0;
 };
 
 /// Read typed values from a CAN frame.
@@ -519,40 +439,100 @@ class MultiplexParser {
     abort();
   }
 
+  static constexpr int8_t kInt = 0;
+  static constexpr int8_t kPosition = 1;
+  static constexpr int8_t kVelocity = 2;
+  static constexpr int8_t kTorque = 3;
+  static constexpr int8_t kPwm = 4;
+  static constexpr int8_t kVoltage = 5;
+  static constexpr int8_t kTemperature = 6;
+  static constexpr int8_t kTime = 7;
+  static constexpr int8_t kCurrent = 8;
+  static constexpr int8_t kTheta = 9;
+
+  double ReadConcrete(Resolution res, int8_t concrete_type) {
+#ifndef ARDUINO
+    static constexpr double kMappingValues[] = {
+#else
+    static constexpr double PROGMEM kMappingValues[] = {
+#endif
+      1.0, 1.0, 1.0,           // kInt
+      0.01, 0.0001, 0.00001,   // kPosition
+      0.1, 0.00025, 0.00001,   // kVelocity
+      0.5, 0.01, 0.001,        // kTorque
+      1.0 / 127.0, 1.0 / 32767.0, 1.0 / 2147483647.0,  // kPwm
+      0.5, 0.1, 0.001,         // kVoltage
+      1.0, 0.1, 0.001,         // kTemperature
+      0.01, 0.001, 0.000001,   // kTime
+      1.0, 0.1, 0.001,         // kCurrent
+      1.0 / 127.0 * M_PI, 1.0 / 32767.0 * M_PI, 1.0 / 2147483647.0 * M_PI, // kTheta
+    };
+
+#ifndef ARDUINO
+    const double int8_scale = kMappingValues[concrete_type * 3 + 0];
+    const double int16_scale = kMappingValues[concrete_type * 3 + 1];
+    const double int32_scale = kMappingValues[concrete_type * 3 + 2];
+#else
+    const double int8_scale = pgm_read_float_near(kMappingValues + concrete_type * 3 + 0);
+    const double int16_scale = pgm_read_float_near(kMappingValues + concrete_type * 3 + 1);
+    const double int32_scale = pgm_read_float_near(kMappingValues + concrete_type * 3 + 2);
+#endif
+
+    switch (res) {
+      case Resolution::kInt8: {
+        return Nanify<int8_t>(Read<int8_t>()) * int8_scale;
+      }
+      case Resolution::kInt16: {
+        return Nanify<int16_t>(Read<int16_t>()) * int16_scale;
+      }
+      case Resolution::kInt32: {
+        return Nanify<int32_t>(Read<int32_t>()) * int32_scale;
+      }
+      case Resolution::kFloat: {
+        return Read<float>();
+      }
+      default: {
+        break;
+      }
+    }
+
+    abort();
+  }
+
   int ReadInt(Resolution res) {
-    return static_cast<int>(ReadMapped(res, 1.0, 1.0, 1.0));
+    return static_cast<int>(ReadConcrete(res, kInt));
   }
 
   double ReadPosition(Resolution res) {
-    return ReadMapped(res, 0.01, 0.0001, 0.00001);
+    return ReadConcrete(res, kPosition);
   }
 
   double ReadVelocity(Resolution res) {
-    return ReadMapped(res, 0.1, 0.00025, 0.00001);
+    return ReadConcrete(res, kVelocity);
   }
 
   double ReadTorque(Resolution res) {
-    return ReadMapped(res, 0.5, 0.01, 0.001);
+    return ReadConcrete(res, kTorque);
   }
 
   double ReadPwm(Resolution res) {
-    return ReadMapped(res, 1.0 / 127.0, 1.0 / 32767.0, 1.0 / 2147483647.0);
+    return ReadConcrete(res, kPwm);
   }
 
   double ReadVoltage(Resolution res) {
-    return ReadMapped(res, 0.5, 0.1, 0.001);
+    return ReadConcrete(res, kVoltage);
   }
 
   double ReadTemperature(Resolution res) {
-    return ReadMapped(res, 1.0, 0.1, 0.001);
+    return ReadConcrete(res, kTemperature);
   }
 
   double ReadTime(Resolution res) {
-    return ReadMapped(res, 0.01, 0.001, 0.000001);
+    return ReadConcrete(res, kTime);
   }
 
   double ReadCurrent(Resolution res) {
-    return ReadMapped(res, 1.0, 0.1, 0.001);
+    return ReadConcrete(res, kCurrent);
   }
 
   void Ignore(Resolution res) {
@@ -569,8 +549,7 @@ class MultiplexParser {
     return size_ - offset_;
   }
 
- private:
-  int8_t ResolutionSize(Resolution res) {
+  static int8_t ResolutionSize(Resolution res) {
     switch (res) {
       case Resolution::kInt8: return 1;
       case Resolution::kInt16: return 2;
@@ -581,6 +560,7 @@ class MultiplexParser {
     return 1;
   }
 
+ private:
   const uint8_t* const data_;
   const uint8_t size_;
   uint16_t offset_ = 0;
@@ -588,6 +568,98 @@ class MultiplexParser {
   int8_t remaining_ = 0;
   Resolution current_resolution_ = Resolution::kIgnore;
   uint16_t current_register_ = 0;
+};
+
+/// Determines how to group registers when encoding them to minimize
+/// the required bytes.
+class WriteCombiner {
+ public:
+  WriteCombiner(WriteCanData* frame,
+                int8_t base_command,
+                uint16_t start_register,
+                const Resolution* resolutions,
+                uint16_t resolutions_size)
+      : frame_(frame),
+        base_command_(base_command),
+        start_register_(start_register),
+        resolutions_(resolutions),
+        resolutions_size_(resolutions_size) {}
+
+  ~WriteCombiner() {
+    if (offset_ != resolutions_size_) {
+      ::abort();
+    }
+  }
+
+  uint8_t reply_size() const { return reply_size_; }
+
+  bool MaybeWrite() {
+    const auto this_offset = offset_;
+    offset_++;
+
+    if (current_resolution_ == resolutions_[this_offset]) {
+      // We don't need to write any register operations here, and the
+      // value should go out only if requested.
+      return current_resolution_ != Resolution::kIgnore;
+    }
+    // We need to do some kind of framing.  See how far ahead the new
+    // resolution goes.
+    const auto new_resolution = resolutions_[this_offset];
+    current_resolution_ = new_resolution;
+
+    // We are now in a new block of ignores.
+    if (new_resolution == Resolution::kIgnore) {
+      return false;
+    }
+
+    int16_t count = 1;
+    for (uint16_t i = this_offset + 1;
+         i < resolutions_size_ && resolutions_[i] == new_resolution;
+         i++) {
+      count++;
+    }
+
+    int8_t write_command = base_command_ + [&]() {
+      switch (new_resolution) {
+        case Resolution::kInt8: return 0x00;
+        case Resolution::kInt16: return 0x04;
+        case Resolution::kInt32: return 0x08;
+        case Resolution::kFloat: return 0x0c;
+        case Resolution::kIgnore: {
+          abort();
+        }
+      }
+      return 0x00;
+    }();
+
+    const auto start_size = frame_->size();
+    if (count <= 3) {
+      // Use the shorthand formulation.
+      frame_->Write<int8_t>(write_command + count);
+    } else {
+      // Nope, the long form.
+      frame_->Write<int8_t>(write_command);
+      frame_->Write<int8_t>(count);
+    }
+    frame_->WriteVaruint(start_register_ + this_offset);
+    const auto end_size = frame_->size();
+
+    reply_size_ += (end_size - start_size);
+    reply_size_ += count * MultiplexParser::ResolutionSize(new_resolution);
+
+    return true;
+  }
+
+ private:
+  WriteCanData* const frame_;
+  int8_t base_command_ = 0;
+  uint16_t start_register_ = 0;
+  const Resolution* const resolutions_;
+  uint16_t resolutions_size_ = 0;
+
+  Resolution current_resolution_ = Resolution::kIgnore;
+  uint16_t offset_ = 0;
+  uint8_t reply_size_ = 0;
 };
 
 }
