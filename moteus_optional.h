@@ -48,6 +48,5 @@ class Optional {
   union { char dummy_; T val_; };
   bool engaged_;
 };
-
 }  // namespace moteus
 }  // namespace mjbots
