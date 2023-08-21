@@ -32,10 +32,10 @@ public slots:
     void run_cycles();
 
 private:
-    bool Check_Motor(QString dev_name,int Motor_id);
-    bool Check_TrajectoryComplete(QString dev_name,int Motor_id);
-    bool Wait_TrajectoryComplete(QString dev_name,int Motor_id);
-    bool Check_Velocity(QString dev_name,int Motor_id);
+    bool Check_Motor(int Motor_id);
+    bool Check_TrajectoryComplete(int Motor_id);
+    bool Wait_TrajectoryComplete(int Motor_id);
+    bool Check_Velocity(int Motor_id);
     double l_accel_limit;
     double l_position;
     double l_velocity_limit;
@@ -45,8 +45,6 @@ private:
     double l_kd_scale;
     double l_Cycle_Start_Stop;
     double l_Cycle_Delay;
-    QString l_dev_name;
-    QString Position_dev_name;
     double delay = 0;
     double l_Cycle;
     int    l_Motor_id;
@@ -79,8 +77,3 @@ private:
 };
 
 #endif // MOTORWORKER_H
-
-
-
-
-
