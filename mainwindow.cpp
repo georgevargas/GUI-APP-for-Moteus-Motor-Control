@@ -208,7 +208,7 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
                 }
             }
 
-            MoteusAPI api(dev_name, moteus_id); // set to initialize MoteusAPI
+            MoteusAPI api(moteus_id); // set to initialize MoteusAPI
 
             for (int i = 1; i <= Number_of_Motors; i++)
             {
@@ -586,7 +586,7 @@ void MainWindow::on_btnSetNearest_clicked()
     }
     else
     {
-        MoteusAPI api(dev_name, moteus_id);
+        MoteusAPI api(moteus_id);
         api.TestCommand();
     }
 }
