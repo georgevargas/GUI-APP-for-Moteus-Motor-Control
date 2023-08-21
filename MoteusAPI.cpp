@@ -1,40 +1,18 @@
-// Copyright 2021 Sina Aghli, sinaaghli.com
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 #include "MoteusAPI.h"
 
-#include <errno.h>   // Error number definitions
-#include <fcntl.h>   // File control definitions
 #include <stdio.h>   // Standard input/output definitions
-#include <string.h>  // String function definitions
-#include <sys/ioctl.h>
-#include <termios.h>  // POSIX terminal control definitions
-#include <unistd.h>   // UNIX standard function definitions
 #include "MoteusAPI.h"
-
-#include <iostream>
 #include "moteus.h"
 
 using namespace mjbots;
 using namespace moteus;
 
-MoteusAPI::MoteusAPI(const string dev_name, int moteus_id)
-    : dev_name_(dev_name), moteus_id_(moteus_id) {
-  OpenDev();
+MoteusAPI::MoteusAPI(int moteus_id)
+    : moteus_id_(moteus_id) {
 }
 
-MoteusAPI::~MoteusAPI() { CloseDev(); }
+MoteusAPI::~MoteusAPI() {
+}
 
 bool MoteusAPI::SendPositionCommand(double position,
                                     double velocity_limit,
@@ -177,101 +155,4 @@ void MoteusAPI::ReadState(State& curr_state) const {
   curr_state.fault = qr.fault;
   curr_state.mode = static_cast<float>(qr.mode);
   curr_state.TrajectoryComplete = qr.trajectory_complete;
-}
-
-bool MoteusAPI::ExpectResponse(const string& exp_string,
-                               string& fullresp) const {
-  char read_buff[readbuffsize];
-  for (uint ii = 0; ii < readbuffsize; ii++) {
-    read_buff[ii] = 0;
-  }
-  do {
-    int res = ReadUntilDev(read_buff, '\n', readbuffsize, 1000);
-    if (res) {
-      cout << "Timeout: Expected response'" << exp_string
-           << "' was not received" << endl;
-      return false;
-    }
-    fullresp = string(read_buff);
-  } while (fullresp.find(exp_string) == std::string::npos);
-  return true;
-}
-
-int MoteusAPI::OpenDev() {
-  struct termios toptions;
-  int fd;
-
-  fd = open(dev_name_.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
-
-  if (fd == -1) {
-    throw std::runtime_error("MoteusAPI: Unable to open port");
-    exit(EXIT_FAILURE);
-  }
-
-  if (tcgetattr(fd, &toptions) < 0) {
-    throw std::runtime_error("MoteusAPI: Couldn't get term attributes");
-    exit(EXIT_FAILURE);
-  }
-
-  // set baud to arbitrary value, it will get ignored by dev
-  speed_t brate = B115200;
-
-  cfsetispeed(&toptions, brate);
-  cfsetospeed(&toptions, brate);
-
-  // 8N1
-  toptions.c_cflag &= ~PARENB;
-  toptions.c_cflag &= ~CSTOPB;
-  toptions.c_cflag &= ~CSIZE;
-  toptions.c_cflag |= CS8;
-  // no flow control
-  toptions.c_cflag &= ~CRTSCTS;
-
-  toptions.c_cflag |= CREAD | CLOCAL;
-  toptions.c_iflag &= ~(IXON | IXOFF | IXANY);
-
-  toptions.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
-  toptions.c_oflag &= ~OPOST;
-
-  toptions.c_cc[VMIN] = 0;
-  toptions.c_cc[VTIME] = 0;
-
-  tcsetattr(fd, TCSANOW, &toptions);
-  if (tcsetattr(fd, TCSAFLUSH, &toptions) < 0) {
-    throw std::runtime_error("MoteusAPI: Couldn't set term attributes");
-  }
-
-  fd_ = fd;
-  return fd_;
-}
-
-bool MoteusAPI::WriteDev(const string& buff) const {
-  uint n = write(fd_, buff.c_str(), buff.size());
-  if (n != buff.size()) {
-    return false;
-  }
-  return true;
-}
-
-int MoteusAPI::CloseDev() const { return close(fd_); }
-
-int MoteusAPI::ReadUntilDev(char* buf, char until, int buf_max,
-                            int timeout) const {
-  char b[1];  // read expects an array, so we give it a 1-byte array
-  int i = 0;
-  do {
-    int n = read(fd_, b, 1);  // read a char at a time
-    if (n == -1) return -1;   // couldn't read
-    if (n == 0) {
-      usleep(1 * 1000);  // wait 1 msec try again
-      timeout--;
-      if (timeout == 0) return -2;
-      continue;
-    }
-    buf[i] = b[0];
-    i++;
-  } while (b[0] != until && i < buf_max && timeout > 0);
-
-  buf[i] = 0;  // null terminate the string
-  return 0;
 }
