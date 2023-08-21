@@ -25,9 +25,9 @@ Motorworker::Motorworker(QObject *parent) :
 Motorworker::~Motorworker()
 {
 }
-bool Motorworker::Check_Motor(QString dev_name,int Motor_id)
+bool Motorworker::Check_Motor(int Motor_id)
 {
-    MoteusAPI api(dev_name.toStdString(), Motor_id);
+    MoteusAPI api(Motor_id);
     bool error = false;
     Motor_error = false;
     TrajectoryComplete_error = false;
@@ -153,9 +153,9 @@ bool Motorworker::Check_Motor(QString dev_name,int Motor_id)
     }
     return !error;
 }
-bool Motorworker::Check_TrajectoryComplete(QString dev_name,int Motor_id)
+bool Motorworker::Check_TrajectoryComplete(int Motor_id)
 {
-    MoteusAPI api(dev_name.toStdString(), Motor_id);
+    MoteusAPI api(Motor_id);
     bool error = false;
     TrajectoryComplete_error = false;
     // define a state object
@@ -182,9 +182,9 @@ bool Motorworker::Check_TrajectoryComplete(QString dev_name,int Motor_id)
     }
     return !error;
 }
-bool Motorworker::Wait_TrajectoryComplete(QString dev_name,int Motor_id)
+bool Motorworker::Wait_TrajectoryComplete(int Motor_id)
 {
-    MoteusAPI api(dev_name.toStdString(), Motor_id);
+    MoteusAPI api(Motor_id);
     bool error = false;
     Motor_error = false;
     TrajectoryComplete_error = false;
@@ -242,9 +242,9 @@ bool Motorworker::Wait_TrajectoryComplete(QString dev_name,int Motor_id)
     }
     return !error;
 }
-bool Motorworker::Check_Velocity(QString dev_name,int Motor_id)
+bool Motorworker::Check_Velocity(int Motor_id)
 {
-    MoteusAPI api(dev_name.toStdString(), Motor_id);
+    MoteusAPI api(Motor_id);
     // define a state object
     State curr_state;
     std::ostringstream out;
@@ -269,12 +269,12 @@ void Motorworker::run_cycles()
     if (!Step_Mode && !Rec_run_Enable && Position_wait)
     {
         // check TrajectoryComplete
-        if (Check_TrajectoryComplete(Position_dev_name,position_Motor_id))
+        if (Check_TrajectoryComplete(position_Motor_id))
         {
             std::ostringstream out;
             Position_wait = false;
 
-            MoteusAPI api1(Position_dev_name.toStdString(), position_Motor_id);
+            MoteusAPI api1(position_Motor_id);
             // define a state object
             State curr_state1;
 
@@ -294,7 +294,7 @@ void Motorworker::run_cycles()
         if (TrajectoryComplete_pause)
         {
             // check TrajectoryComplete
-            if (Check_TrajectoryComplete(l_dev_name,l_Motor_id))
+            if (Check_TrajectoryComplete(l_Motor_id))
             {
                TrajectoryComplete_pause = false;
             }
@@ -309,9 +309,9 @@ void Motorworker::run_cycles()
                 // start the next in the list
                 l_Motor_id = list_Motor_id[current_list_index];
 
-                MoteusAPI api(l_dev_name.toStdString(), l_Motor_id);
+                MoteusAPI api(l_Motor_id);
                 TrajectoryComplete_pause = false;
-                if (!Check_Motor(l_dev_name,l_Motor_id))
+                if (!Check_Motor(l_Motor_id))
                 {
                    if (Motor_error)
                    {
@@ -647,7 +647,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         Step_Mode = false;
         Position_wait = false;
 
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        MoteusAPI api(Motor_id);
 
         // define a state object
         State curr_state;
@@ -693,7 +693,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     }
     else if (msg == "Update Velocity")
     {
-        Check_Velocity(dev_name, Motor_id);
+        Check_Velocity(Motor_id);
     }
     else if (msg == "Run_Recorded")
     {
@@ -708,7 +708,6 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         l_kp_scale = kp_scale;
         l_kd_scale = kd_scale;
         l_Cycle_Start_Stop = Cycle;
-        l_dev_name = dev_name;
         current_list_index = 0;
         l_Cycle = 0;
         // set l_Cycle_Delay and delay equal to cause first list load
@@ -734,7 +733,6 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         l_kd_scale = kd_scale;
 
         l_Cycle_Start_Stop = Cycle;
-        l_dev_name = dev_name;
         l_Cycle = 0;
         // set l_Cycle_Delay and delay equal to cause first list load
         l_Cycle_Delay = 1;
@@ -797,7 +795,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         Rec_run_Enable = false;
         Position_wait = false;
 
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        MoteusAPI api(Motor_id);
 
         moteus::Controller::Options options;
         options.id = Motor_id;
@@ -1053,7 +1051,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         Rec_run_Enable = false;
         Position_wait = false;
 
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        MoteusAPI api(Motor_id);
 
         moteus::Controller::Options options;
         options.id = Motor_id;
@@ -1088,7 +1086,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         Rec_run_Enable = false;
         Position_wait = false;
 
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        MoteusAPI api(Motor_id);
 
         moteus::Controller::Options options;
         options.id = Motor_id;
@@ -1131,9 +1129,9 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         Rec_run_Enable = false;
         Position_wait = false;
 
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        MoteusAPI api(Motor_id);
 
-        if (!Check_Motor(dev_name,Motor_id))
+        if (!Check_Motor(Motor_id))
         {
            if (Motor_error)
            {
@@ -1143,7 +1141,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
            else if (TrajectoryComplete_error)
            {
                // wait for TrajectoryComplete
-               Wait_TrajectoryComplete(l_dev_name,Motor_id);
+               Wait_TrajectoryComplete(Motor_id);
            }
         }
 
@@ -1176,7 +1174,6 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         }
 
         position_Motor_id = Motor_id;
-        Position_dev_name = dev_name;
         Position_wait = true;
      }
     else if (msg == "Go To Rest Position")
@@ -1184,9 +1181,9 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         Rec_run_Enable = false;
         Position_wait = false;
 
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        MoteusAPI api(Motor_id);
 
-        if (!Check_Motor(dev_name,Motor_id))
+        if (!Check_Motor(Motor_id))
         {
            if (Motor_error)
            {
@@ -1196,7 +1193,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
            else if (TrajectoryComplete_error)
            {
                // wait for TrajectoryComplete
-               Wait_TrajectoryComplete(l_dev_name,Motor_id);
+               Wait_TrajectoryComplete(Motor_id);
            }
         }
 
@@ -1228,7 +1225,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         }
         else
         {
-            Wait_TrajectoryComplete(dev_name,Motor_id);
+            Wait_TrajectoryComplete(Motor_id);
 
             //read current position
             curr_state.Reset();
@@ -1244,9 +1241,9 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         Rec_run_Enable = false;
         Position_wait = false;
 
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        MoteusAPI api(Motor_id);
 
-        if (!Check_Motor(dev_name,Motor_id))
+        if (!Check_Motor(Motor_id))
         {
            if (Motor_error)
            {
@@ -1256,7 +1253,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
            else if (TrajectoryComplete_error)
            {
                // wait for TrajectoryComplete
-               Wait_TrajectoryComplete(l_dev_name,Motor_id);
+               Wait_TrajectoryComplete(Motor_id);
            }
         }
 
@@ -1296,7 +1293,6 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         }
 
         position_Motor_id = Motor_id;
-        Position_dev_name = dev_name;
         Position_wait = true;
 
     }
@@ -1305,9 +1301,9 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         Rec_run_Enable = false;
         Position_wait = false;
 
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        MoteusAPI api(Motor_id);
 
-        if (!Check_Motor(dev_name,Motor_id))
+        if (!Check_Motor(Motor_id))
         {
            if (Motor_error)
            {
@@ -1317,7 +1313,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
            else if (TrajectoryComplete_error)
            {
                // wait for TrajectoryComplete
-               Wait_TrajectoryComplete(l_dev_name,Motor_id);
+               Wait_TrajectoryComplete(Motor_id);
            }
         }
 
@@ -1355,12 +1351,11 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         }
 
         position_Motor_id = Motor_id;
-        Position_dev_name = dev_name;
         Position_wait = true;
     }
     else if (msg == "Read_Status")
     {
-        MoteusAPI api(dev_name.toStdString(), Motor_id);
+        MoteusAPI api(Motor_id);
 
         // define a state object
         State curr_state;
