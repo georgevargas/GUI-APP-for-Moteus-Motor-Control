@@ -1,32 +1,7 @@
-// Copyright 2021 Sina Aghli, sinaaghli.com
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 #ifndef MOTEUSAPI_H__
 #define MOTEUSAPI_H__
 
-#include <algorithm>
-#include <chrono>
-#include <cmath>
-#include <iomanip>
 #include <iostream>
-#include <iterator>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <thread>
-#include <vector>
-
 #include "moteus_protocol.h"
 
 using namespace std;
@@ -142,7 +117,7 @@ struct State {
 
 class MoteusAPI {
  public:
-  MoteusAPI(const string dev_name, int moteus_id);
+  MoteusAPI(int moteus_id);
   ~MoteusAPI();
 
   bool SendPositionCommand(double position,
@@ -159,22 +134,10 @@ class MoteusAPI {
 
   bool TestCommand();
 
-  bool SendDiagnosticCommand(string msg);
-
   void ReadState(State& curr_state) const;
 
  private:
-  // Open /dev/dev_name_
-  int OpenDev();
-  int CloseDev() const;
-  bool WriteDev(const string& buff) const;
-  int ReadUntilDev(char* buf, char until, int buf_max, int timeout) const;
-  bool ExpectResponse(const string& exp_string, string& resp) const;
-  const string dev_name_;
   const int moteus_id_;
-  int fd_;
-  const unsigned int readbuffsize = 500;
-  // const unsigned long timeoutdelayus = 1000;
 };
 
 #endif  // MOTEUSAPI_H__
