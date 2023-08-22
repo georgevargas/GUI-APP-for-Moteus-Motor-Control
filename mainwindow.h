@@ -14,7 +14,7 @@
 #include <QPen>
 #include <QPixmap>
 #include <stdlib.h> // required for system call
-#include "MoteusAPI.h"
+//#include "MoteusAPI.h"
 #include <QTimer>
 #include "qcustomplot.h"
 
@@ -70,7 +70,7 @@ private:
     QCPItemText *m_ValueIndex;
 
     QTimer * myTimer;
-    string dev_name = "/dev/ttyACM0";
+    QString dev_name = "/dev/ttyACM0";
     int moteus_id = 1;
     int Number_of_Motors = 3;
     double Motor_rest_position[10] ={-0.005,-0.007,0.208496,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
