@@ -1,6 +1,5 @@
 #ifndef MOTORCVWORKER_H
 #define MOTORCVWORKER_H
-#include "MoteusAPI.h"
 #include "mainwindow.h"
 #include <QObject>
 
@@ -11,6 +10,114 @@
 #include <stdio.h>
 
 using namespace std;
+enum class Fault {
+  kNoFault = 0,
+  kCalibrationFault = 32,
+  kMotorDriverFault = 33,
+  kOverVoltageFault = 34,
+  kEncoderFault = 35,
+  kMotorNotConfiguredFault = 36,
+  kPwmCycleOverrunFault = 37,
+  kOverTemperatureFault = 38,
+  kOutsideLimitFault = 39,
+};
+
+struct State {
+  double position = NAN;
+  double velocity = NAN;
+  double torque = NAN;
+  double q_curr = NAN;
+  double d_curr = NAN;
+  double rezero_state = NAN;
+  double voltage = NAN;
+  double temperature = NAN;
+  double fault = NAN;
+  double mode = NAN;
+  bool TrajectoryComplete = false;
+  // flags
+  bool mode_flag = false;
+  bool position_flag = false;
+  bool velocity_flag = false;
+  bool torque_flag = false;
+  bool q_curr_flag = false;
+  bool d_curr_flag = false;
+  bool abs_position_flag = false;
+  bool motor_temperature_flag = false;
+  bool TrajectoryComplete_flag = false;
+  bool home_state_flag = false;
+  bool voltage_flag = false;
+  bool temperature_flag = false;
+  bool fault_flag = false;
+
+  State& EN_Position() {
+    position_flag = true;
+    return *this;
+  }
+  State& EN_Velocity() {
+    velocity_flag = true;
+    return *this;
+  }
+  State& EN_Torque() {
+    torque_flag = true;
+    return *this;
+  }
+  State& EN_QCurr() {
+    q_curr_flag = true;
+    return *this;
+  }
+  State& EN_DCurr() {
+    d_curr_flag = true;
+    return *this;
+  }
+  State& EN_abs_position() {
+    abs_position_flag = true;
+    return *this;
+  }
+  State& motor_temperature() {
+    motor_temperature_flag = true;
+    return *this;
+  }
+  State& EN_TrajectoryComplete() {
+    TrajectoryComplete_flag = true;
+    return *this;
+  }
+  State& EN_home_state() {
+    home_state_flag = true;
+    return *this;
+  }
+  State& EN_Voltage() {
+    voltage_flag = true;
+    return *this;
+  }
+  State& EN_Temp() {
+    temperature_flag = true;
+    return *this;
+  }
+  State& EN_Fault() {
+    fault_flag = true;
+    return *this;
+  }
+  State& EN_Mode() {
+    mode_flag = true;
+    return *this;
+  }
+
+  void Reset() {
+    position_flag = false;
+    velocity_flag = false;
+    torque_flag = false;
+    q_curr_flag = false;
+    d_curr_flag = false;
+    abs_position_flag = false;
+    motor_temperature_flag = false;
+    home_state_flag = false;
+    voltage_flag = false;
+    temperature_flag = false;
+    fault_flag = false;
+    mode_flag = false;
+    TrajectoryComplete_flag = false;
+  }
+};
 
 class Motorworker : public QObject
 {
@@ -36,6 +143,19 @@ private:
     bool Check_TrajectoryComplete(int Motor_id);
     bool Wait_TrajectoryComplete(int Motor_id);
     bool Check_Velocity(int Motor_id);
+    bool SendPositionCommand(int Motor_id,
+                             double position,
+                             double velocity_limit,
+                             double accel_limit,
+                             double max_torque,
+                             double feedforward_torque,
+                             double kp_scale,
+                             double kd_scale,
+                             double velocity, // end velocity
+                             double watchdog_timer = NAN) const;
+
+    bool SendStopCommand(int moteus_id);
+    void ReadState(int moteus_id, State& curr_state) const;
     double l_accel_limit;
     double l_position;
     double l_velocity_limit;
