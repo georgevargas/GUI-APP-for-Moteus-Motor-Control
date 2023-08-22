@@ -27,7 +27,6 @@ Motorworker::~Motorworker()
 }
 bool Motorworker::Check_Motor(int Motor_id)
 {
-    MoteusAPI api(Motor_id);
     bool error = false;
     Motor_error = false;
     TrajectoryComplete_error = false;
@@ -43,7 +42,7 @@ bool Motorworker::Check_Motor(int Motor_id)
     curr_state.EN_Fault();
     curr_state.EN_Mode();
     curr_state.EN_TrajectoryComplete();
-    api.ReadState(curr_state);
+    ReadState(Motor_id, curr_state);
 
     Fault fault = static_cast<Fault>(curr_state.fault);
     Mode mode = static_cast<Mode>(curr_state.mode);
@@ -155,7 +154,6 @@ bool Motorworker::Check_Motor(int Motor_id)
 }
 bool Motorworker::Check_TrajectoryComplete(int Motor_id)
 {
-    MoteusAPI api(Motor_id);
     bool error = false;
     TrajectoryComplete_error = false;
     // define a state object
@@ -170,7 +168,7 @@ bool Motorworker::Check_TrajectoryComplete(int Motor_id)
     curr_state.EN_Fault();
     curr_state.EN_Mode();
     curr_state.EN_TrajectoryComplete();
-    api.ReadState(curr_state);
+    ReadState(Motor_id, curr_state);
 
     Fault fault = static_cast<Fault>(curr_state.fault);
     Mode mode = static_cast<Mode>(curr_state.mode);
@@ -184,7 +182,6 @@ bool Motorworker::Check_TrajectoryComplete(int Motor_id)
 }
 bool Motorworker::Wait_TrajectoryComplete(int Motor_id)
 {
-    MoteusAPI api(Motor_id);
     bool error = false;
     Motor_error = false;
     TrajectoryComplete_error = false;
@@ -200,7 +197,7 @@ bool Motorworker::Wait_TrajectoryComplete(int Motor_id)
     curr_state.EN_Fault();
     curr_state.EN_Mode();
     curr_state.EN_TrajectoryComplete();
-    api.ReadState(curr_state);
+    ReadState(Motor_id, curr_state);
 
     Fault fault = static_cast<Fault>(curr_state.fault);
     Mode mode = static_cast<Mode>(curr_state.mode);
@@ -220,7 +217,7 @@ bool Motorworker::Wait_TrajectoryComplete(int Motor_id)
             curr_state.EN_Fault();
             curr_state.EN_Mode();
             curr_state.EN_TrajectoryComplete();
-            api.ReadState(curr_state);
+            ReadState(Motor_id, curr_state);
             fault = static_cast<Fault>(curr_state.fault);
             mode = static_cast<Mode>(curr_state.mode);
             TrajectoryComplete = static_cast<bool>(curr_state.TrajectoryComplete);
@@ -242,9 +239,126 @@ bool Motorworker::Wait_TrajectoryComplete(int Motor_id)
     }
     return !error;
 }
+
+bool Motorworker::SendStopCommand(int moteus_id) {
+    moteus::Controller::Options options;
+    options.id = moteus_id;
+    options.default_query = false;
+    moteus::Controller controller(options);
+
+    // Command a stop to the controller in order to clear any faults.
+    controller.SetStop();
+
+  return true;
+}
+void Motorworker::ReadState(int moteus_id, State& curr_state) const {
+    moteus::Query::Format q_com;
+    q_com.mode = mjbots::moteus::Resolution::kInt8;
+    q_com.position = mjbots::moteus::Resolution::kFloat;
+    q_com.velocity = mjbots::moteus::Resolution::kFloat;
+    q_com.torque = mjbots::moteus::Resolution::kFloat;
+    q_com.q_current = mjbots::moteus::Resolution::kFloat;
+    q_com.d_current = mjbots::moteus::Resolution::kFloat;
+    q_com.abs_position = mjbots::moteus::Resolution::kFloat;
+    q_com.motor_temperature = mjbots::moteus::Resolution::kFloat;
+    q_com.trajectory_complete = mjbots::moteus::Resolution::kInt16;
+    q_com.home_state = mjbots::moteus::Resolution::kIgnore;
+    q_com.voltage = mjbots::moteus::Resolution::kFloat;
+    q_com.temperature = mjbots::moteus::Resolution::kFloat;
+    q_com.fault = mjbots::moteus::Resolution::kInt8;
+
+  if (!curr_state.position_flag)
+    q_com.position = mjbots::moteus::Resolution::kIgnore;
+  if (!curr_state.velocity_flag)
+    q_com.velocity = mjbots::moteus::Resolution::kIgnore;
+  if (!curr_state.torque_flag)
+    q_com.torque = mjbots::moteus::Resolution::kIgnore;
+  if (!curr_state.q_curr_flag)
+    q_com.q_current = mjbots::moteus::Resolution::kIgnore;
+  if (!curr_state.d_curr_flag)
+    q_com.d_current = mjbots::moteus::Resolution::kIgnore;
+  if (!curr_state.abs_position_flag)
+    q_com.abs_position = mjbots::moteus::Resolution::kIgnore;
+  if (!curr_state.motor_temperature_flag)
+    q_com.motor_temperature = mjbots::moteus::Resolution::kIgnore;
+  if (!curr_state.home_state_flag)
+    q_com.home_state = mjbots::moteus::Resolution::kIgnore;
+  if (!curr_state.TrajectoryComplete_flag)
+    q_com.trajectory_complete = mjbots::moteus::Resolution::kIgnore;
+  if (!curr_state.voltage_flag)
+    q_com.voltage = mjbots::moteus::Resolution::kIgnore;
+  if (!curr_state.temperature_flag)
+    q_com.temperature = mjbots::moteus::Resolution::kIgnore;
+  if (!curr_state.fault_flag)
+    q_com.fault = mjbots::moteus::Resolution::kIgnore;
+  if (!curr_state.mode_flag)
+    q_com.mode = mjbots::moteus::Resolution::kIgnore;
+
+  moteus::Controller::Options options;
+  options.id = moteus_id;
+  options.default_query = false;
+  moteus::Controller controller(options);
+
+  const auto maybe_result = controller.SetQuery(&q_com);
+  const auto qr = maybe_result->values;
+  curr_state.position = qr.position;
+  curr_state.velocity = qr.velocity;
+  curr_state.torque = qr.torque;
+  curr_state.q_curr = qr.q_current;
+  curr_state.d_curr = qr.d_current;
+  curr_state.voltage = qr.voltage;
+  curr_state.temperature = qr.temperature;
+  curr_state.fault = qr.fault;
+  curr_state.mode = static_cast<float>(qr.mode);
+  curr_state.TrajectoryComplete = qr.trajectory_complete;
+}
+bool Motorworker::SendPositionCommand(  int Motor_id,
+                                        double position,
+                                        double velocity_limit,
+                                        double accel_limit,
+                                        double max_torque,
+                                        double feedforward_torque,
+                                        double kp_scale,
+                                        double kd_scale,
+                                        double velocity,
+                                        double watchdog_timer) const
+{
+    moteus::PositionMode::Command cmd;
+    cmd.position = position;
+    cmd.velocity = velocity;
+    cmd.maximum_torque = max_torque;
+    cmd.stop_position = std::numeric_limits<double>::quiet_NaN();
+    cmd.kp_scale = kp_scale;
+    cmd.kd_scale = kd_scale;
+    cmd.feedforward_torque = feedforward_torque;
+    cmd.velocity_limit = velocity_limit;
+    cmd.accel_limit = accel_limit;
+    cmd.watchdog_timeout = watchdog_timer;
+
+    moteus::PositionMode::Format res;
+    res.position = mjbots::moteus::Resolution::kFloat;
+    res.velocity = mjbots::moteus::Resolution::kFloat;
+    res.feedforward_torque = mjbots::moteus::Resolution::kFloat;
+    res.kp_scale = mjbots::moteus::Resolution::kFloat;
+    res.kd_scale = mjbots::moteus::Resolution::kFloat;
+    res.maximum_torque = mjbots::moteus::Resolution::kFloat;
+    res.stop_position = mjbots::moteus::Resolution::kFloat;
+    res.watchdog_timeout = mjbots::moteus::Resolution::kFloat;
+    res.velocity_limit = mjbots::moteus::Resolution::kFloat;
+    res.accel_limit = mjbots::moteus::Resolution::kFloat;
+    res.fixed_voltage_override = mjbots::moteus::Resolution::kIgnore;
+
+    moteus::Controller::Options options;
+    options.id = Motor_id;
+    options.default_query = false;
+    moteus::Controller controller(options);
+
+    controller.SetPosition(cmd,&res);
+    return true;
+
+}
 bool Motorworker::Check_Velocity(int Motor_id)
 {
-    MoteusAPI api(Motor_id);
     // define a state object
     State curr_state;
     std::ostringstream out;
@@ -260,7 +374,7 @@ bool Motorworker::Check_Velocity(int Motor_id)
     curr_state.EN_Temp();
     curr_state.EN_QCurr();
 
-    api.ReadState(curr_state);
+    ReadState(Motor_id, curr_state);
     emit sendMsg("get velocity",Motor_id,curr_state.position,curr_state.velocity,curr_state.torque,curr_state.temperature,curr_state.q_curr);
     return true;
 }
@@ -274,7 +388,6 @@ void Motorworker::run_cycles()
             std::ostringstream out;
             Position_wait = false;
 
-            MoteusAPI api1(position_Motor_id);
             // define a state object
             State curr_state1;
 
@@ -283,7 +396,7 @@ void Motorworker::run_cycles()
 
             //read current position
             curr_state1.EN_Position();
-            api1.ReadState(curr_state1);
+            ReadState(position_Motor_id, curr_state1);
 
             out << "Motor = " << position_Motor_id << " Ending position:\t" << curr_state1.position << endl;
             emit sendToMain(QString::fromStdString(out.str()));
@@ -309,14 +422,13 @@ void Motorworker::run_cycles()
                 // start the next in the list
                 l_Motor_id = list_Motor_id[current_list_index];
 
-                MoteusAPI api(l_Motor_id);
                 TrajectoryComplete_pause = false;
                 if (!Check_Motor(l_Motor_id))
                 {
                    if (Motor_error)
                    {
                        // send one stop command
-                       api.SendStopCommand();
+                       SendStopCommand(l_Motor_id);
                    }
                    else if (TrajectoryComplete_error)
                    {
@@ -331,7 +443,8 @@ void Motorworker::run_cycles()
 
                 if (Dynamic && Dynamic_Motor_id == list_Motor_id[current_list_index])
                 {
-                    if (!api.SendPositionCommand(list_Position[current_list_index],
+                    if (!SendPositionCommand(list_Motor_id[current_list_index],
+                                            list_Position[current_list_index],
                                             l_velocity_limit,
                                             l_accel_limit,
                                             l_max_torque,
@@ -347,7 +460,8 @@ void Motorworker::run_cycles()
                 }
                 else
                 {
-                    if (!api.SendPositionCommand(list_Position[current_list_index],
+                    if (!SendPositionCommand(list_Motor_id[current_list_index],
+                                            list_Position[current_list_index],
                                             list_velocity_limit[current_list_index],
                                             list_accel_limit[current_list_index],
                                             list_Max_torque[current_list_index],
@@ -647,8 +761,6 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         Step_Mode = false;
         Position_wait = false;
 
-        MoteusAPI api(Motor_id);
-
         // define a state object
         State curr_state;
         std::ostringstream out;
@@ -658,7 +770,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
 
         //read current position
         curr_state.EN_Position();
-        api.ReadState(curr_state);
+        ReadState(Motor_id, curr_state);
 
         double position_limited = curr_state.position;
         if (bounds_max != NAN && position_limited > bounds_max)
@@ -794,8 +906,6 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     {
         Rec_run_Enable = false;
         Position_wait = false;
-
-        MoteusAPI api(Motor_id);
 
         moteus::Controller::Options options;
         options.id = Motor_id;
@@ -1051,8 +1161,6 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         Rec_run_Enable = false;
         Position_wait = false;
 
-        MoteusAPI api(Motor_id);
-
         moteus::Controller::Options options;
         options.id = Motor_id;
         options.default_query = false;
@@ -1076,7 +1184,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
 
         //read current position
         curr_state.EN_Position();
-        api.ReadState(curr_state);
+        ReadState(Motor_id, curr_state);
         out << "Motor: " << Motor_id << " Stopped position:\t" << curr_state.position << endl;
         emit sendToMain(QString::fromStdString(out.str()));
 
@@ -1085,8 +1193,6 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     {
         Rec_run_Enable = false;
         Position_wait = false;
-
-        MoteusAPI api(Motor_id);
 
         moteus::Controller::Options options;
         options.id = Motor_id;
@@ -1112,7 +1218,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
 
         //read current position
         curr_state.EN_Position();
-        api.ReadState(curr_state);
+        ReadState(Motor_id, curr_state);
         try
         {
             out << std::format("Motor: {} Position:\t{:.6f}", Motor_id , curr_state.position) << endl;
@@ -1129,14 +1235,12 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         Rec_run_Enable = false;
         Position_wait = false;
 
-        MoteusAPI api(Motor_id);
-
         if (!Check_Motor(Motor_id))
         {
            if (Motor_error)
            {
                // send one stop command
-               api.SendStopCommand();
+               SendStopCommand(Motor_id);
            }
            else if (TrajectoryComplete_error)
            {
@@ -1153,21 +1257,22 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
 
         //read current position
         curr_state.EN_Position();
-        api.ReadState(curr_state);
+        ReadState(Motor_id, curr_state);
 
         std::ostringstream out;
         out.str("");
         out << "Current position:\t" << curr_state.position << endl;
         emit sendToMain(QString::fromStdString(out.str()));
-        if (!api.SendPositionCommand(curr_state.position,
-                                velocity_limit,
-                                accel_limit,
-                                max_torque,
-                                feedforward_torque,
-                                kp_scale,
-                                kd_scale,
-                                0.0 // end velocity
-                                ))
+        if (!SendPositionCommand(   Motor_id,
+                                    curr_state.position,
+                                    velocity_limit,
+                                    accel_limit,
+                                    max_torque,
+                                    feedforward_torque,
+                                    kp_scale,
+                                    kd_scale,
+                                    0.0 // end velocity
+                                    ))
         {
             out << "error on posiion command " << Motor_id << endl;
             emit sendToMain(QString::fromStdString(out.str()));
@@ -1181,14 +1286,12 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         Rec_run_Enable = false;
         Position_wait = false;
 
-        MoteusAPI api(Motor_id);
-
         if (!Check_Motor(Motor_id))
         {
            if (Motor_error)
            {
                // send one stop command
-               api.SendStopCommand();
+               SendStopCommand(Motor_id);
            }
            else if (TrajectoryComplete_error)
            {
@@ -1210,14 +1313,15 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
             position_limited = bounds_max;
         else if (bounds_min != NAN && position_limited < bounds_min)
             position_limited = bounds_min;
-        if (!api.SendPositionCommand(position_limited, // position
-                                          velocity_limit,
-                                          accel_limit,
-                                          max_torque,
-                                          feedforward_torque,
-                                          kp_scale,
-                                          kd_scale,
-                                          0.0 // end velocity
+        if (!SendPositionCommand( Motor_id,
+                                  position_limited, // position
+                                  velocity_limit,
+                                  accel_limit,
+                                  max_torque,
+                                  feedforward_torque,
+                                  kp_scale,
+                                  kd_scale,
+                                  0.0 // end velocity
                                 ))
         {
             out << "error on posiion command " << Motor_id << endl;
@@ -1230,7 +1334,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
             //read current position
             curr_state.Reset();
             curr_state.EN_Position();
-            api.ReadState(curr_state);
+            ReadState(Motor_id, curr_state);
             out << "Motor: " << Motor_id << " Position:\t" << curr_state.position << endl;
             emit sendToMain(QString::fromStdString(out.str()));
         }
@@ -1241,14 +1345,12 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         Rec_run_Enable = false;
         Position_wait = false;
 
-        MoteusAPI api(Motor_id);
-
         if (!Check_Motor(Motor_id))
         {
            if (Motor_error)
            {
                // send one stop command
-               api.SendStopCommand();
+               SendStopCommand(Motor_id);
            }
            else if (TrajectoryComplete_error)
            {
@@ -1265,7 +1367,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
 
         //read current position
         curr_state.EN_Position();
-        api.ReadState(curr_state);
+        ReadState(Motor_id, curr_state);
 
         std::ostringstream out;
         out.str("");
@@ -1278,15 +1380,16 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         else if (bounds_min != NAN && position_limited < bounds_min)
             position_limited = bounds_min;
 
-        if (!api.SendPositionCommand(position_limited,
-                                velocity_limit,
-                                accel_limit,
-                                max_torque,
-                                feedforward_torque,
-                                kp_scale,
-                                kd_scale,
-                                0.0 // end velocity
-                                ))
+        if (!SendPositionCommand(   Motor_id,
+                                    position_limited,
+                                    velocity_limit,
+                                    accel_limit,
+                                    max_torque,
+                                    feedforward_torque,
+                                    kp_scale,
+                                    kd_scale,
+                                    0.0 // end velocity
+                                    ))
         {
             out << "error on posiion command " << Motor_id << endl;
             emit sendToMain(QString::fromStdString(out.str()));
@@ -1301,14 +1404,12 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         Rec_run_Enable = false;
         Position_wait = false;
 
-        MoteusAPI api(Motor_id);
-
         if (!Check_Motor(Motor_id))
         {
            if (Motor_error)
            {
                // send one stop command
-               api.SendStopCommand();
+               SendStopCommand(Motor_id);
            }
            else if (TrajectoryComplete_error)
            {
@@ -1327,7 +1428,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
 
         //read current position
         curr_state.EN_Position();
-        api.ReadState(curr_state);
+        ReadState(Motor_id, curr_state);
 
         out.str("");
         out << "Starting position:\t" << curr_state.position << endl;
@@ -1336,7 +1437,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         if (position < 0.0)
             final_velocity = -velocity_limit;
 
-        if (!api.SendPositionCommand(curr_state.position,
+        if (!SendPositionCommand(Motor_id,
+                                curr_state.position,
                                 velocity_limit,
                                 accel_limit,
                                 max_torque,
@@ -1355,8 +1457,6 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
     }
     else if (msg == "Read_Status")
     {
-        MoteusAPI api(Motor_id);
-
         // define a state object
         State curr_state;
         std::ostringstream out;
@@ -1378,7 +1478,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         curr_state.EN_TrajectoryComplete();
 
         // read registers
-        api.ReadState(curr_state);
+        ReadState(Motor_id, curr_state);
 
         // print everyting
         try
