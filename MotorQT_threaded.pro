@@ -28,7 +28,6 @@ DEFINES += QT_DEPRECATED_WARNINGS
         main.cpp \
         mainwindow.cpp \
         Motorworker.cpp \
-        MoteusAPI.cpp \
         qcustomplot.cpp
 
 HEADERS += \
@@ -38,7 +37,6 @@ HEADERS += \
         moteus_multiplex.h \
         moteus_optional.h \
         moteus_protocol.h \
-        MoteusAPI.h \
         moteus_tokenizer.h \
         moteus_transport.h \
         qcustomplot.h
