@@ -709,24 +709,6 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         current_list_index = 0;
 
     }
-    else if (msg == "Check Device")
-    {
-        std::ostringstream out;
-        out.str("");
-
-        bool device_evable = false;
-         try {
-            moteus::Controller::ProcessTransportArgs({});
-            device_evable = true;
-         } catch (std::exception& e) {
-            cout << "Could not open moteus transport: " << e.what() << "\n";
-            device_evable = false;
-            out << "Warning: Unable to open port, is the fdcanusb device plugged in?" << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-         }
-
-        emit sendMsg("Check Device",device_evable,0,0,0,0,0);
-    }
     else if (msg == "Set Dynamic")
     {
         Dynamic = true;
