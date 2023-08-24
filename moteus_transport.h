@@ -116,7 +116,7 @@ class Fdcanusb : public Transport {
     uint32_t min_ok_wait_ns = 1000000;
     uint32_t min_rcv_wait_ns = 2000000;
 
-    uint32_t rx_extra_wait_ns = 250000;
+    uint32_t rx_extra_wait_ns = 1000000;
 
     Options() {}
   };
@@ -209,6 +209,13 @@ class Fdcanusb : public Transport {
     }
 
     return "";
+  }
+
+  static int64_t GetNow() {
+    struct timespec ts = {};
+    ::clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+    return static_cast<int64_t>(ts.tv_sec) * 1000000000ll +
+      static_cast<int64_t>(ts.tv_nsec);
   }
 
  private:
@@ -495,13 +502,6 @@ class Fdcanusb : public Transport {
         n += ret;
       }
     }
-  }
-
-  static int64_t GetNow() {
-    struct timespec ts = {};
-    ::clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-    return static_cast<int64_t>(ts.tv_sec) * 1000000000ll +
-      static_cast<int64_t>(ts.tv_nsec);
   }
 
   static int ParseHexNybble(char c) {
