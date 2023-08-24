@@ -14,7 +14,6 @@
 #include <QPen>
 #include <QPixmap>
 #include <stdlib.h> // required for system call
-//#include "MoteusAPI.h"
 #include <QTimer>
 #include "qcustomplot.h"
 
