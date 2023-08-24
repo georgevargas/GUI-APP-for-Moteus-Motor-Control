@@ -16,6 +16,13 @@
 #include <QInputDialog>
 #include <format>
 #include "moteus.h"
+#include <errno.h>   // Error number definitions
+#include <fcntl.h>   // File control definitions
+#include <stdio.h>   // Standard input/output definitions
+#include <string.h>  // String function definitions
+#include <sys/ioctl.h>
+#include <termios.h>  // POSIX terminal control definitions
+#include <unistd.h>   // UNIX standard function definitions
 
 using namespace mjbots;
 using namespace moteus;
@@ -517,21 +524,34 @@ void MainWindow:: Init_Motor()
         ui->Slider_Cycle_Delay->setValue(Cycle_Delay);
 
         update();
+        emit sendToWorker("Check Device",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
 
         std::ostringstream out;
-        out.str("");
-
+        int Device_ok;
          try {
             moteus::Controller::ProcessTransportArgs({});
-            Device_enable = true;
+            moteus::Controller::Options options;
+            options.id = moteus_id;
+            options.default_query = false;
+            moteus::Controller controller(options);
+
+            for (int i =0; i < 10; i++)
+            {
+                controller.DiagnosticWrite("tel stop\n");
+            }
+            controller.DiagnosticFlush();
+
+            Device_ok = true;
          } catch (std::exception& e) {
             cout << "Could not open moteus transport: " << e.what() << "\n";
-            Device_enable = false;
+            Device_ok = false;
+            out.str("");
             out << "Warning: Unable to open port, is the fdcanusb device plugged in?" << endl;
             MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
          }
 
-        if (Device_enable)
+        if (Device_ok)
         {
 
             if (Enable_startup_nearest_commands)
@@ -571,7 +591,7 @@ void MainWindow:: Init_Motor()
                 emit sendToWorker("get Position Offset",dev_name,i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                                   kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
             }
-
+            Device_enable = true;
         }
 }
 
