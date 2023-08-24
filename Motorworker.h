@@ -48,7 +48,6 @@ struct State {
   bool voltage_flag = false;
   bool temperature_flag = false;
   bool fault_flag = false;
-
   State& EN_Position() {
     position_flag = true;
     return *this;
