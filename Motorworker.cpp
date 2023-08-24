@@ -709,6 +709,51 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         current_list_index = 0;
 
     }
+    else if (msg == "Check Device")
+    {
+        struct termios toptions;
+        int fd;
+        std::ostringstream out;
+        out.str("");
+
+        fd = open((dev_name.toStdString()).c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
+
+        if (fd == -1) {
+        }
+        else if (tcgetattr(fd, &toptions) < 0) {
+        }
+        else
+        {
+            // set baud to arbitrary value, it will get ignored by dev
+            speed_t brate = B115200;
+
+            cfsetispeed(&toptions, brate);
+            cfsetospeed(&toptions, brate);
+
+            // 8N1
+            toptions.c_cflag &= ~PARENB;
+            toptions.c_cflag &= ~CSTOPB;
+            toptions.c_cflag &= ~CSIZE;
+            toptions.c_cflag |= CS8;
+            // no flow control
+            toptions.c_cflag &= ~CRTSCTS;
+
+            toptions.c_cflag |= CREAD | CLOCAL;
+            toptions.c_iflag &= ~(IXON | IXOFF | IXANY);
+
+            toptions.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+            toptions.c_oflag &= ~OPOST;
+
+            toptions.c_cc[VMIN] = 0;
+            toptions.c_cc[VTIME] = 0;
+
+            tcsetattr(fd, TCSANOW, &toptions);
+            if (tcsetattr(fd, TCSAFLUSH, &toptions) < 0) {
+            }
+        }
+
+        close(fd);
+    }
     else if (msg == "Set Dynamic")
     {
         Dynamic = true;
@@ -847,7 +892,7 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         options.default_query = false;
         moteus::Controller controller(options);
 
-        controller.DiagnosticCommand("tel stop");
+        controller.DiagnosticWrite("tel stop\n");
         controller.DiagnosticFlush();
 
         double value = std::numeric_limits<double>::quiet_NaN();
@@ -870,8 +915,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         options.default_query = false;
         moteus::Controller controller(options);
 
-        controller.DiagnosticCommand("tel stop");
-        controller.DiagnosticFlush();
+//        controller.DiagnosticWrite("tel stop\n");
+//        controller.DiagnosticFlush();
 
         double value = std::numeric_limits<double>::quiet_NaN();
 
@@ -894,8 +939,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         options.default_query = false;
         moteus::Controller controller(options);
 
-        controller.DiagnosticCommand("tel stop");
-        controller.DiagnosticFlush();
+//        controller.DiagnosticWrite("tel stop\n");
+//        controller.DiagnosticFlush();
 
         double value = std::numeric_limits<double>::quiet_NaN();
 
@@ -918,8 +963,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         moteus::Controller controller(options);
 
 
-        controller.DiagnosticCommand("tel stop");
-        controller.DiagnosticFlush();
+//        controller.DiagnosticWrite("tel stop\n");
+//        controller.DiagnosticFlush();
 
         // get min limit command
         l_bounds_min[Motor_id-1] = std::stod(
@@ -943,8 +988,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         options.default_query = false;
         moteus::Controller controller(options);
 
-        controller.DiagnosticCommand("tel stop");
-        controller.DiagnosticFlush();
+//        controller.DiagnosticWrite("tel stop\n");
+//        controller.DiagnosticFlush();
 
         std::ostringstream out;
         out.str("");
@@ -966,8 +1011,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         options.default_query = false;
         moteus::Controller controller(options);
 
-        controller.DiagnosticCommand("tel stop");
-        controller.DiagnosticFlush();
+//        controller.DiagnosticWrite("tel stop\n");
+//        controller.DiagnosticFlush();
 
         double value1 = std::numeric_limits<double>::quiet_NaN();
         double value2 = std::numeric_limits<double>::quiet_NaN();
@@ -998,8 +1043,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         options.default_query = false;
         moteus::Controller controller(options);
 
-        controller.DiagnosticCommand("tel stop");
-        controller.DiagnosticFlush();
+//        controller.DiagnosticWrite("tel stop\n");
+//        controller.DiagnosticFlush();
 
         std::ostringstream out;
 
@@ -1037,8 +1082,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         moteus::Controller controller(options);
 
 
-        controller.DiagnosticCommand("tel stop");
-        controller.DiagnosticFlush();
+//        controller.DiagnosticWrite("tel stop\n");
+//        controller.DiagnosticFlush();
 
         std::ostringstream out;
         out.str("");
@@ -1063,8 +1108,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         options.default_query = false;
         moteus::Controller controller(options);
 
-        controller.DiagnosticCommand("tel stop");
-        controller.DiagnosticFlush();
+//        controller.DiagnosticWrite("tel stop\n");
+//        controller.DiagnosticFlush();
 
         std::ostringstream out;
         out.str("");
@@ -1089,8 +1134,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         options.default_query = false;
         moteus::Controller controller(options);
 
-        controller.DiagnosticCommand("tel stop");
-        controller.DiagnosticFlush();
+//        controller.DiagnosticWrite("tel stop\n");
+//        controller.DiagnosticFlush();
 
         std::ostringstream out;
         out.str("");
@@ -1115,8 +1160,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         options.default_query = false;
         moteus::Controller controller(options);
 
-        controller.DiagnosticCommand("tel stop");
-        controller.DiagnosticFlush();
+//        controller.DiagnosticWrite("tel stop\n");
+//        controller.DiagnosticFlush();
 
         std::ostringstream out;
         out.str("");
@@ -1148,8 +1193,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         options.default_query = false;
         moteus::Controller controller(options);
 
-        controller.DiagnosticCommand("tel stop");
-        controller.DiagnosticFlush();
+//        controller.DiagnosticWrite("tel stop\n");
+//        controller.DiagnosticFlush();
 
         // Command a stop to the controller in order to clear any faults.
         controller.SetStop();
@@ -1181,8 +1226,8 @@ void Motorworker::getFromMain(QString msg, QString dev_name, int Motor_id, doubl
         options.default_query = false;
         moteus::Controller controller(options);
 
-        controller.DiagnosticCommand("tel stop");
-        controller.DiagnosticFlush();
+//        controller.DiagnosticWrite("tel stop\n");
+//        controller.DiagnosticFlush();
 
         moteus::OutputNearest::Command cmd;
         cmd.position = 0.0;
