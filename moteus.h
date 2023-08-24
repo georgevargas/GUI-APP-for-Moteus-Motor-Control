@@ -142,6 +142,10 @@ class Controller {
                      &options_.query_format : format_override);
   }
 
+  // This is prefixed "Set" despite the fact that it sets nothing
+  // because (a) it is consistent with the other methods with
+  // "Make/Set/Async" prefixes, and (b) it would otherwise shadow the
+  // mjbots::moteus::Query structure.
   Optional<Result> SetQuery(const Query::Format* format_override = nullptr) {
     return ExecuteSingleCommand(MakeQuery(format_override));
   }
@@ -479,7 +483,7 @@ class Controller {
     context->Start();
   }
 
-  void DiagnosticWrite(const std::string& message, int channel) {
+  void DiagnosticWrite(const std::string& message, int channel = 1) {
     BlockingCallback cbk;
     AsyncDiagnosticWrite(message, channel, cbk.callback());
     cbk.Wait();
@@ -531,6 +535,9 @@ class Controller {
     context->transport->Cycle(
         &output_frame_, 1, &context->replies,
         [context, this](int) {
+          std::string response;
+          bool any_response = false;
+
           for (const auto& frame : context->replies) {
             if (frame.destination != options_.source ||
                 frame.source != options_.id ||
@@ -538,8 +545,13 @@ class Controller {
               continue;
             }
             auto maybe_data = DiagnosticResponse::Parse(frame.data, frame.size);
-            *context->response = std::string(
+            response += std::string(
                 reinterpret_cast<const char*>(maybe_data.data), maybe_data.size);
+            any_response = true;
+          }
+
+          if (any_response) {
+            *context->response = response;
             context->transport->Post(std::bind(context->callback, 0));
             return;
           }
@@ -549,11 +561,25 @@ class Controller {
         });
   }
 
-  void DiagnosticFlush(int channel = 1) {
-    // Read until nothing is left.
+  void DiagnosticFlush(int channel = 1, double timeout_s = 0.2) {
+    // Read until nothing is left or the timeout hits.
+    const auto timeout = timeout_s * 1000000000ll;
+    const auto start = Fdcanusb::GetNow();
+    auto end_time = start + timeout;
+
     while (true) {
       const auto response = DiagnosticRead(channel);
-      if (response.empty()) { return; }
+      const auto now = Fdcanusb::GetNow();
+      if (!response.empty()) {
+        // Every time we get something, bump out timeout further into
+        // the future.
+        end_time = now + timeout;
+        continue;
+      }
+      if (now > end_time) {
+        break;
+      }
+      ::usleep(options_.diagnostic_retry_sleep_ns / 1000);
     }
   }
 
