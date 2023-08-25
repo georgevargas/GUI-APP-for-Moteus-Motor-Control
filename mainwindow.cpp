@@ -524,8 +524,6 @@ void MainWindow:: Init_Motor()
         ui->Slider_Cycle_Delay->setValue(Cycle_Delay);
 
         update();
-        emit sendToWorker("Check Device",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
 
         std::ostringstream out;
         int Device_ok;
@@ -536,10 +534,7 @@ void MainWindow:: Init_Motor()
             options.default_query = false;
             moteus::Controller controller(options);
 
-            for (int i =0; i < 10; i++)
-            {
-                controller.DiagnosticWrite("tel stop\n");
-            }
+            controller.DiagnosticWrite("tel stop\n");
             controller.DiagnosticFlush();
 
             Device_ok = true;
