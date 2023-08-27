@@ -109,7 +109,55 @@ void MainWindow::updateDiagram()
 
 void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Value2 , double Value3,double Value4,double Value5)
 {
-    if (msg == "set motor limits")
+    if (msg == "Check Device")
+    {
+        std::ostringstream out;
+
+        if (Motor_id == 0)
+        {
+            Device_enable = false;
+            out.str("");
+            out << "Warning: Unable to open port, is the fdcanusb device plugged in?" << endl;
+            MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
+        }
+        else
+        {
+            if (Enable_startup_nearest_commands)
+            {
+                for (int i = 1; i <= Number_of_Motors; i++)
+                {
+                    emit sendToWorker_motor_commands("Set Output Nearest",i);
+                }
+            }
+
+            for (int i = 1; i <= Number_of_Motors; i++)
+            {
+                emit sendToWorker_diagnostic_read_commands("get motor limits",i);
+            }
+
+            for (int i = 1; i <= Number_of_Motors; i++)
+            {
+                emit sendToWorker_diagnostic_read_commands("get PID",i);
+            }
+
+            for (int i = 1; i <= Number_of_Motors; i++)
+            {
+                emit sendToWorker_diagnostic_read_commands("get rotor_to_output_ratio",i);
+            }
+
+            for (int i = 1; i <= Number_of_Motors; i++)
+            {
+                emit sendToWorker_diagnostic_read_commands("get break voltage",i);
+            }
+            for (int i = 1; i <= Number_of_Motors; i++)
+            {
+                emit sendToWorker_diagnostic_read_commands("get Position Offset",i);
+            }
+
+            Device_enable = true;
+        }
+    }
+    else if (msg == "set motor limits")
     {
         std::ostringstream out;
 
@@ -506,6 +554,8 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
 
 void MainWindow:: Init_Motor()
 {
+        // first initialize ui parameters
+
         ui->Counter_Accel_Limit->setValue(accel_limit);
         ui->Counter_Position->setValue(position);
         ui->Counter_Velocity_Limit->setValue(velocity_limit);
@@ -524,75 +574,21 @@ void MainWindow:: Init_Motor()
         ui->Slider_KP_Scale->setLowerBound(kp_scale);
         ui->Slider_Cycle_Start_Stop->setValue(Cycle_Start_Stop);
         ui->Slider_Cycle_Delay->setValue(Cycle_Delay);
-        if (Dynamic)
+        if (ui->checkBox_Dymamic->isChecked())
         {
+            Dynamic = true;
             emit sendToWorker_motor_commands("Set Dynamic",moteus_id);
         }
         else
         {
+            Dynamic = false;
             emit sendToWorker_motor_commands("Clear Dynamic",moteus_id);
         }
 
         update();
 
-        std::ostringstream out;
-        int Device_ok;
-         try {
-            moteus::Controller::ProcessTransportArgs({});
-            moteus::Controller::Options options;
-            options.id = moteus_id;
-            options.default_query = false;
-            moteus::Controller controller(options);
-
-            controller.DiagnosticWrite("tel stop\n");
-            controller.DiagnosticFlush();
-
-            Device_ok = true;
-         } catch (std::exception& e) {
-            cout << "Could not open moteus transport: " << e.what() << "\n";
-            Device_ok = false;
-            out.str("");
-            out << "Warning: Unable to open port, is the fdcanusb device plugged in?" << endl;
-            MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
-         }
-
-        if (Device_ok)
-        {
-
-            if (Enable_startup_nearest_commands)
-            {
-                for (int i = 1; i <= Number_of_Motors; i++)
-                {
-                    emit sendToWorker_motor_commands("Set Output Nearest",i);
-                }
-            }
-
-            for (int i = 1; i <= Number_of_Motors; i++)
-            {
-                emit sendToWorker_diagnostic_read_commands("get motor limits",i);
-            }
-
-            for (int i = 1; i <= Number_of_Motors; i++)
-            {
-                emit sendToWorker_diagnostic_read_commands("get PID",i);
-            }
-
-            for (int i = 1; i <= Number_of_Motors; i++)
-            {
-                emit sendToWorker_diagnostic_read_commands("get rotor_to_output_ratio",i);
-            }
-
-            for (int i = 1; i <= Number_of_Motors; i++)
-            {
-                emit sendToWorker_diagnostic_read_commands("get break voltage",i);
-            }
-            for (int i = 1; i <= Number_of_Motors; i++)
-            {
-                emit sendToWorker_diagnostic_read_commands("get Position Offset",i);
-            }
-
-            Device_enable = true;
-        }
+        // check if fdcanusb is plugged in, if so finish setup in MainWindow::receiveMsg.
+        sendToWorker_motor_commands("Check Device",moteus_id);
 }
 
 void MainWindow::on_btnRead_Status_clicked()
