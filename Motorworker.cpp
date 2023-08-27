@@ -25,6 +25,7 @@ Motorworker::Motorworker(QObject *parent) :
 Motorworker::~Motorworker()
 {
 }
+
 bool Motorworker::Check_Motor(int Motor_id)
 {
     bool error = false;
@@ -38,7 +39,7 @@ bool Motorworker::Check_Motor(int Motor_id)
     // reset the state
     curr_state.Reset();
 
-    //read current position
+    //read status
     curr_state.EN_Fault();
     curr_state.EN_Mode();
     curr_state.EN_TrajectoryComplete();
@@ -152,6 +153,7 @@ bool Motorworker::Check_Motor(int Motor_id)
     }
     return !error;
 }
+
 bool Motorworker::Check_TrajectoryComplete(int Motor_id)
 {
     bool error = false;
@@ -180,6 +182,7 @@ bool Motorworker::Check_TrajectoryComplete(int Motor_id)
     }
     return !error;
 }
+
 bool Motorworker::Wait_TrajectoryComplete(int Motor_id)
 {
     bool error = false;
@@ -952,6 +955,30 @@ void Motorworker::getFromMain_motor_commands(QString msg, int Motor_id) // slot 
     else if (msg == "Clear Dynamic")
     {
         Dynamic = false;
+    }
+    else if (msg == "Check Device")
+    {
+        std::ostringstream out;
+        out.str("");
+
+        bool device_evable = false;
+         try {
+            moteus::Controller::ProcessTransportArgs({});
+            moteus::Controller::Options options;
+            options.id = Motor_id;
+            options.default_query = false;
+            moteus::Controller controller(options);
+
+            controller.DiagnosticWrite("tel stop\n");
+            controller.DiagnosticFlush();
+            device_evable = true;
+
+         } catch (std::exception& e) {
+            cout << "Could not open moteus transport: " << e.what() << "\n";
+            device_evable = false;
+         }
+
+        emit sendMsg("Check Device",device_evable,0,0,0,0,0);
     }
     else
     {
