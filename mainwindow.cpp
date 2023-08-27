@@ -75,12 +75,15 @@ void MainWindow::setup()
     QTimer *workerTrigger = new QTimer();
     workerTrigger->setInterval(10);
 
-
     connect(workerTrigger, SIGNAL(timeout()), worker, SLOT(run_cycles()));
     connect(this, SIGNAL(sendSetup()), worker, SLOT(receiveSetup()));
     connect(worker, SIGNAL(sendMsg(QString,int,double,double,double,double,double)), this, SLOT(receiveMsg(QString,int,double,double,double,double,double)));
-    connect(this,SIGNAL(sendToWorker(QString,QString,int,double,double,double,double,double,double,double,double,double,double,double)),worker,SLOT(getFromMain(QString,QString,int,double,
-             double,double,double,double,double,double,double,double,double,double)));
+    connect(this,SIGNAL(sendToWorker_position_commands(QString,int,double,double,double,double,double,double,double,double,double,double,double)),worker,SLOT(getFromMain_position_commands(QString,int,double,
+                                    double,double,double,double,double,double,double,double,double,double)));
+    connect(this,SIGNAL(sendToWorker_file_commands(QString,QString)),worker,SLOT(getFromMain_file_commands(QString,QString)));
+    connect(this,SIGNAL(sendToWorker_motor_commands(QString,int)),worker,SLOT(getFromMain_motor_commands(QString,int)));
+    connect(this,SIGNAL(sendToWorker_diagnostic_write_commands(QString,int,double,double,double)),worker,SLOT(getFromMain_diagnostic_write_commands(QString,int,double,double,double)));
+    connect(this,SIGNAL(sendToWorker_diagnostic_read_commands(QString,int)),worker,SLOT(getFromMain_diagnostic_read_commands(QString,int)));
     connect(worker,SIGNAL(sendToMain(QString)),this,SLOT(getFromWorker(QString)));
 
     worker->moveToThread(thread);
@@ -101,8 +104,7 @@ void MainWindow::updateDiagram()
 {
     time += 0.05;
     if (Device_enable)
-    emit sendToWorker("Update Velocity",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+    emit sendToWorker_motor_commands("Update Velocity",moteus_id);
 }
 
 void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Value2 , double Value3,double Value4,double Value5)
@@ -522,6 +524,14 @@ void MainWindow:: Init_Motor()
         ui->Slider_KP_Scale->setLowerBound(kp_scale);
         ui->Slider_Cycle_Start_Stop->setValue(Cycle_Start_Stop);
         ui->Slider_Cycle_Delay->setValue(Cycle_Delay);
+        if (Dynamic)
+        {
+            emit sendToWorker_motor_commands("Set Dynamic",moteus_id);
+        }
+        else
+        {
+            emit sendToWorker_motor_commands("Clear Dynamic",moteus_id);
+        }
 
         update();
 
@@ -553,62 +563,54 @@ void MainWindow:: Init_Motor()
             {
                 for (int i = 1; i <= Number_of_Motors; i++)
                 {
-                    emit sendToWorker("Set Output Nearest",dev_name,i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+                    emit sendToWorker_motor_commands("Set Output Nearest",i);
                 }
             }
 
             for (int i = 1; i <= Number_of_Motors; i++)
             {
-                emit sendToWorker("get motor limits",dev_name,i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                  kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+                emit sendToWorker_diagnostic_read_commands("get motor limits",i);
             }
 
             for (int i = 1; i <= Number_of_Motors; i++)
             {
-                emit sendToWorker("get PID",dev_name,i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                  kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+                emit sendToWorker_diagnostic_read_commands("get PID",i);
             }
 
             for (int i = 1; i <= Number_of_Motors; i++)
             {
-                emit sendToWorker("get rotor_to_output_ratio",dev_name,i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                  kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+                emit sendToWorker_diagnostic_read_commands("get rotor_to_output_ratio",i);
             }
 
             for (int i = 1; i <= Number_of_Motors; i++)
             {
-                emit sendToWorker("get break voltage",dev_name,i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                  kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+                emit sendToWorker_diagnostic_read_commands("get break voltage",i);
             }
             for (int i = 1; i <= Number_of_Motors; i++)
             {
-                emit sendToWorker("get Position Offset",dev_name,i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                  kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+                emit sendToWorker_diagnostic_read_commands("get Position Offset",i);
             }
+
             Device_enable = true;
         }
 }
 
 void MainWindow::on_btnRead_Status_clicked()
 {
-    emit sendToWorker("Read_Status",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+    emit sendToWorker_motor_commands("Read_Status",moteus_id);
 }
 
 void MainWindow::on_btnSetNearest_clicked()
 {
         for (int i = 1; i <= Number_of_Motors; i++)
         {
-            emit sendToWorker("Set Output Nearest",dev_name,i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                              kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+            emit sendToWorker_motor_commands("Set Output Nearest",i);
         }
 }
 
 void MainWindow::on_btnStop_Motor_clicked()
 {
-    emit sendToWorker("Send Stop",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+    emit sendToWorker_motor_commands("Send Stop",moteus_id);
 }
 
 void MainWindow::on_btnGo_To_Rest_Position_clicked()
@@ -616,31 +618,30 @@ void MainWindow::on_btnGo_To_Rest_Position_clicked()
 
     for (int i = Number_of_Motors; i > 0 ; i--)
     {
-        emit sendToWorker("Go To Rest Position",dev_name,i,accel_limit,Motor_rest_position[i-1],velocity_limit,max_torque,feedforward_torque,kp_scale,
+        emit sendToWorker_position_commands("Go To Rest Position",i,accel_limit,Motor_rest_position[i-1],velocity_limit,max_torque,feedforward_torque,kp_scale,
                       kd_scale,bounds_min[i -1],bounds_max[i -1],Cycle_Start_Stop,Cycle_Delay);
 //        QThread::msleep(3000);  //Blocking delay 100ms
     }
     for (int i = 1; i <= Number_of_Motors; i++)
     {
-        emit sendToWorker("Send Stop",dev_name,i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                      kd_scale,bounds_min[i -1],bounds_max[i -1],Cycle_Start_Stop,Cycle_Delay);
+        emit sendToWorker_motor_commands("Send Stop",i);
     }
 }
 void MainWindow::on_btnStart_Motor_clicked()
 {
-    emit sendToWorker("Send Start",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+    emit sendToWorker_position_commands("Send Start",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                       kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
 }
 
 void MainWindow::on_btnRun_Position_clicked()
 {
-    emit sendToWorker("Go To Position",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+    emit sendToWorker_position_commands("Go To Position",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                       kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
 }
 
 void MainWindow::on_btnRun_Velocity_clicked()
 {
-    emit sendToWorker("Run Forever",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+    emit sendToWorker_position_commands("Run Forever",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                       kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
 
 }
@@ -663,7 +664,7 @@ void MainWindow::on_Slider_Velocity_Limit_valueChanged(double value)
     ui->Counter_Velocity_Limit->setValue(value);
     if (Dynamic)
     {
-        emit sendToWorker("Update Dynamic",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+        emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                           kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
     }
 }
@@ -673,7 +674,7 @@ void MainWindow::on_Slider_Accel_Limit_valueChanged(double value)
     ui->Counter_Accel_Limit->setValue(value);
     if (Dynamic)
     {
-        emit sendToWorker("Update Dynamic",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+        emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                           kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
     }
 
@@ -684,7 +685,7 @@ void MainWindow::on_Slider_Max_Torque_valueChanged(double value)
     ui->Counter_Max_Torque->setValue(value);
     if (Dynamic)
     {
-        emit sendToWorker("Update Dynamic",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+        emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                           kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
     }
 }
@@ -695,7 +696,7 @@ void MainWindow::on_Slider_Feedforward_valueChanged(double value)
     ui->Counter_Feedforward->setValue(value);
     if (Dynamic)
     {
-        emit sendToWorker("Update Dynamic",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+        emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                           kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
     }
 }
@@ -706,7 +707,7 @@ void MainWindow::on_Slider_KP_Scale_valueChanged(double value)
     ui->Counter_KP_Scale->setValue(value);
     if (Dynamic)
     {
-        emit sendToWorker("Update Dynamic",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+        emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                           kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
     }
 }
@@ -717,7 +718,7 @@ void MainWindow::on_Slider_KD_Scale_valueChanged(double value)
     ui->Counter_KD_Scale->setValue(value);
     if (Dynamic)
     {
-        emit sendToWorker("Update Dynamic",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+        emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                           kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
     }
 }
@@ -734,7 +735,7 @@ void MainWindow::on_Counter_Velocity_Limit_valueChanged(double value)
     ui->Slider_Velocity_Limit->setValue(value);
     if (Dynamic)
     {
-        emit sendToWorker("Update Dynamic",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+        emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                           kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
     }
 }
@@ -744,7 +745,7 @@ void MainWindow::on_Counter_Accel_Limit_valueChanged(double value)
     ui->Slider_Accel_Limit->setValue(value);
     if (Dynamic)
     {
-        emit sendToWorker("Update Dynamic",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+        emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                           kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
     }
 }
@@ -754,7 +755,7 @@ void MainWindow::on_Counter_Max_Torque_valueChanged(double value)
     ui->Slider_Max_Torque->setValue(value);
     if (Dynamic)
     {
-        emit sendToWorker("Update Dynamic",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+        emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                           kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
     }
 
@@ -766,7 +767,7 @@ void MainWindow::on_Counter_Feedforward_valueChanged(double value)
     ui->Slider_Feedforward->setValue(value);
     if (Dynamic)
     {
-        emit sendToWorker("Update Dynamic",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+        emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                           kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
     }
 }
@@ -777,7 +778,7 @@ void MainWindow::on_Counter_KP_Scale_valueChanged(double value)
     ui->Slider_KP_Scale->setValue(value);
     if (Dynamic)
     {
-        emit sendToWorker("Update Dynamic",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+        emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                           kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
     }
 }
@@ -788,7 +789,7 @@ void MainWindow::on_Counter_KD_Scale_valueChanged(double value)
     ui->Slider_KD_Scale->setValue(value);
     if (Dynamic)
     {
-        emit sendToWorker("Update Dynamic",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+        emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                           kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
     }
 }
@@ -861,26 +862,25 @@ void MainWindow::on_Slider_Cycle_Delay_valueChanged(double value)
 
 void MainWindow::on_btnRec_positions_clicked()
 {
-    emit sendToWorker("Record Position",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+    emit sendToWorker_position_commands("Record Position",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
                       kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
 }
 
 void MainWindow::on_btnRun_Recorded_clicked()
 {
-    emit sendToWorker("Run_Recorded",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+    emit sendToWorker_position_commands("Run Recorded",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                       kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
 }
 
 void MainWindow::on_btnStep_Recorded_clicked()
 {
-    emit sendToWorker("Step_Recorded",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+    emit sendToWorker_position_commands("Step Recorded",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                       kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
 }
 
 void MainWindow::on_btnClear_Recorded_clicked()
 {
-    emit sendToWorker("Clear_Recorded",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+    emit sendToWorker_motor_commands("Clear_Recorded",moteus_id);
 
 }
 
@@ -896,8 +896,7 @@ void MainWindow::on_actionOpen_triggered()
     {
         QString fileName = fileDialog.selectedFiles().first();
 
-        emit sendToWorker("Open File",fileName,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+        emit sendToWorker_file_commands("Open File",fileName);
         statusBar()->showMessage(tr("Read \"%1\"")
                                  .arg(QDir::toNativeSeparators(fileName)));
     }
@@ -915,8 +914,7 @@ void MainWindow::on_actionSave_triggered()
     if (fileDialog.exec() == QDialog::Accepted)
     {
         QString fileName = fileDialog.selectedFiles().first();
-        emit sendToWorker("Save File",fileName,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+        emit sendToWorker_file_commands("Save File",fileName);
 
         statusBar()->showMessage(tr("Saved \"%1\"")
                                  .arg(QDir::toNativeSeparators(fileName)));
@@ -986,49 +984,44 @@ void MainWindow::on_checkBox_Dymamic_clicked()
     if (ui->checkBox_Dymamic->isChecked())
     {
         Dynamic = true;
-        emit sendToWorker("Set Dynamic",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+        emit sendToWorker_motor_commands("Set Dynamic",moteus_id);
     }
     else
     {
         Dynamic = false;
-        emit sendToWorker("Clear Dynamic",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+        emit sendToWorker_motor_commands("Clear Dynamic",moteus_id);
     }
-
 }
 
 void MainWindow::on_btnRec_update_limits_clicked()
 {
-    emit sendToWorker("set motor limits",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+    emit sendToWorker_diagnostic_write_commands("set motor limits",moteus_id,bounds_min[moteus_id -1],bounds_max[moteus_id -1],0);
 }
+
 void MainWindow::on_btnRec_Gear_Ratio_clicked()
 {
-    emit sendToWorker("set rotor_to_output_ratio",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,Gear_Ratio[moteus_id -1],kp_scale,
-                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+    emit sendToWorker_diagnostic_write_commands("set rotor_to_output_ratio",moteus_id,Gear_Ratio[moteus_id -1],0,0);
 }
+
 void MainWindow::on_btnRec_Break_voltage_clicked()
 {
-    emit sendToWorker("set break voltage",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,Break_Voltage[moteus_id -1],kp_scale,
-                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+    emit sendToWorker_diagnostic_write_commands("set break voltage",moteus_id,Break_Voltage[moteus_id -1],0,0);
 }
+
 void MainWindow::on_btnRun_update_KP_clicked()
 {
-    emit sendToWorker("set PID",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,ki[moteus_id -1],kp[moteus_id -1],
-                      kd[moteus_id -1],bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+    emit sendToWorker_diagnostic_write_commands("set PID",moteus_id,kp[moteus_id -1],kd[moteus_id -1],ki[moteus_id -1]);
 }
+
 void MainWindow::on_btnPosition_Offset_clicked()
 {
-    emit sendToWorker("set Position Offset",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,position_offset[moteus_id -1],kp_scale,
-                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+    emit sendToWorker_diagnostic_write_commands("set Position Offset",moteus_id,position_offset[moteus_id -1],0,0);
 }
 
 void MainWindow::on_Counter_Limit_Min_valueChanged(double value)
 {
     bounds_min[moteus_id -1] = value;
     ui->Slider_Limit_Min->setValue(value);
-
 }
 
 void MainWindow::on_Slider_Limit_Min_valueChanged(double value)
@@ -1122,35 +1115,29 @@ void MainWindow::on_Slider_Position_Offset_valueChanged(double value)
 
 void MainWindow::on_btnConf_Write_clicked()
 {
-    emit sendToWorker("conf write",dev_name,moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                      kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+    emit sendToWorker_diagnostic_write_commands("conf write",moteus_id,0,0,0);
 }
 
 void MainWindow::on_btnConf_Read_clicked()
 {
     for (int i = 1; i <= Number_of_Motors; i++)
     {
-        emit sendToWorker("get motor limits",dev_name,i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+        emit sendToWorker_diagnostic_read_commands("get motor limits",i);
     }
     for (int i = 1; i <= Number_of_Motors; i++)
     {
-        emit sendToWorker("get PID",dev_name,i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+        emit sendToWorker_diagnostic_read_commands("get PID",i);
     }
     for (int i = 1; i <= Number_of_Motors; i++)
     {
-        emit sendToWorker("get rotor_to_output_ratio",dev_name,i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+        emit sendToWorker_diagnostic_read_commands("get rotor_to_output_ratio",i);
     }
     for (int i = 1; i <= Number_of_Motors; i++)
     {
-        emit sendToWorker("get break voltage",dev_name,i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+        emit sendToWorker_diagnostic_read_commands("get break voltage",i);
     }
     for (int i = 1; i <= Number_of_Motors; i++)
     {
-        emit sendToWorker("get Position Offset",dev_name,i,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay);
+        emit sendToWorker_diagnostic_read_commands("get Position Offset",i);
     }
 }
