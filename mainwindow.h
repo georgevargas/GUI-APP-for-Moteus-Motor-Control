@@ -96,8 +96,12 @@ public:
 
 signals:
     void sendSetup();
-    void sendToWorker(QString msg, QString dev_name,int Motor_id,double accel_limit,double position,double velocity_limit,double max_torque,double feedforward_torque,double kp_scale,
+    void sendToWorker_position_commands(QString msg, int Motor_id,double accel_limit,double position,double velocity_limit,double max_torque,double feedforward_torque,double kp_scale,
          double kd_scale,double bounds_min,double bounds_max,double Cycle,double Delay);
+    void sendToWorker_file_commands(QString msg, QString file_name);
+    void sendToWorker_motor_commands(QString msg, int Motor_id);
+    void sendToWorker_diagnostic_write_commands(QString msg, int Motor_id, double Value1, double Value2, double Value3);
+    void sendToWorker_diagnostic_read_commands(QString msg, int Motor_id);
 
 public slots:
     void receiveMsg(QString  msg, int Motor_id, double Value1, double Value2, double Value3,double value4,double value5);
