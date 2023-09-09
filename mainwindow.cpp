@@ -15,18 +15,7 @@
 #include <QMessageBox>
 #include <QInputDialog>
 #include <format>
-#include "moteus.h"
-#include <errno.h>   // Error number definitions
-#include <fcntl.h>   // File control definitions
-#include <stdio.h>   // Standard input/output definitions
-#include <string.h>  // String function definitions
-#include <sys/ioctl.h>
-#include <termios.h>  // POSIX terminal control definitions
-#include <unistd.h>   // UNIX standard function definitions
-
-using namespace mjbots;
-using namespace moteus;
-
+#include <numbers>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -77,7 +66,7 @@ void MainWindow::setup()
 
     connect(workerTrigger, SIGNAL(timeout()), worker, SLOT(run_cycles()));
     connect(this, SIGNAL(sendSetup()), worker, SLOT(receiveSetup()));
-    connect(worker, SIGNAL(sendMsg(QString,int,double,double,double,double,double)), this, SLOT(receiveMsg(QString,int,double,double,double,double,double)));
+    connect(worker, SIGNAL(sendMsg(QString,int,double,double,double,double,double,double,double)), this, SLOT(receiveMsg(QString,int,double,double,double,double,double,double,double)));
     connect(this,SIGNAL(sendToWorker_position_commands(QString,int,double,double,double,double,double,double,double,double,double,double,double)),worker,SLOT(getFromMain_position_commands(QString,int,double,
                                     double,double,double,double,double,double,double,double,double,double)));
     connect(this,SIGNAL(sendToWorker_file_commands(QString,QString)),worker,SLOT(getFromMain_file_commands(QString,QString)));
@@ -104,10 +93,13 @@ void MainWindow::updateDiagram()
 {
     time += 0.05;
     if (Device_enable)
-    emit sendToWorker_motor_commands("Update Velocity",moteus_id);
+    {
+        emit sendToWorker_motor_commands("Update Velocity",moteus_id);
+    }
+
 }
 
-void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Value2 , double Value3,double Value4,double Value5)
+void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Value2 , double Value3,double Value4,double Value5,double Value6,double Value7)
 {
     if (msg == "Check Device")
     {
@@ -122,12 +114,9 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         }
         else
         {
-            if (Enable_startup_nearest_commands)
+            for (int i = 1; i <= Number_of_Motors; i++)
             {
-                for (int i = 1; i <= Number_of_Motors; i++)
-                {
-                    emit sendToWorker_motor_commands("Set Output Nearest",i);
-                }
+                emit sendToWorker_diagnostic_write_commands("Set Output Nearest",i,nearest_offset[i-1],1,0);
             }
 
             for (int i = 1; i <= Number_of_Motors; i++)
@@ -278,7 +267,13 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         try
         {
             iss.str(std::format("{:.3f}\n" , Value1));
-            iss >> Position[Motor_id-1];
+            iss >> Position[0];
+
+            iss.str(std::format("{:.3f}\n" , Value6));
+            iss >> Position[1];
+
+            iss.str(std::format("{:.3f}\n" , Value7));
+            iss >> Position[2];
 
             iss.str(std::format("{:.3f}\n" , Value2));
             iss >> Velocity[Motor_id-1];
@@ -291,6 +286,7 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
 
             iss.str(std::format("{:.3f}\n" , Value5));
             iss >> Q_Phase_Current[Motor_id-1];
+
         }
         catch(std::format_error& error)
         {
@@ -591,16 +587,69 @@ void MainWindow:: Init_Motor()
         sendToWorker_motor_commands("Check Device",moteus_id);
 }
 
+double* MainWindow::inverse_kin(double x, double y)
+{
+    double * theta = new double[4]{0.0, 0.0, 0.0, 0.0};
+
+// calculate theta2 angle for motor 2 for elbow up and elbow down
+    double theta2 =     acos((x*x+y*y-(L1*L1+L2*L2))/(2*L1*L2));
+    double theta2_1 = -   acos((x*x+y*y-(L1*L1+L2*L2))/(2*L1*L2));
+
+    // calculate theta1 angle for motor 1 for elbow up and elbow down
+    double tanY =  (L2*sin(theta2  ))/(L1+L2*cos(theta2  ));
+    double tanY1 = (L2*sin(theta2_1))/(L1+L2*cos(theta2_1));
+
+    theta[1] = theta2;
+    theta[3] = theta2_1;
+
+    // calculate q1 angle for motor 1 for both cases
+    // four quadrent arctan solution
+
+    if (y >= 0 && x >= 0 )
+    {
+        theta[0] = atan(-y/x) + atan(tanY);
+        theta[2] = atan(-y/x) + atan(tanY1);
+    }
+    else if (y >= 0 && x < 0 )
+    {
+        theta[0] = - std::numbers::pi - atan(y/x) + atan(tanY);
+        theta[2] = - std::numbers::pi - atan(y/x) + atan(tanY1);
+    }
+    else if (y < 0 && x >= 0)
+    {
+        theta[0] = atan(-y/x) + atan(tanY);
+        theta[2] = atan(-y/x) + atan(tanY1);
+    }
+    else if (y < 0 && x < 0)
+    {
+        theta[0] = - std::numbers::pi - atan(y/x) + atan(tanY);
+        theta[2] = - std::numbers::pi - atan(y/x) + atan(tanY1);
+    }
+
+    return theta;
+}
+double* MainWindow::forward_kin(double theta1, double theta2)
+{
+    double * result = new double[2]{0.0, 0.0};
+//    if ((theta1 >=0 || theta1<=180) && (theta2 >=0 || theta2<=180) ) // LIMIT CHECK
+//    {
+        result[0] = L1 * cos(theta1) + L2 * cos(theta1 + theta2);
+        result[1] = L1 * sin(theta1) + L2 * sin(theta1 + theta2);
+//    }
+    return result;
+}
+
 void MainWindow::on_btnRead_Status_clicked()
 {
+
     emit sendToWorker_motor_commands("Read_Status",moteus_id);
 }
 
 void MainWindow::on_btnSetNearest_clicked()
 {
-        for (int i = 1; i <= Number_of_Motors; i++)
+    for (int i = 1; i <= Number_of_Motors; i++)
         {
-            emit sendToWorker_motor_commands("Set Output Nearest",i);
+            emit sendToWorker_diagnostic_write_commands("Set Output Nearest",i,nearest_offset[i-1],0,0);
         }
 }
 
@@ -876,7 +925,7 @@ void MainWindow::on_btnStep_Recorded_clicked()
 
 void MainWindow::on_btnClear_Recorded_clicked()
 {
-    emit sendToWorker_motor_commands("Clear_Recorded",moteus_id);
+    emit sendToWorker_motor_commands("Clear Recorded",moteus_id);
 
 }
 
@@ -1136,4 +1185,261 @@ void MainWindow::on_btnConf_Read_clicked()
     {
         emit sendToWorker_diagnostic_read_commands("get Position Offset",i);
     }
+}
+
+void MainWindow::on_Counter_Position_X_valueChanged(double value)
+{
+    position_X = value;
+    ui->Slider_Position_X->setValue(value);
+}
+
+void MainWindow::on_Slider_Position_X_valueChanged(double value)
+{
+    position_X = value;
+    ui->Counter_Position_X->setValue(value);
+}
+
+void MainWindow::on_Counter_Position_Y_valueChanged(double value)
+{
+    position_Y = value;
+    ui->Slider_Position_Y->setValue(value);
+}
+
+void MainWindow::on_Slider_Position_Y_valueChanged(double value)
+{
+    position_Y = value;
+    ui->Counter_Position_Y->setValue(value);
+}
+
+void MainWindow::on_btnRun_make_X_Y_pos_clicked()
+{
+    std::ostringstream out;
+
+    double x = position_X;
+    double y = position_Y;
+
+    double outer_r = L1+L2;
+
+    double dist = x * x  + y  * y ;
+    if ( !(dist < outer_r * outer_r))
+    {
+       out.str("");
+       try
+       {
+           out << std::format("X {:.3f} ,Y {:.3f} is not inside the radius of arm1 {:.3f} + arm2 {:.3f} ", x , y,L1,L2) << endl;
+       }
+       catch(std::format_error& error)
+       {
+           cout  << error.what();
+       }
+
+       MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
+    }
+    else if ( (dist < inner_radius * inner_radius) )
+    {
+       out.str("");
+       try
+       {
+           out << std::format("X {:.3f} ,Y {:.3f} is not outside inner radius of {:.3f} ", x , y,inner_radius) << endl;
+       }
+       catch(std::format_error& error)
+       {
+           cout  << error.what();
+       }
+
+       MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
+    }
+    else if ( y < min_Y )
+    {
+       out.str("");
+       try
+       {
+           out << std::format("Y {:.3f} is less than minimum Y {:.3f} ", y,min_Y) << endl;
+       }
+       catch(std::format_error& error)
+       {
+           cout  << error.what();
+       }
+
+       MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
+    }
+    else if ( y < 0 && x >= 0 && x < min_Pos_X )
+    {
+       out.str("");
+       try
+       {
+           out << std::format("X {:.3f} is less than minimum positive X below y 0 {:.3f} ", x, min_Pos_X) << endl;
+       }
+       catch(std::format_error& error)
+       {
+           cout  << error.what();
+       }
+
+       MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
+    }
+    else if ( y < 0 && x < 0 && x > min_Neg_X )
+    {
+       out.str("");
+       try
+       {
+           out << std::format("X {:.3f} is less than minimum negative X below y 0 {:.3f} ", x,min_Neg_X) << endl;
+       }
+       catch(std::format_error& error)
+       {
+           cout  << error.what();
+       }
+
+       MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
+    }
+    else
+    {
+
+        double * theta = inverse_kin(x,y);
+
+        out.str("");
+
+        // convert radians to revolutions
+        double motor1_revolutions1 = theta[0]/(2*std::numbers::pi);
+        double motor2_revolutions1 = theta[1]/(2*std::numbers::pi);
+        double motor1_revolutions2 = theta[2]/(2*std::numbers::pi);
+        double motor2_revolutions2 = theta[3]/(2*std::numbers::pi);
+
+        position_Gen_Elbow_Up[0] = motor1_revolutions2;
+        position_Gen_Elbow_Up[1] = motor2_revolutions2;
+        position_Gen_Elbow_Down[0] = motor1_revolutions1;
+        position_Gen_Elbow_Down[1] = motor2_revolutions1;
+
+        bool Elbow_Up_limit_error = false;
+        bool Elbow_Down_limit_error = false;
+
+        // check for position outside limits
+        if (    (bounds_max[0] != NAN && position_Gen_Elbow_Up[0] > bounds_max[0]) ||
+                (bounds_min[0] != NAN && position_Gen_Elbow_Up[0] < bounds_min[0]) ||
+                (bounds_max[1] != NAN && position_Gen_Elbow_Up[1] > bounds_max[1]) ||
+                (bounds_min[1] != NAN && position_Gen_Elbow_Up[1] < bounds_min[1]) ||
+                (position_Gen_Elbow_Up[1] > Motor2_rotation_limit)  ||
+                (position_Gen_Elbow_Up[1] < -Motor2_rotation_limit))
+        {
+            Elbow_Up_limit_error = true;
+        }
+
+        if (    (bounds_max[0] != NAN && position_Gen_Elbow_Down[0] > bounds_max[0]) ||
+                (bounds_min[0] != NAN && position_Gen_Elbow_Down[0] < bounds_min[0]) ||
+                (bounds_max[1] != NAN && position_Gen_Elbow_Down[1] > bounds_max[1]) ||
+                (bounds_min[1] != NAN && position_Gen_Elbow_Down[1] < bounds_min[1]) ||
+                (position_Gen_Elbow_Down[1] > Motor2_rotation_limit)  ||
+                (position_Gen_Elbow_Down[1] < -Motor2_rotation_limit))
+        {
+            Elbow_Down_limit_error = true;
+        }
+
+        try
+        {
+            if (Elbow_Down_limit_error)
+                out << "Elbow Down motor limit error" << endl;
+            if (Elbow_Up_limit_error)
+                out << "Elbow Up motor limit error" << endl;
+
+            out << std::format("motor 1 revolutions1 = \t{:.6f} \tmotor 2 revolutions1 =\t{:.6f}", motor1_revolutions1 , motor2_revolutions1) << endl;
+            out << std::format("motor 1 revolutions2 = \t{:.6f} \tmotor 2 revolutions2 =\t{:.6f}", motor1_revolutions2 , motor2_revolutions2) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
+
+        MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
+        if ( !Elbow_Up_limit_error || !Elbow_Down_limit_error)
+        {
+            if (!Elbow_Up_limit_error)
+            {
+                // if X > 0 && motor 1 going positive, move motor 2 first
+                // if X < 0 && motor 1 going negative, move motor 2 first
+                if ( (x >= 0 && position_Gen_Elbow_Up[0] > Position[0]) ||
+                     (x <= 0 && position_Gen_Elbow_Up[0] < Position[0]) )
+                {
+                    //Position motor 2
+                    emit sendToWorker_position_commands("Go To Position and wait",2,accel_limit,position_Gen_Elbow_Up[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                      kd_scale,bounds_min[1],bounds_max[1],Cycle_Start_Stop,2);
+                    //Position motor 1
+                    emit sendToWorker_position_commands("Go To Position and wait",1,accel_limit,position_Gen_Elbow_Up[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                      kd_scale,bounds_min[0],bounds_max[0],Cycle_Start_Stop,2);
+                }
+                else
+                {
+                    //Position motor 1
+                    emit sendToWorker_position_commands("Go To Position and wait",1,accel_limit,position_Gen_Elbow_Up[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                      kd_scale,bounds_min[0],bounds_max[0],Cycle_Start_Stop,2);
+                    //Position motor 2
+                    emit sendToWorker_position_commands("Go To Position and wait",2,accel_limit,position_Gen_Elbow_Up[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                      kd_scale,bounds_min[1],bounds_max[1],Cycle_Start_Stop,2);
+                }
+            }
+            else if (!Elbow_Down_limit_error)
+            {
+                // if X > 0 && motor 1 going positive, move motor 2 first
+                // if X < 0 && motor 1 going negative, move motor 2 first
+                if ( (x >= 0 && position_Gen_Elbow_Down[0] > Position[0]) ||
+                     (x <= 0 && position_Gen_Elbow_Down[0] < Position[0]) )
+                {
+                    //Position motor 2
+                    emit sendToWorker_position_commands("Go To Position and wait",2,accel_limit,position_Gen_Elbow_Down[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                      kd_scale,bounds_min[1],bounds_max[1],Cycle_Start_Stop,2);
+                    //Position motor 1
+                    emit sendToWorker_position_commands("Go To Position and wait",1,accel_limit,position_Gen_Elbow_Down[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                      kd_scale,bounds_min[0],bounds_max[0],Cycle_Start_Stop,2);
+                }
+                else
+                {
+                    //Position motor 1
+                    emit sendToWorker_position_commands("Go To Position and wait",1,accel_limit,position_Gen_Elbow_Down[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                      kd_scale,bounds_min[0],bounds_max[0],Cycle_Start_Stop,2);
+                    //Position motor 2
+                    emit sendToWorker_position_commands("Go To Position and wait",2,accel_limit,position_Gen_Elbow_Down[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                      kd_scale,bounds_min[1],bounds_max[1],Cycle_Start_Stop,2);
+                }
+            }
+        }
+
+    }
+
+}
+
+void MainWindow::on_btnRun_Cur_X_Y_pos_clicked()
+{
+    std::ostringstream out;
+    std::istringstream iss;
+
+    double X = 0;
+    double Y = 0;
+
+    double motor1_revolutions = Position[0];
+    double motor2_revolutions = Position[1];
+
+    // convert revolutions to radians
+    double theta1 = -motor1_revolutions * 2 * std::numbers::pi;
+    double theta2 = motor2_revolutions * 2 * std::numbers::pi;
+
+    out.str("");
+
+    double* result = forward_kin(theta1, theta2);
+
+    // Eliminate very small numbers using format.
+    try
+    {
+        iss.str(std::format("{:.3f}\n" , result[0]));
+        iss >> X;
+
+        iss.str(std::format("{:.3f}\n" , result[1]));
+        iss >> Y;
+    }
+    catch(std::format_error& error)
+    {
+        cout  << error.what();
+    }
+
+    ui->Slider_Cur_Position_X->setValue(X);
+    ui->Counter_Cur_Position_X->setValue(X);
+    ui->Slider_Cur_Position_Y->setValue(Y);
+    ui->Counter_Cur_Position_Y->setValue(Y);
 }
