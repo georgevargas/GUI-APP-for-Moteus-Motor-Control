@@ -265,7 +265,7 @@ void Motorworker::ReadState(int moteus_id, State& curr_state) const {
     q_com.abs_position = mjbots::moteus::Resolution::kFloat;
     q_com.motor_temperature = mjbots::moteus::Resolution::kFloat;
     q_com.trajectory_complete = mjbots::moteus::Resolution::kInt16;
-    q_com.home_state = mjbots::moteus::Resolution::kIgnore;
+    q_com.home_state = mjbots::moteus::Resolution::kInt16;
     q_com.voltage = mjbots::moteus::Resolution::kFloat;
     q_com.temperature = mjbots::moteus::Resolution::kFloat;
     q_com.fault = mjbots::moteus::Resolution::kInt8;
@@ -314,6 +314,7 @@ void Motorworker::ReadState(int moteus_id, State& curr_state) const {
   curr_state.fault = qr.fault;
   curr_state.mode = static_cast<float>(qr.mode);
   curr_state.TrajectoryComplete = qr.trajectory_complete;
+  curr_state.home_state = static_cast<float>(qr.home_state);
 }
 bool Motorworker::SendPositionCommand(  int Motor_id,
                                         double position,
@@ -364,25 +365,25 @@ void Motorworker::run_cycles()
 {
     if (!Step_Mode && !Rec_run_Enable && Position_wait)
     {
-        // check TrajectoryComplete
-        if (Check_TrajectoryComplete(position_Motor_id))
-        {
-            std::ostringstream out;
-            Position_wait = false;
+            // check TrajectoryComplete
+            if (Check_TrajectoryComplete(position_Motor_id))
+            {
+                std::ostringstream out;
+                Position_wait = false;
 
-            // define a state object
-            State curr_state1;
+                // define a state object
+                State curr_state1;
 
-            // reset the state
-            curr_state1.Reset();
+                // reset the state
+                curr_state1.Reset();
 
-            //read current position
-            curr_state1.EN_Position();
-            ReadState(position_Motor_id, curr_state1);
+                //read current position
+                curr_state1.EN_Position();
+                ReadState(position_Motor_id, curr_state1);
 
-            out << "Motor = " << position_Motor_id << " Ending position:\t" << curr_state1.position << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
+                out << "Motor = " << position_Motor_id << " Ending position:\t" << curr_state1.position << endl;
+                emit sendToMain(QString::fromStdString(out.str()));
+            }
     }
     else if (Step_Mode || (Rec_run_Enable && l_Cycle <= l_Cycle_Start_Stop))
     {
@@ -698,9 +699,14 @@ void Motorworker::getFromMain_file_commands(QString msg, QString file_name) // s
 
 void Motorworker::getFromMain_motor_commands(QString msg, int Motor_id) // slot implementation
 {
+
     // status stuff
-    if (msg == "Update Velocity")
+    if (msg == "Update Position")
     {
+        double position_1 = 1.123;
+        double position_2 = 2.123;
+        double position_3 = 3.123;
+
         // define a state object
         State curr_state;
         std::ostringstream out;
@@ -708,16 +714,66 @@ void Motorworker::getFromMain_motor_commands(QString msg, int Motor_id) // slot 
 
         // reset the state
         curr_state.Reset();
+        curr_state.EN_Position();
 
         //read current velocity
-        curr_state.EN_Position();
+        ReadState(1, curr_state);
+        position_1 = curr_state.position;
+
+        ReadState(2, curr_state);
+        position_2 = curr_state.position;
+
+        ReadState(3, curr_state);
+        position_3 = curr_state.position;
+
+        // reset the state
+        curr_state.Reset();
+
+        //read current velocity
         curr_state.EN_Velocity();
         curr_state.EN_Torque();
         curr_state.EN_Temp();
         curr_state.EN_QCurr();
 
         ReadState(Motor_id, curr_state);
-        emit sendMsg("get velocity",Motor_id,curr_state.position,curr_state.velocity,curr_state.torque,curr_state.temperature,curr_state.q_curr);
+        emit sendMsg("get Position",Motor_id,position_1,curr_state.velocity,curr_state.torque,curr_state.temperature,curr_state.q_curr,position_2,position_3);
+    }
+    else if (msg == "Update Velocity")
+    {
+        double position_1 = 1.123;
+        double position_2 = 2.123;
+        double position_3 = 3.123;
+
+        // define a state object
+        State curr_state;
+        std::ostringstream out;
+        out.str("");
+
+        // reset the state
+        curr_state.Reset();
+        curr_state.EN_Position();
+
+        //read current velocity
+        ReadState(1, curr_state);
+        position_1 = curr_state.position;
+
+        ReadState(2, curr_state);
+        position_2 = curr_state.position;
+
+        ReadState(3, curr_state);
+        position_3 = curr_state.position;
+
+        // reset the state
+        curr_state.Reset();
+
+        //read current velocity
+        curr_state.EN_Velocity();
+        curr_state.EN_Torque();
+        curr_state.EN_Temp();
+        curr_state.EN_QCurr();
+
+        ReadState(Motor_id, curr_state);
+        emit sendMsg("get velocity",Motor_id,position_1,curr_state.velocity,curr_state.torque,curr_state.temperature,curr_state.q_curr,position_2,position_3);
     }
     else if (msg == "Read_Status")
     {
@@ -890,43 +946,6 @@ void Motorworker::getFromMain_motor_commands(QString msg, int Motor_id) // slot 
         out << "Motor: " << Motor_id << " Stopped position:\t" << curr_state.position << endl;
         emit sendToMain(QString::fromStdString(out.str()));
     }
-    else if (msg == "Set Output Nearest")
-    {
-        Rec_run_Enable = false;
-        Position_wait = false;
-
-        moteus::Controller::Options options;
-        options.id = Motor_id;
-        options.default_query = false;
-        moteus::Controller controller(options);
-
-        moteus::OutputNearest::Command cmd;
-        cmd.position = 0.0;
-
-        // Command OutputNearest
-        controller.SetOutputNearest(cmd);
-
-        // define a state object
-        State curr_state;
-        std::ostringstream out;
-        out.str("");
-
-        // reset the state
-        curr_state.Reset();
-
-        //read current position
-        curr_state.EN_Position();
-        ReadState(Motor_id, curr_state);
-        try
-        {
-            out << std::format("Motor: {} Position:\t{:.6f}", Motor_id , curr_state.position) << endl;
-        }
-        catch(std::format_error& error)
-        {
-            cout  << error.what();
-        }
-        emit sendToMain(QString::fromStdString(out.str()));
-    }
 
     else if (msg == "Clear Recorded")
     {
@@ -978,7 +997,7 @@ void Motorworker::getFromMain_motor_commands(QString msg, int Motor_id) // slot 
             device_evable = false;
          }
 
-        emit sendMsg("Check Device",device_evable,0,0,0,0,0);
+        emit sendMsg("Check Device",device_evable,0,0,0,0,0,0,0);
     }
     else
     {
@@ -1020,6 +1039,59 @@ void Motorworker::Motorworker::getFromMain_diagnostic_write_commands(QString msg
             << "\tkd: " << Value2
             << "\t ki: " << Value3
             << endl;
+        emit sendToMain(QString::fromStdString(out.str()));
+    }
+    else if (msg == "Set Output Nearest")
+    {
+        Rec_run_Enable = false;
+        Position_wait = false;
+
+        moteus::Controller::Options options;
+        options.id = Motor_id;
+        options.default_query = false;
+        moteus::Controller controller(options);
+
+        // define a state object
+        State curr_state;
+        std::ostringstream out;
+        out.str("");
+
+        if (Value2 > 0)
+        {
+            // if value 2 is non zero, set nearsest is conditional on home state being < 2
+            curr_state.Reset();
+            curr_state.EN_home_state();
+            ReadState(Motor_id, curr_state);
+            if (curr_state.home_state > 1)
+                return;
+        }
+
+        moteus::OutputNearest::Command cmd;
+        cmd.position = Value1;
+
+        moteus::OutputNearest::Format res;
+
+        // Command OutputNearest
+        controller.SetOutputNearest(cmd,&res);
+
+
+        // reset the state
+        curr_state.Reset();
+
+        //read current position
+        curr_state.EN_Position();
+        curr_state.EN_home_state();
+        ReadState(Motor_id, curr_state);
+
+        out.str("");
+        try
+        {
+            out << std::format("Motor: {} Position:\t{:.6f}", Motor_id , curr_state.position) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
         emit sendToMain(QString::fromStdString(out.str()));
     }
     else if (msg == "set rotor_to_output_ratio")
@@ -1166,7 +1238,7 @@ void Motorworker::getFromMain_diagnostic_read_commands(QString msg, int Motor_id
             value = std::stod(
                 controller.DiagnosticCommand("conf get motor_position.rotor_to_output_ratio",
                                              moteus::Controller::kExpectSingleLine));
-       emit sendMsg("get gear ratio",Motor_id,value,0,0,0,0);
+       emit sendMsg("get gear ratio",Motor_id,value,0,0,0,0,0,0);
 
     }
     else if (msg == "get break voltage")
@@ -1188,7 +1260,7 @@ void Motorworker::getFromMain_diagnostic_read_commands(QString msg, int Motor_id
             controller.DiagnosticCommand("conf get servo.flux_brake_min_voltage",
                                          moteus::Controller::kExpectSingleLine));
 
-        emit sendMsg("get Break Voltage",Motor_id,value,0,0,0,0);
+        emit sendMsg("get Break Voltage",Motor_id,value,0,0,0,0,0,0);
     }
     else if (msg == "get Position Offset")
     {
@@ -1208,7 +1280,7 @@ void Motorworker::getFromMain_diagnostic_read_commands(QString msg, int Motor_id
         value = std::stod(
             controller.DiagnosticCommand("conf get motor_position.output.offset",
                                          moteus::Controller::kExpectSingleLine));
-        emit sendMsg("get Position Offset",Motor_id,value,0,0,0,0);
+        emit sendMsg("get Position Offset",Motor_id,value,0,0,0,0,0,0);
     }
     else if (msg == "get motor limits")
     {
@@ -1230,7 +1302,7 @@ void Motorworker::getFromMain_diagnostic_read_commands(QString msg, int Motor_id
             controller.DiagnosticCommand("conf get servopos.position_max",
                                          moteus::Controller::kExpectSingleLine));
 
-        emit sendMsg("set motor limits",Motor_id,l_bounds_min[Motor_id-1],l_bounds_max[Motor_id-1],0,0,0);
+        emit sendMsg("set motor limits",Motor_id,l_bounds_min[Motor_id-1],l_bounds_max[Motor_id-1],0,0,0,0,0);
     }
     else if (msg == "get PID")
     {
@@ -1259,7 +1331,7 @@ void Motorworker::getFromMain_diagnostic_read_commands(QString msg, int Motor_id
             controller.DiagnosticCommand("conf get servo.pid_position.ki",
                                          moteus::Controller::kExpectSingleLine));
 
-        emit sendMsg("get PID",Motor_id,value1,value2,value3,0,0);
+        emit sendMsg("get PID",Motor_id,value1,value2,value3,0,0,0,0);
     }
 
     else
@@ -1535,6 +1607,64 @@ void Motorworker::getFromMain_position_commands(QString msg, int Motor_id, doubl
         position_Motor_id = Motor_id;
         Position_wait = true;
 
+    }
+    else if (msg == "Go To Position and wait")
+    {
+        Rec_run_Enable = false;
+        Position_wait = false;
+
+        std::ostringstream out;
+
+        if (!Check_Motor(Motor_id))
+        {
+           if (Motor_error)
+           {
+               // send one stop command
+               SendStopCommand(Motor_id);
+           }
+           else if (TrajectoryComplete_error)
+           {
+               // wait for TrajectoryComplete
+               Wait_TrajectoryComplete(Motor_id);
+           }
+        }
+
+
+        double position_limited = position;
+        if (bounds_max != NAN && position_limited > bounds_max)
+            position_limited = bounds_max;
+        else if (bounds_min != NAN && position_limited < bounds_min)
+            position_limited = bounds_min;
+
+        if (!SendPositionCommand(   Motor_id,
+                                    position_limited,
+                                    velocity_limit,
+                                    accel_limit,
+                                    max_torque,
+                                    feedforward_torque,
+                                    kp_scale,
+                                    kd_scale,
+                                    0.0 // end velocity
+                                    ))
+        {
+            out.str("");
+            out << "error on posiion command " << Motor_id << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+        }
+
+        out.str("");
+        out << std::format("Position to: {:.3f}", position)
+            << std::format(", Velocity: {:.3f}", velocity_limit)
+            << std::format(", Accel: {:.3f}", accel_limit)
+            << std::format(", Motor: {}", Motor_id)
+            << std::format(", Max torque: {:.3f}", max_torque)
+            << std::format(", Feedforward torque: {:.3f}", feedforward_torque)
+            << std::format(", KP scale: {:.3f}", kp_scale)
+            << std::format(", KD scale: {:.3f}", kd_scale)
+            << std::format(", Delay: {}", Delay)
+            << endl;
+        emit sendToMain(QString::fromStdString(out.str()));
+        Wait_TrajectoryComplete(Motor_id);
     }
     else if (msg == "Run Forever")
     {
