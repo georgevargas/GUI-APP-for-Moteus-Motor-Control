@@ -13,6 +13,8 @@ The sequence can then run in cycles. Controller parameters are displayed and may
 
 You can then dynamically change the movement parameters to see how to tune the movements.
 
+It is also possible to position to an X,Y coordinate using Inverse Kinematics. It is also possible to display the current X,Y using forward Kinematics.
+
 For example, you can manually move a motor to a position and press the Record Position button. The parameters on the screen will be recorded for that motor. This can be repeated for one or multiple motors.
 
 Then you can press run recorded and the sequence will be executed in any number of cycles.
