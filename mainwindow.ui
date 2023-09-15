@@ -3587,7 +3587,7 @@ background-color: #C5D5DB;
    <widget class="QPushButton" name="btnRun_Recorded">
     <property name="geometry">
      <rect>
-      <x>154</x>
+      <x>422</x>
       <y>80</y>
       <width>120</width>
       <height>25</height>
@@ -3628,8 +3628,8 @@ background-color: #C5D5DB;
    <widget class="QPushButton" name="btnClear_Recorded">
     <property name="geometry">
      <rect>
-      <x>422</x>
-      <y>80</y>
+      <x>704</x>
+      <y>20</y>
       <width>120</width>
       <height>25</height>
      </rect>
@@ -7422,47 +7422,6 @@ background-color: #C5D5DB;
      <string>Step Rec</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="btnRun_make_X_Y_pos">
-    <property name="geometry">
-     <rect>
-      <x>704</x>
-      <y>20</y>
-      <width>120</width>
-      <height>25</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <pointsize>12</pointsize>
-      <weight>50</weight>
-      <bold>false</bold>
-     </font>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">    QPushButton {
-        border: 1px solid #337E9F;
-        border-radius: 6px;
-        background-color: rgb(70, 130, 180);
-        background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
-            stop: 0 #5DC1FA, stop: 1 #0F86CA); 
-    }
-    QPushButton:hover{
-        border: 1px solid #333333;
-        background-color: rgb(70, 130, 180);
-        background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
-           stop: 0 #71CAFD, stop: 1 #41A2CC);
-    }
-    QPushButton:pressed {
-        border: 1px solid #333333;
-        background-color: rgb(70, 130, 180);
-        background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
-            stop: 0 #11A5FA, stop: 1 #0F86CA);
-    };</string>
-    </property>
-    <property name="text">
-     <string>Position  to X,Y</string>
-    </property>
-   </widget>
    <widget class="QGroupBox" name="groupBox_5">
     <property name="geometry">
      <rect>
@@ -8989,6 +8948,47 @@ background-color: #C5D5DB;
     </property>
     <property name="text">
      <string>Cur  Pos X,Y</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btn_record_X_Y">
+    <property name="geometry">
+     <rect>
+      <x>154</x>
+      <y>80</y>
+      <width>120</width>
+      <height>25</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+      <weight>50</weight>
+      <bold>false</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">    QPushButton {
+        border: 1px solid #337E9F;
+        border-radius: 6px;
+        background-color: rgb(70, 130, 180);
+        background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
+            stop: 0 #5DC1FA, stop: 1 #0F86CA); 
+    }
+    QPushButton:hover{
+        border: 1px solid #333333;
+        background-color: rgb(70, 130, 180);
+        background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
+           stop: 0 #71CAFD, stop: 1 #41A2CC);
+    }
+    QPushButton:pressed {
+        border: 1px solid #333333;
+        background-color: rgb(70, 130, 180);
+        background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 0.67, 
+            stop: 0 #11A5FA, stop: 1 #0F86CA);
+    };</string>
+    </property>
+    <property name="text">
+     <string>Record X,Y</string>
     </property>
    </widget>
   </widget>
