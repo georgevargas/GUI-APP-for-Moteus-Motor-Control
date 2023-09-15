@@ -44,17 +44,6 @@ private:
     double Cycle_Start_Stop = 100;
     double Cycle_Delay = 1.1;
     bool   Dynamic = false;
-    double L1 = 4.7; // Length 0f arm 1
-    double L2 = 8.0; // Length 0f arm 2
-    double min_Y = -7.30;
-    double min_Pos_X = 1.5;
-    double min_Neg_X = -1.5;
-    double inner_radius = 4.8; // unreachable inner radius around the origin of X,Y.
-    double Motor2_rotation_limit = 0.349943;
-    double height = 9.34; // height above base
-    double motor1_offset = -.209; // motor1 position offset
-    double motor2_offset = -0.138687; // motor2 position offset
-
     bool   Device_enable = false;
     bool   Enable_startup_nearest_commands = false;
     bool   Enable_plot_position = true;
@@ -100,12 +89,8 @@ private:
     double nearest_offset[10] ={0.149242,0.148727,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
     double position_X = 0;
     double position_Y = 0;
-    double position_Gen_Elbow_Up[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
-    double position_Gen_Elbow_Down[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
     void setup();
     void Init_Motor();
-    double* inverse_kin(double x, double y);
-    double* forward_kin(double theta1, double theta2);
 
 public:
     explicit MainWindow(QWidget *parent = 0);
@@ -115,7 +100,7 @@ public:
 signals:
     void sendSetup();
     void sendToWorker_position_commands(QString msg, int Motor_id,double accel_limit,double position,double velocity_limit,double max_torque,double feedforward_torque,double kp_scale,
-         double kd_scale,double bounds_min,double bounds_max,double Cycle,double Delay);
+         double kd_scale,double bounds_min,double bounds_max,double Cycle,double Delay,double position_X,double position_Y);
     void sendToWorker_file_commands(QString msg, QString file_name);
     void sendToWorker_motor_commands(QString msg, int Motor_id);
     void sendToWorker_diagnostic_write_commands(QString msg, int Motor_id, double Value1, double Value2, double Value3);
@@ -200,8 +185,8 @@ private slots:
     void on_Slider_Position_X_valueChanged(double value);
     void on_Counter_Position_Y_valueChanged(double value);
     void on_Slider_Position_Y_valueChanged(double value);
-    void on_btnRun_make_X_Y_pos_clicked();
     void on_btnRun_Cur_X_Y_pos_clicked();
+    void on_btn_record_X_Y_clicked();
 };
 
 #endif // MAINWINDOW_H
