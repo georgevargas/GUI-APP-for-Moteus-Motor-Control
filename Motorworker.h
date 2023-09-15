@@ -134,7 +134,7 @@ signals:
 
 public slots:
     void getFromMain_position_commands(QString msg, int Motor_id,double start_position,double position,double velocity_limit,double max_torque,double feedforward_torque,double kp_scale,
-                     double kd_scale,double bounds_min,double bounds_max,double Cycle,double Delay);
+                     double kd_scale,double bounds_min,double bounds_max,double Cycle,double Delay,double position_X,double position_Y);
     void getFromMain_file_commands(QString msg, QString file_name);
     void getFromMain_motor_commands(QString msg, int Motor_id);
     void getFromMain_diagnostic_write_commands(QString msg, int Motor_id, double Value1, double Value2, double Value3);
@@ -143,6 +143,11 @@ public slots:
     void run_cycles();
 
 private:
+    void Record_Position(int Motor_id, double accel_limit, double position, double velocity_limit, double max_torque, double feedforward_torque, double kp_scale,
+                                   double kd_scale, double bounds_min, double bounds_max, double Delay);
+    double* inverse_kin(double x, double y);
+    double* forward_kin(double theta1, double theta2);
+    bool Collision_Check( int Motor_id, double position);
     bool Check_Motor(int Motor_id);
     bool Check_TrajectoryComplete(int Motor_id);
     bool Wait_TrajectoryComplete(int Motor_id);
@@ -155,10 +160,19 @@ private:
                              double kp_scale,
                              double kd_scale,
                              double velocity, // end velocity
-                             double watchdog_timer = NAN) const;
+                             double watchdog_timer = NAN) ;
 
     bool SendStopCommand(int moteus_id);
     void ReadState(int moteus_id, State& curr_state) const;
+
+    double L1 = 4.7; // Length 0f arm 1
+    double L2 = 8.0; // Length 0f arm 2
+    double min_Y = -8.2;
+    double min_Pos_X = 1.5;
+    double min_Neg_X = -1.5;
+    double inner_radius = L1 - L2; // unreachable inner radius around the origin of X,Y.
+    double Motor2_rotation_limit = 0.349943;
+
     double l_accel_limit;
     double l_position;
     double l_velocity_limit;
@@ -177,6 +191,9 @@ private:
     int Trajectory_Timeout_2 = 100; // 10 secs
     double l_bounds_min[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the minimum positions for each motor
     double l_bounds_max[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}; // Contains the mamimum positions for each motor
+    double position_Gen_Elbow_Up[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    double position_Gen_Elbow_Down[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    double last_position_destination[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
     bool   Position_wait = false;
     bool   Rec_run_Enable = false;
     bool   Dynamic = false;
