@@ -194,6 +194,7 @@ private:
     double position_Gen_Elbow_Up[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
     double position_Gen_Elbow_Down[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
     double last_position_destination[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+    double last_record_destination[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
     bool   Position_wait = false;
     bool   Rec_run_Enable = false;
     bool   Dynamic = false;
