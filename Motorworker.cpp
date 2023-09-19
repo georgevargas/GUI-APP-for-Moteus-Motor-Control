@@ -90,6 +90,8 @@ void Motorworker::Record_Position(int Motor_id, double accel_limit, double posit
     else if (bounds_min != NAN && position_limited < bounds_min)
         position_limited = bounds_min;
 
+    last_record_destination[Motor_id-1] = position_limited; //save this position as the last recorded position for this motor id.
+
     list_Position.push_back(position_limited);
     list_Motor_id.push_back(Motor_id);
     list_Delay.push_back(Delay);
@@ -2040,18 +2042,20 @@ void Motorworker::getFromMain_position_commands(QString msg, int Motor_id, doubl
 
             emit sendToMain(QString::fromStdString(out.str()));
 
-            double position_1 = 0;
+            if (list_Position.empty())
+            {
+                // define a state object
+                State curr_state;
 
-            // define a state object
-            State curr_state;
-
-            // reset the state
-            curr_state.Reset();
-            curr_state.EN_Position();
-
-            //read current velocity
-            ReadState(1, curr_state);
-            position_1 = curr_state.position;
+                // reset the state
+                curr_state.Reset();
+                curr_state.EN_Position();
+                //read current position
+                ReadState(1, curr_state);
+                last_record_destination[0] = curr_state.position;
+                ReadState(2, curr_state);
+                last_record_destination[1] = curr_state.position;
+            }
 
             if ( !Elbow_Up_limit_error || !Elbow_Down_limit_error)
             {
@@ -2059,8 +2063,8 @@ void Motorworker::getFromMain_position_commands(QString msg, int Motor_id, doubl
                 {
                     // if X > 0 && motor 1 going positive, move motor 2 first
                     // if X < 0 && motor 1 going negative, move motor 2 first
-                    if ( (x >= 0 && position_Gen_Elbow_Up[0] > position_1) ||
-                         (x <= 0 && position_Gen_Elbow_Up[0] < position_1) )
+                    if ( (x >= 0 && position_Gen_Elbow_Up[0] > last_record_destination[0]) ||
+                         (x <= 0 && position_Gen_Elbow_Up[0] < last_record_destination[0]) )
                     {
                         //Position motor 2
                         Record_Position(2,accel_limit,position_Gen_Elbow_Up[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
@@ -2083,8 +2087,8 @@ void Motorworker::getFromMain_position_commands(QString msg, int Motor_id, doubl
                 {
                     // if X > 0 && motor 1 going positive, move motor 2 first
                     // if X < 0 && motor 1 going negative, move motor 2 first
-                    if ( (x >= 0 && position_Gen_Elbow_Down[0] > position_1) ||
-                         (x <= 0 && position_Gen_Elbow_Down[0] < position_1) )
+                    if ( (x >= 0 && position_Gen_Elbow_Down[0] > last_record_destination[0]) ||
+                         (x <= 0 && position_Gen_Elbow_Down[0] < last_record_destination[0]) )
                     {
                         //Position motor 2
                         Record_Position(2,accel_limit,position_Gen_Elbow_Down[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
