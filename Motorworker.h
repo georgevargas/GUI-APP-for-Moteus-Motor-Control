@@ -145,8 +145,8 @@ public slots:
 private:
     void Record_Position(int Motor_id, double accel_limit, double position, double velocity_limit, double max_torque, double feedforward_torque, double kp_scale,
                                    double kd_scale, double bounds_min, double bounds_max, double Delay);
-    double* inverse_kin(double x, double y);
-    double* forward_kin(double theta1, double theta2);
+    void inverse_kin(double theta[], double x, double y);
+    void forward_kin(double result[], double theta1, double theta2);
     bool Collision_Check( int Motor_id, double position);
     bool Check_Motor(int Motor_id);
     bool Check_TrajectoryComplete(int Motor_id);
