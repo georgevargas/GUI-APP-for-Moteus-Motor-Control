@@ -25,9 +25,8 @@ Motorworker::Motorworker(QObject *parent) :
 Motorworker::~Motorworker()
 {
 }
-double* Motorworker::inverse_kin(double x, double y)
+void Motorworker::inverse_kin(double theta[], double x, double y)
 {
-    double * theta = new double[4]{0.0, 0.0, 0.0, 0.0};
 
 // calculate theta2 angle for motor 2 for elbow up and elbow down
     double theta2 =     acos((x*x+y*y-(L1*L1+L2*L2))/(2*L1*L2));
@@ -63,15 +62,11 @@ double* Motorworker::inverse_kin(double x, double y)
         theta[0] = - std::numbers::pi - atan(y/x) + atan(tanY);
         theta[2] = - std::numbers::pi - atan(y/x) + atan(tanY1);
     }
-
-    return theta;
 }
-double* Motorworker::forward_kin(double theta1, double theta2)
+void Motorworker::forward_kin(double result[], double theta1, double theta2)
 {
-    double * result = new double[2]{0.0, 0.0};
     result[0] = L1 * cos(theta1) + L2 * cos(theta1 + theta2);
     result[1] = L1 * sin(theta1) + L2 * sin(theta1 + theta2);
-    return result;
 }
 
 void Motorworker::Record_Position(int Motor_id, double accel_limit, double position, double velocity_limit, double max_torque, double feedforward_torque, double kp_scale,
@@ -444,7 +439,8 @@ bool Motorworker::Collision_Check( int Motor_id, double position)
 
     out.str("");
 
-    double* result = forward_kin(theta1, theta2);
+    double result[2] = {0.0,0.0};
+    forward_kin(result, theta1, theta2);
     double x = 0;
     double y = 0;
 
@@ -1460,7 +1456,8 @@ void Motorworker::Motorworker::getFromMain_diagnostic_write_commands(QString msg
 
         out.str("");
 
-        double* result = forward_kin(theta1, theta2);
+        double result[2] = {0.0,0.0};
+        forward_kin(result, theta1, theta2);
 
         // Eliminate very small numbers using format.
         try
@@ -1985,8 +1982,8 @@ void Motorworker::getFromMain_position_commands(QString msg, int Motor_id, doubl
         }
         else
         {
-
-            double * theta = inverse_kin(x,y);
+            double theta[4] = {0.0, 0.0, 0.0, 0.0};
+            inverse_kin(theta,x,y);
 
             out.str("");
 
