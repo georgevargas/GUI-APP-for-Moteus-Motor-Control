@@ -144,3 +144,29 @@ The sequence number value is ignored but they must be there.
 The sequence is executed from top to bottom.
  
 mainwindow.h contains an array called Motor_rest_position which can be edited to establish all motor rest positions.
+
+mainwindow.h contains a parameter called Number_of_Motors, which should be set to the number of motors you have. 
+
+motorworker.h contains parameters used for collision detection for a two segment arm system. The program will avoid position moves which are restricted in an x,y coordinate system, or by rotation limitations set in the controller. Edit the parameters to suit your needs.
+
+Motor 1 is the origin connected to arm 1.
+Motor 2 is connected between arm 1 and arm 2.
+The end of arm 2 farthest from the motor is the X and Y coordinate.
+
+(origin) m1-------M2--------X,Y
+
+
+L1 = 4.7 Length 0f arm 1
+
+L2 = 8.0 Length 0f arm 2
+
+min_Y = -8.2                         This is the minimum y position (relative to the origin) 
+
+min_Pos_X = 1.5                      This is the minimum positive X closest to the origin 
+
+min_Neg_X = -1.5                     This is the minimum negative X closest to the origin 
+
+inner_radius = L1 - L2               This is the unreachable inner radius around the origin of X,Y
+
+Motor2_rotation_limit = 0.349943     This is + or - limit arm 2 can rotate without hitting something
+
