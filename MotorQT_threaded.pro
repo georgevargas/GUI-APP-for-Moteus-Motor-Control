@@ -56,8 +56,8 @@ LIBS += \
 RESOURCES += \
         resources.qrc
 
-        QMAKE_CXXFLAGS_CXX2A = -std:c++20
-        QMAKE_CXXFLAGS += -std=c++2a
-        QMAKE_CXX = g++-13
+        QMAKE_CXXFLAGS_CXX2A = -std:c++23
+        QMAKE_CXXFLAGS += -std=c++23
+        QMAKE_CXX = g++-14.2.0
 
 DISTFILES +=
