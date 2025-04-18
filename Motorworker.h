@@ -1,5 +1,4 @@
-#ifndef MOTORCVWORKER_H
-#define MOTORCVWORKER_H
+#pragma once
 #include "mainwindow.h"
 #include <QObject>
 
@@ -164,7 +163,7 @@ private:
 
     bool SendStopCommand(int moteus_id);
     void ReadState(int moteus_id, State& curr_state) const;
-
+    bool   Collision_Check_enable = false; // enables forward and reverse kinamatics checks
     double L1 = 4.7; // Length 0f arm 1
     double L2 = 8.0; // Length 0f arm 2
     double min_Y = -8.2;
@@ -216,5 +215,3 @@ private:
     int current_list_index =0;
 
 };
-
-#endif // MOTORWORKER_H

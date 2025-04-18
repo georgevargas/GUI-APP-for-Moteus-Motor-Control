@@ -15,6 +15,7 @@
 #include <QMessageBox>
 #include <QInputDialog>
 #include <format>
+#include <print>
 #include <numbers>
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -162,14 +163,7 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         bounds_max[Motor_id-1] =  Value2;
 
         out.str("");
-        try
-        {
-            out << std::format("Motor: {} limit min:\t{:.3f}\tlimit max:\t{:.3f}" , Motor_id , bounds_min[Motor_id-1], bounds_max[Motor_id-1]) << endl;
-        }
-        catch(std::format_error& error)
-        {
-            cout  << error.what();
-        }
+        std::println(out, "Motor: {} limit min:\t{:.3f}\tlimit max:\t{:.3f}" , Motor_id , bounds_min[Motor_id-1], bounds_max[Motor_id-1]);
 
         ui->Slider_Limit_Min->setValue(bounds_min[moteus_id -1]);
         ui->Counter_Limit_Min->setValue(bounds_min[moteus_id -1]);
@@ -194,14 +188,7 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         ui->Counter_KI->setValue(ki[moteus_id -1]);
 
         out.str("");
-        try
-        {
-            out << std::format("Motor: {}\tkp: {:.1f}\tkd: {:.1f}\t ki: {:.1f}" , Motor_id , kp[Motor_id-1], kd[Motor_id-1],ki[Motor_id-1]) << endl;
-        }
-        catch(std::format_error& error)
-        {
-            cout  << error.what();
-        }
+        std::println(out,"Motor: {}\tkp: {:.1f}\tkd: {:.1f}\t ki: {:.1f}" , Motor_id , kp[Motor_id-1], kd[Motor_id-1],ki[Motor_id-1]);
 
         MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
     }
@@ -216,14 +203,7 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
 
         out.str("");
 
-        try
-        {
-            out << std::format("Motor: {}\tGear Ratio: {:.6f}", Motor_id, Gear_Ratio[Motor_id-1]) << endl;
-        }
-        catch(std::format_error& error)
-        {
-            cout  << error.what();
-        }
+        std::println(out,"Motor: {}\tGear Ratio: {:.6f}", Motor_id, Gear_Ratio[Motor_id-1]);
 
         MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
     }
@@ -237,14 +217,7 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         ui->Counter_Position_Offset->setValue(position_offset[moteus_id -1]);
 
         out.str("");
-        try
-        {
-            out << std::format("Motor: {}\tPosition Offset: {:.6f}", Motor_id, position_offset[Motor_id-1]) << endl;
-        }
-        catch(std::format_error& error)
-        {
-            cout  << error.what();
-        }
+        std::println(out,"Motor: {}\tPosition Offset: {:.6f}", Motor_id, position_offset[Motor_id-1]);
 
         MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
     }
@@ -258,14 +231,7 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         ui->Counter_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
 
         out.str("");
-        try
-        {
-            out << std::format("Motor: {}\tBreak Voltage: {:.1f}", Motor_id, Break_Voltage[Motor_id-1]) << endl;
-        }
-        catch(std::format_error& error)
-        {
-            cout  << error.what();
-        }
+        std::println(out,"Motor: {}\tBreak Voltage: {:.1f}", Motor_id, Break_Voltage[Motor_id-1]);
 
         MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
     }
@@ -275,13 +241,7 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         try
         {
             iss.str(std::format("{:.3f}\n" , Value1));
-            iss >> Position[0];
-
-            iss.str(std::format("{:.3f}\n" , Value6));
-            iss >> Position[1];
-
-            iss.str(std::format("{:.3f}\n" , Value7));
-            iss >> Position[2];
+            iss >> Position[Motor_id-1];
 
             iss.str(std::format("{:.3f}\n" , Value2));
             iss >> Velocity[Motor_id-1];

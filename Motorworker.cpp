@@ -10,6 +10,7 @@
 #include <unistd.h>   // UNIX standard function definitions
 #include <fstream>
 #include <format>
+#include <print>
 #include "moteus.h"
 
 using namespace mjbots;
@@ -462,14 +463,7 @@ bool Motorworker::Collision_Check( int Motor_id, double position)
     if ( y < min_Y )
     {
        out.str("");
-       try
-       {
-           out << std::format("Y {:.3f} is less than minimum Y {:.3f} ", y,min_Y) << endl;
-       }
-       catch(std::format_error& error)
-       {
-           cout  << error.what();
-       }
+       std::println(out,"Y {:.3f} is less than minimum Y {:.3f} ", y,min_Y);
 
        emit sendToMain(QString::fromStdString(out.str()));
        Rec_run_Enable = false;
@@ -479,14 +473,7 @@ bool Motorworker::Collision_Check( int Motor_id, double position)
     else if ( y < 0 && x >= 0 && x < min_Pos_X )
     {
        out.str("");
-       try
-       {
-           out << std::format("X {:.3f} is less than minimum positive X below y 0 {:.3f} ", x, min_Pos_X) << endl;
-       }
-       catch(std::format_error& error)
-       {
-           cout  << error.what();
-       }
+       std::println(out,"X {:.3f} is less than minimum positive X below y 0 {:.3f} ", x, min_Pos_X);
 
        emit sendToMain(QString::fromStdString(out.str()));
        Rec_run_Enable = false;
@@ -496,14 +483,7 @@ bool Motorworker::Collision_Check( int Motor_id, double position)
     else if ( y < 0 && x < 0 && x > min_Neg_X )
     {
        out.str("");
-       try
-       {
-           out << std::format("X {:.3f} is less than minimum negative X below y 0 {:.3f} ", x,min_Neg_X) << endl;
-       }
-       catch(std::format_error& error)
-       {
-           cout  << error.what();
-       }
+       std::println(out,"X {:.3f} is less than minimum negative X below y 0 {:.3f} ", x,min_Neg_X);
 
        emit sendToMain(QString::fromStdString(out.str()));
        Rec_run_Enable = false;
@@ -557,13 +537,15 @@ bool Motorworker::SendPositionCommand(  int Motor_id,
     options.default_query = false;
     moteus::Controller controller(options);
 
-    if (!Collision_Check( Motor_id, position))
+    if (Collision_Check_enable)
     {
-        out << "error on posiion command " << Motor_id << endl;
-        emit sendToMain(QString::fromStdString(out.str()));
-        return false;
+        if (!Collision_Check( Motor_id, position))
+        {
+            out << "error on posiion command " << Motor_id << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+            return false;
+        }
     }
-
     last_position_destination[Motor_id-1] = position; // remember the last position destination for this motor
     controller.SetPosition(cmd,&res);
     return true;
@@ -670,39 +652,22 @@ void Motorworker::run_cycles()
                 out.str("");
                 if (Dynamic && Dynamic_Motor_id == list_Motor_id[current_list_index])
                 {
-                    try
-                    {
-                        out << std::format("Position to: {:.3f}", list_Position[current_list_index])
-                            << std::format(", Velocity: {:.3f}", l_velocity_limit)
-                            << std::format(", Accel: {:.3f}", l_accel_limit)
-                            << std::format(", Motor: {}", list_Motor_id[current_list_index])
-                            << std::format(", Max torque: {:.3f}", l_max_torque)
-                            << std::format(", Feedforward torque: {:.3f}", l_feedforward_torque)
-                            << std::format(", KP scale: {:.3f}", l_kp_scale)
-                            << std::format(", KD scale: {:.3f}", l_kd_scale)
-                            << endl;
-                    }
-                    catch(std::format_error& error)
-                    {
-                        cout  << error.what();
-                    }
-
-                }
+                    std::print(out,"Position to: {:.3f}", list_Position[current_list_index]);
+                    std::print(out,", Velocity: {:.3f}", l_velocity_limit);
+                    std::print(out,", Accel: {:.3f}", l_accel_limit);
+                    std::print(out,", Motor: {}", list_Motor_id[current_list_index]);
+                    std::print(out,", Max torque: {:.3f}", l_max_torque);
+                    std::print(out,", Feedforward torque: {:.3f}", l_feedforward_torque);
+                    std::print(out,", KP scale: {:.3f}", l_kp_scale);
+                    std::println(out,", KD scale: {:.3f}", l_kd_scale);
+                 }
                 else
                 {
-                    try
-                    {
-                        out << std::format("Position to: {:.3f}", list_Position[current_list_index])
-                            << std::format(", Velocity: {:.3f}", list_velocity_limit[current_list_index])
-                            << std::format(", Accel: {:.3f}", list_accel_limit[current_list_index])
-                            << std::format(", Motor: {}", list_Motor_id[current_list_index])
-                            << std::format(", Delay: {}", list_Delay[current_list_index])
-                            << endl;
-                    }
-                    catch(std::format_error& error)
-                    {
-                        cout  << error.what();
-                    }
+                    std::print(out,"Position to: {:.3f}", list_Position[current_list_index]);
+                    std::print(out,", Velocity: {:.3f}", list_velocity_limit[current_list_index]);
+                    std::print(out,", Accel: {:.3f}", list_accel_limit[current_list_index]);
+                    std::print(out,", Motor: {}", list_Motor_id[current_list_index]);
+                    std::println(out,", Delay: {}", list_Delay[current_list_index]);
                 }
                 emit sendToMain(QString::fromStdString(out.str()));
 
@@ -948,9 +913,6 @@ void Motorworker::getFromMain_motor_commands(QString msg, int Motor_id) // slot 
     }
     else if (msg == "Update Velocity")
     {
-        double position_1 = 1.123;
-        double position_2 = 2.123;
-        double position_3 = 3.123;
 
         // define a state object
         State curr_state;
@@ -959,29 +921,16 @@ void Motorworker::getFromMain_motor_commands(QString msg, int Motor_id) // slot 
 
         // reset the state
         curr_state.Reset();
+
+        //read current parameters
         curr_state.EN_Position();
-
-        //read current velocity
-        ReadState(1, curr_state);
-        position_1 = curr_state.position;
-
-        ReadState(2, curr_state);
-        position_2 = curr_state.position;
-
-        ReadState(3, curr_state);
-        position_3 = curr_state.position;
-
-        // reset the state
-        curr_state.Reset();
-
-        //read current velocity
         curr_state.EN_Velocity();
         curr_state.EN_Torque();
         curr_state.EN_Temp();
         curr_state.EN_QCurr();
 
         ReadState(Motor_id, curr_state);
-        emit sendMsg("get velocity",Motor_id,position_1,curr_state.velocity,curr_state.torque,curr_state.temperature,curr_state.q_curr,position_2,position_3);
+        emit sendMsg("get velocity",Motor_id,curr_state.position,curr_state.velocity,curr_state.torque,curr_state.temperature,curr_state.q_curr,0,0);
     }
     else if (msg == "Read_Status")
     {
@@ -1009,31 +958,14 @@ void Motorworker::getFromMain_motor_commands(QString msg, int Motor_id) // slot 
         ReadState(Motor_id, curr_state);
 
         // print everyting
-        try
-        {
-            out << std::format("Position:\t\t{:.6f}", curr_state.position) << endl;
-            out << std::format("Velocity:\t\t{:.6f}", curr_state.velocity) << endl;
-            out << std::format("Torque:\t\t{:.6f}", curr_state.torque) << endl;
-            out << std::format("Q Current:\t\t{:.6f}", curr_state.q_curr) << endl;
-            out << std::format("D Current:\t\t{:.6f}", curr_state.d_curr) << endl;
-            out << std::format("Voltage:\t\t{:.2f}", curr_state.voltage) << endl;
-            out << std::format("Temperature:\t{:.2f}", curr_state.temperature) << endl;
-        }
-        catch(std::format_error& error)
-        {
-            cout  << error.what();
-        }
-
-        out << "Trajectory Complete:\t";
-
-        if  (curr_state.TrajectoryComplete != 0)
-        {
-            out << "True" << endl;
-        }
-        else
-        {
-            out << "False" << endl;
-        }
+        std::println(out,"Position:\t\t{:.6f}", curr_state.position);
+        std::println(out,"Velocity:\t\t{:.6f}", curr_state.velocity);
+        std::println(out,"Torque:\t\t{:.6f}", curr_state.torque);
+        std::println(out,"Q Current:\t\t{:.6f}", curr_state.q_curr);
+        std::println(out,"D Current:\t\t{:.6f}", curr_state.d_curr);
+        std::println(out,"Voltage:\t\t{:.2f}", curr_state.voltage);
+        std::println(out,"Temperature:\t{:.2f}", curr_state.temperature);
+        out << "Trajectory Complete:\t" << std::boolalpha << curr_state.TrajectoryComplete << endl;
 
         unsigned int fault = static_cast<unsigned int>(curr_state.fault);
         switch (fault)
@@ -1292,14 +1224,7 @@ void Motorworker::Motorworker::getFromMain_diagnostic_write_commands(QString msg
         ReadState(Motor_id, curr_state);
 
         out.str("");
-        try
-        {
-            out << std::format("Motor: {} Position:\t{:.6f}", Motor_id , curr_state.position) << endl;
-        }
-        catch(std::format_error& error)
-        {
-            cout  << error.what();
-        }
+        std::println(out,"Motor: {} Position:\t{:.6f}", Motor_id , curr_state.position);
         emit sendToMain(QString::fromStdString(out.str()));
     }
     else if (msg == "set rotor_to_output_ratio")
@@ -1427,52 +1352,63 @@ void Motorworker::Motorworker::getFromMain_diagnostic_write_commands(QString msg
         std::ostringstream out;
         std::istringstream iss;
 
-        double X = 0;
-        double Y = 0;
-
-        double position_1 = 0;
-        double position_2 = 0;
-
-        // define a state object
-        State curr_state;
-
-        // reset the state
-        curr_state.Reset();
-        curr_state.EN_Position();
-
-        //read current velocity
-        ReadState(1, curr_state);
-        position_1 = curr_state.position;
-
-        ReadState(2, curr_state);
-        position_2 = curr_state.position;
-
-        double motor1_revolutions = position_1;
-        double motor2_revolutions = position_2;
-
-        // convert revolutions to radians
-        double theta1 = -motor1_revolutions * 2 * std::numbers::pi;
-        double theta2 = motor2_revolutions * 2 * std::numbers::pi;
-
-        out.str("");
-
-        double result[2] = {0.0,0.0};
-        forward_kin(result, theta1, theta2);
-
-        // Eliminate very small numbers using format.
-        try
+        if (Collision_Check_enable)
         {
-            iss.str(std::format("{:.3f}\n" , result[0]));
-            iss >> X;
 
-            iss.str(std::format("{:.3f}\n" , result[1]));
-            iss >> Y;
+            double X = 0;
+            double Y = 0;
+
+            double position_1 = 0;
+            double position_2 = 0;
+
+            // define a state object
+            State curr_state;
+
+            // reset the state
+            curr_state.Reset();
+            curr_state.EN_Position();
+
+            //read current velocity
+            ReadState(1, curr_state);
+            position_1 = curr_state.position;
+
+            ReadState(2, curr_state);
+            position_2 = curr_state.position;
+
+            double motor1_revolutions = position_1;
+            double motor2_revolutions = position_2;
+
+            // convert revolutions to radians
+            double theta1 = -motor1_revolutions * 2 * std::numbers::pi;
+            double theta2 = motor2_revolutions * 2 * std::numbers::pi;
+
+            out.str("");
+
+            double result[2] = {0.0,0.0};
+            forward_kin(result, theta1, theta2);
+
+            // Eliminate very small numbers using format.
+            try
+            {
+                iss.str(std::format("{:.3f}\n" , result[0]));
+                iss >> X;
+
+                iss.str(std::format("{:.3f}\n" , result[1]));
+                iss >> Y;
+            }
+            catch(std::format_error& error)
+            {
+                cout  << error.what();
+            }
+            emit sendMsg("Get Cur X,Y",0,X,Y,0,0,0,0,0);
         }
-        catch(std::format_error& error)
+        else
         {
-            cout  << error.what();
+            out.str("");
+            out << "Function Not enabled" << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
         }
-        emit sendMsg("Get Cur X,Y",0,X,Y,0,0,0,0,0);
+
     }
     else
     {
@@ -1903,209 +1839,176 @@ void Motorworker::getFromMain_position_commands(QString msg, int Motor_id, doubl
     else if (msg == "Record X,Y")
     {
         std::ostringstream out;
-
-        double x = position_X;
-        double y = position_Y;
-
-        double outer_r = L1+L2;
-
-        double dist = x * x  + y  * y ;
-        if ( !(dist < outer_r * outer_r))
+        if (Collision_Check_enable)
         {
-           out.str("");
-           try
-           {
-               out << std::format("X {:.3f} ,Y {:.3f} is not inside the radius of arm1 {:.3f} + arm2 {:.3f} ", x , y,L1,L2) << endl;
-           }
-           catch(std::format_error& error)
-           {
-               cout  << error.what();
-           }
 
-           emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else if ( inner_radius > 0 && (dist < inner_radius * inner_radius) )
-        {
-           out.str("");
-           try
-           {
-               out << std::format("X {:.3f} ,Y {:.3f} is not outside inner radius of {:.3f} ", x , y,inner_radius) << endl;
-           }
-           catch(std::format_error& error)
-           {
-               cout  << error.what();
-           }
+            double x = position_X;
+            double y = position_Y;
 
-           emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else if ( y < min_Y )
-        {
-           out.str("");
-           try
-           {
-               out << std::format("Y {:.3f} is less than minimum Y {:.3f} ", y,min_Y) << endl;
-           }
-           catch(std::format_error& error)
-           {
-               cout  << error.what();
-           }
+            double outer_r = L1+L2;
 
-           emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else if ( y < 0 && x >= 0 && x < min_Pos_X )
-        {
-           out.str("");
-           try
-           {
-               out << std::format("X {:.3f} is less than minimum positive X below y 0 {:.3f} ", x, min_Pos_X) << endl;
-           }
-           catch(std::format_error& error)
-           {
-               cout  << error.what();
-           }
+            double dist = x * x  + y  * y ;
+            if ( !(dist < outer_r * outer_r))
+            {
+               out.str("");
+               std::println(out,"X {:.3f} ,Y {:.3f} is not inside the radius of arm1 {:.3f} + arm2 {:.3f} ", x , y,L1,L2);
 
-           emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else if ( y < 0 && x < 0 && x > min_Neg_X )
-        {
-           out.str("");
-           try
-           {
-               out << std::format("X {:.3f} is less than minimum negative X below y 0 {:.3f} ", x,min_Neg_X) << endl;
-           }
-           catch(std::format_error& error)
-           {
-               cout  << error.what();
-           }
+               emit sendToMain(QString::fromStdString(out.str()));
+            }
+            else if ( inner_radius > 0 && (dist < inner_radius * inner_radius) )
+            {
+               out.str("");
+               std::println(out,"X {:.3f} ,Y {:.3f} is not outside inner radius of {:.3f} ", x , y,inner_radius);
 
-           emit sendToMain(QString::fromStdString(out.str()));
+               emit sendToMain(QString::fromStdString(out.str()));
+            }
+            else if ( y < min_Y )
+            {
+               out.str("");
+               std::println(out,"Y {:.3f} is less than minimum Y {:.3f} ", y,min_Y);
+
+               emit sendToMain(QString::fromStdString(out.str()));
+            }
+            else if ( y < 0 && x >= 0 && x < min_Pos_X )
+            {
+               out.str("");
+               std::println(out,"X {:.3f} is less than minimum positive X below y 0 {:.3f} ", x, min_Pos_X);
+
+               emit sendToMain(QString::fromStdString(out.str()));
+            }
+            else if ( y < 0 && x < 0 && x > min_Neg_X )
+            {
+               out.str("");
+               std::println(out,"X {:.3f} is less than minimum negative X below y 0 {:.3f} ", x,min_Neg_X);
+
+               emit sendToMain(QString::fromStdString(out.str()));
+            }
+            else
+            {
+                double theta[4] = {0.0, 0.0, 0.0, 0.0};
+                inverse_kin(theta,x,y);
+
+                out.str("");
+
+                // convert radians to revolutions
+                double motor1_revolutions1 = theta[0]/(2*std::numbers::pi);
+                double motor2_revolutions1 = theta[1]/(2*std::numbers::pi);
+                double motor1_revolutions2 = theta[2]/(2*std::numbers::pi);
+                double motor2_revolutions2 = theta[3]/(2*std::numbers::pi);
+
+                position_Gen_Elbow_Up[0] = motor1_revolutions2;
+                position_Gen_Elbow_Up[1] = motor2_revolutions2;
+                position_Gen_Elbow_Down[0] = motor1_revolutions1;
+                position_Gen_Elbow_Down[1] = motor2_revolutions1;
+
+                bool Elbow_Up_limit_error = false;
+                bool Elbow_Down_limit_error = false;
+
+                // check for position outside limits
+                if (    (l_bounds_max[0] != NAN && position_Gen_Elbow_Up[0] > l_bounds_max[0]) ||
+                        (l_bounds_min[0] != NAN && position_Gen_Elbow_Up[0] < l_bounds_min[0]) ||
+                        (l_bounds_max[1] != NAN && position_Gen_Elbow_Up[1] > l_bounds_max[1]) ||
+                        (l_bounds_min[1] != NAN && position_Gen_Elbow_Up[1] < l_bounds_min[1]) ||
+                        (position_Gen_Elbow_Up[1] > Motor2_rotation_limit)  ||
+                        (position_Gen_Elbow_Up[1] < -Motor2_rotation_limit))
+                {
+                    Elbow_Up_limit_error = true;
+                }
+
+                if (    (l_bounds_max[0] != NAN && position_Gen_Elbow_Down[0] > l_bounds_max[0]) ||
+                        (l_bounds_min[0] != NAN && position_Gen_Elbow_Down[0] < l_bounds_min[0]) ||
+                        (l_bounds_max[1] != NAN && position_Gen_Elbow_Down[1] > l_bounds_max[1]) ||
+                        (l_bounds_min[1] != NAN && position_Gen_Elbow_Down[1] < l_bounds_min[1]) ||
+                        (position_Gen_Elbow_Down[1] > Motor2_rotation_limit)  ||
+                        (position_Gen_Elbow_Down[1] < -Motor2_rotation_limit))
+                {
+                    Elbow_Down_limit_error = true;
+                }
+
+                   if (Elbow_Down_limit_error)
+                        out << "Elbow Down motor limit error" << endl;
+                    if (Elbow_Up_limit_error)
+                        out << "Elbow Up motor limit error" << endl;
+
+                std::println(out,"motor 1 revolutions1 = \t{:.6f} \tmotor 2 revolutions1 =\t{:.6f}", motor1_revolutions1 , motor2_revolutions1);
+                std::println(out,"motor 1 revolutions2 = \t{:.6f} \tmotor 2 revolutions2 =\t{:.6f}", motor1_revolutions2 , motor2_revolutions2);
+
+                emit sendToMain(QString::fromStdString(out.str()));
+
+                if (list_Position.empty())
+                {
+                    // define a state object
+                    State curr_state;
+
+                    // reset the state
+                    curr_state.Reset();
+                    curr_state.EN_Position();
+                    //read current position
+                    ReadState(1, curr_state);
+                    last_record_destination[0] = curr_state.position;
+                    ReadState(2, curr_state);
+                    last_record_destination[1] = curr_state.position;
+                }
+
+                if ( !Elbow_Up_limit_error || !Elbow_Down_limit_error)
+                {
+                    if (!Elbow_Up_limit_error)
+                    {
+                        // if X > 0 && motor 1 going positive, move motor 2 first
+                        // if X < 0 && motor 1 going negative, move motor 2 first
+                        if ( (x >= 0 && position_Gen_Elbow_Up[0] > last_record_destination[0]) ||
+                             (x <= 0 && position_Gen_Elbow_Up[0] < last_record_destination[0]) )
+                        {
+                            //Position motor 2
+                            Record_Position(2,accel_limit,position_Gen_Elbow_Up[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                              kd_scale,l_bounds_min[1],l_bounds_max[1],Delay);
+                            //Position motor 1
+                            Record_Position(1,accel_limit,position_Gen_Elbow_Up[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                              kd_scale,l_bounds_min[0],l_bounds_max[0],Delay);
+                        }
+                        else
+                        {
+                            //Position motor 1
+                            Record_Position(1,accel_limit,position_Gen_Elbow_Up[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                              kd_scale,l_bounds_min[0],l_bounds_max[0],Delay);
+                            //Position motor 2
+                            Record_Position(2,accel_limit,position_Gen_Elbow_Up[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                              kd_scale,l_bounds_min[1],l_bounds_max[1],Delay);
+                        }
+                    }
+                    else if (!Elbow_Down_limit_error)
+                    {
+                        // if X > 0 && motor 1 going positive, move motor 2 first
+                        // if X < 0 && motor 1 going negative, move motor 2 first
+                        if ( (x >= 0 && position_Gen_Elbow_Down[0] > last_record_destination[0]) ||
+                             (x <= 0 && position_Gen_Elbow_Down[0] < last_record_destination[0]) )
+                        {
+                            //Position motor 2
+                            Record_Position(2,accel_limit,position_Gen_Elbow_Down[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                              kd_scale,l_bounds_min[1],l_bounds_max[1],Delay);
+                            //Position motor 1
+                            Record_Position(1,accel_limit,position_Gen_Elbow_Down[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                              kd_scale,l_bounds_min[0],l_bounds_max[0],Delay);
+                        }
+                        else
+                        {
+                            //Position motor 1
+                            Record_Position(1,accel_limit,position_Gen_Elbow_Down[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                              kd_scale,l_bounds_min[0],l_bounds_max[0],Delay);
+                            //Position motor 2
+                            Record_Position(2,accel_limit,position_Gen_Elbow_Down[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                              kd_scale,l_bounds_min[1],l_bounds_max[1],Delay);
+                        }
+                    }
+                }
+
+            }
         }
         else
         {
-            double theta[4] = {0.0, 0.0, 0.0, 0.0};
-            inverse_kin(theta,x,y);
-
             out.str("");
-
-            // convert radians to revolutions
-            double motor1_revolutions1 = theta[0]/(2*std::numbers::pi);
-            double motor2_revolutions1 = theta[1]/(2*std::numbers::pi);
-            double motor1_revolutions2 = theta[2]/(2*std::numbers::pi);
-            double motor2_revolutions2 = theta[3]/(2*std::numbers::pi);
-
-            position_Gen_Elbow_Up[0] = motor1_revolutions2;
-            position_Gen_Elbow_Up[1] = motor2_revolutions2;
-            position_Gen_Elbow_Down[0] = motor1_revolutions1;
-            position_Gen_Elbow_Down[1] = motor2_revolutions1;
-
-            bool Elbow_Up_limit_error = false;
-            bool Elbow_Down_limit_error = false;
-
-            // check for position outside limits
-            if (    (l_bounds_max[0] != NAN && position_Gen_Elbow_Up[0] > l_bounds_max[0]) ||
-                    (l_bounds_min[0] != NAN && position_Gen_Elbow_Up[0] < l_bounds_min[0]) ||
-                    (l_bounds_max[1] != NAN && position_Gen_Elbow_Up[1] > l_bounds_max[1]) ||
-                    (l_bounds_min[1] != NAN && position_Gen_Elbow_Up[1] < l_bounds_min[1]) ||
-                    (position_Gen_Elbow_Up[1] > Motor2_rotation_limit)  ||
-                    (position_Gen_Elbow_Up[1] < -Motor2_rotation_limit))
-            {
-                Elbow_Up_limit_error = true;
-            }
-
-            if (    (l_bounds_max[0] != NAN && position_Gen_Elbow_Down[0] > l_bounds_max[0]) ||
-                    (l_bounds_min[0] != NAN && position_Gen_Elbow_Down[0] < l_bounds_min[0]) ||
-                    (l_bounds_max[1] != NAN && position_Gen_Elbow_Down[1] > l_bounds_max[1]) ||
-                    (l_bounds_min[1] != NAN && position_Gen_Elbow_Down[1] < l_bounds_min[1]) ||
-                    (position_Gen_Elbow_Down[1] > Motor2_rotation_limit)  ||
-                    (position_Gen_Elbow_Down[1] < -Motor2_rotation_limit))
-            {
-                Elbow_Down_limit_error = true;
-            }
-
-            try
-            {
-                if (Elbow_Down_limit_error)
-                    out << "Elbow Down motor limit error" << endl;
-                if (Elbow_Up_limit_error)
-                    out << "Elbow Up motor limit error" << endl;
-
-                out << std::format("motor 1 revolutions1 = \t{:.6f} \tmotor 2 revolutions1 =\t{:.6f}", motor1_revolutions1 , motor2_revolutions1) << endl;
-                out << std::format("motor 1 revolutions2 = \t{:.6f} \tmotor 2 revolutions2 =\t{:.6f}", motor1_revolutions2 , motor2_revolutions2) << endl;
-            }
-            catch(std::format_error& error)
-            {
-                cout  << error.what();
-            }
-
+            out << "Function Not enabled" << endl;
             emit sendToMain(QString::fromStdString(out.str()));
-
-            if (list_Position.empty())
-            {
-                // define a state object
-                State curr_state;
-
-                // reset the state
-                curr_state.Reset();
-                curr_state.EN_Position();
-                //read current position
-                ReadState(1, curr_state);
-                last_record_destination[0] = curr_state.position;
-                ReadState(2, curr_state);
-                last_record_destination[1] = curr_state.position;
-            }
-
-            if ( !Elbow_Up_limit_error || !Elbow_Down_limit_error)
-            {
-                if (!Elbow_Up_limit_error)
-                {
-                    // if X > 0 && motor 1 going positive, move motor 2 first
-                    // if X < 0 && motor 1 going negative, move motor 2 first
-                    if ( (x >= 0 && position_Gen_Elbow_Up[0] > last_record_destination[0]) ||
-                         (x <= 0 && position_Gen_Elbow_Up[0] < last_record_destination[0]) )
-                    {
-                        //Position motor 2
-                        Record_Position(2,accel_limit,position_Gen_Elbow_Up[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                          kd_scale,l_bounds_min[1],l_bounds_max[1],Delay);
-                        //Position motor 1
-                        Record_Position(1,accel_limit,position_Gen_Elbow_Up[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                          kd_scale,l_bounds_min[0],l_bounds_max[0],Delay);
-                    }
-                    else
-                    {
-                        //Position motor 1
-                        Record_Position(1,accel_limit,position_Gen_Elbow_Up[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                          kd_scale,l_bounds_min[0],l_bounds_max[0],Delay);
-                        //Position motor 2
-                        Record_Position(2,accel_limit,position_Gen_Elbow_Up[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                          kd_scale,l_bounds_min[1],l_bounds_max[1],Delay);
-                    }
-                }
-                else if (!Elbow_Down_limit_error)
-                {
-                    // if X > 0 && motor 1 going positive, move motor 2 first
-                    // if X < 0 && motor 1 going negative, move motor 2 first
-                    if ( (x >= 0 && position_Gen_Elbow_Down[0] > last_record_destination[0]) ||
-                         (x <= 0 && position_Gen_Elbow_Down[0] < last_record_destination[0]) )
-                    {
-                        //Position motor 2
-                        Record_Position(2,accel_limit,position_Gen_Elbow_Down[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                          kd_scale,l_bounds_min[1],l_bounds_max[1],Delay);
-                        //Position motor 1
-                        Record_Position(1,accel_limit,position_Gen_Elbow_Down[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                          kd_scale,l_bounds_min[0],l_bounds_max[0],Delay);
-                    }
-                    else
-                    {
-                        //Position motor 1
-                        Record_Position(1,accel_limit,position_Gen_Elbow_Down[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                          kd_scale,l_bounds_min[0],l_bounds_max[0],Delay);
-                        //Position motor 2
-                        Record_Position(2,accel_limit,position_Gen_Elbow_Down[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                          kd_scale,l_bounds_min[1],l_bounds_max[1],Delay);
-                    }
-                }
-            }
-
         }
 
     }
