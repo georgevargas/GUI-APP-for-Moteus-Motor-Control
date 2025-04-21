@@ -10,7 +10,11 @@
 #include <unistd.h>   // UNIX standard function definitions
 #include <fstream>
 #include <format>
+
+#ifdef CPP23
 #include <print>
+#endif
+
 #include "moteus.h"
 
 using namespace mjbots;
@@ -463,7 +467,18 @@ bool Motorworker::Collision_Check( int Motor_id, double position)
     if ( y < min_Y )
     {
        out.str("");
+#ifdef CPP23
        std::println(out,"Y {:.3f} is less than minimum Y {:.3f} ", y,min_Y);
+#else
+       try
+       {
+           out << std::format("Y {:.3f} is less than minimum Y {:.3f} ", y,min_Y) << endl;
+       }
+       catch(std::format_error& error)
+       {
+           cout  << error.what();
+       }
+#endif
 
        emit sendToMain(QString::fromStdString(out.str()));
        Rec_run_Enable = false;
@@ -473,7 +488,18 @@ bool Motorworker::Collision_Check( int Motor_id, double position)
     else if ( y < 0 && x >= 0 && x < min_Pos_X )
     {
        out.str("");
+#ifdef CPP23
        std::println(out,"X {:.3f} is less than minimum positive X below y 0 {:.3f} ", x, min_Pos_X);
+#else
+        try
+        {
+            out << std::format("X {:.3f} is less than minimum positive X below y 0 {:.3f} ", x, min_Pos_X) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
+#endif
 
        emit sendToMain(QString::fromStdString(out.str()));
        Rec_run_Enable = false;
@@ -483,7 +509,18 @@ bool Motorworker::Collision_Check( int Motor_id, double position)
     else if ( y < 0 && x < 0 && x > min_Neg_X )
     {
        out.str("");
+#ifdef CPP23
        std::println(out,"X {:.3f} is less than minimum negative X below y 0 {:.3f} ", x,min_Neg_X);
+#else
+        try
+        {
+            out << std::format("X {:.3f} is less than minimum negative X below y 0 {:.3f} ", x,min_Neg_X) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
+#endif
 
        emit sendToMain(QString::fromStdString(out.str()));
        Rec_run_Enable = false;
@@ -652,6 +689,7 @@ void Motorworker::run_cycles()
                 out.str("");
                 if (Dynamic && Dynamic_Motor_id == list_Motor_id[current_list_index])
                 {
+#ifdef CPP23
                     std::print(out,"Position to: {:.3f}", list_Position[current_list_index]);
                     std::print(out,", Velocity: {:.3f}", l_velocity_limit);
                     std::print(out,", Accel: {:.3f}", l_accel_limit);
@@ -660,14 +698,49 @@ void Motorworker::run_cycles()
                     std::print(out,", Feedforward torque: {:.3f}", l_feedforward_torque);
                     std::print(out,", KP scale: {:.3f}", l_kp_scale);
                     std::println(out,", KD scale: {:.3f}", l_kd_scale);
+#else
+                    try
+                    {
+                        out << std::format("Position to: {:.3f}", list_Position[current_list_index])
+                            << std::format(", Velocity: {:.3f}", l_velocity_limit)
+                            << std::format(", Accel: {:.3f}", l_accel_limit)
+                            << std::format(", Motor: {}", list_Motor_id[current_list_index])
+                            << std::format(", Max torque: {:.3f}", l_max_torque)
+                            << std::format(", Feedforward torque: {:.3f}", l_feedforward_torque)
+                            << std::format(", KP scale: {:.3f}", l_kp_scale)
+                            << std::format(", KD scale: {:.3f}", l_kd_scale)
+                            << endl;
+                    }
+                    catch(std::format_error& error)
+                    {
+                        cout  << error.what();
+                    }
+#endif
+
                  }
                 else
                 {
+#ifdef CPP23
                     std::print(out,"Position to: {:.3f}", list_Position[current_list_index]);
                     std::print(out,", Velocity: {:.3f}", list_velocity_limit[current_list_index]);
                     std::print(out,", Accel: {:.3f}", list_accel_limit[current_list_index]);
                     std::print(out,", Motor: {}", list_Motor_id[current_list_index]);
                     std::println(out,", Delay: {}", list_Delay[current_list_index]);
+#else
+                    try
+                    {
+                        out << std::format("Position to: {:.3f}", list_Position[current_list_index])
+                            << std::format(", Velocity: {:.3f}", list_velocity_limit[current_list_index])
+                            << std::format(", Accel: {:.3f}", list_accel_limit[current_list_index])
+                            << std::format(", Motor: {}", list_Motor_id[current_list_index])
+                            << std::format(", Delay: {}", list_Delay[current_list_index])
+                            << endl;
+                    }
+                    catch(std::format_error& error)
+                    {
+                        cout  << error.what();
+                    }
+#endif
                 }
                 emit sendToMain(QString::fromStdString(out.str()));
 
@@ -958,6 +1031,7 @@ void Motorworker::getFromMain_motor_commands(QString msg, int Motor_id) // slot 
         ReadState(Motor_id, curr_state);
 
         // print everyting
+#ifdef CPP23
         std::println(out,"Position:\t\t{:.6f}", curr_state.position);
         std::println(out,"Velocity:\t\t{:.6f}", curr_state.velocity);
         std::println(out,"Torque:\t\t{:.6f}", curr_state.torque);
@@ -966,7 +1040,33 @@ void Motorworker::getFromMain_motor_commands(QString msg, int Motor_id) // slot 
         std::println(out,"Voltage:\t\t{:.2f}", curr_state.voltage);
         std::println(out,"Temperature:\t{:.2f}", curr_state.temperature);
         out << "Trajectory Complete:\t" << std::boolalpha << curr_state.TrajectoryComplete << endl;
+#else
+        try
+        {
+            out << std::format("Position:\t\t{:.6f}", curr_state.position) << endl;
+            out << std::format("Velocity:\t\t{:.6f}", curr_state.velocity) << endl;
+            out << std::format("Torque:\t\t{:.6f}", curr_state.torque) << endl;
+            out << std::format("Q Current:\t\t{:.6f}", curr_state.q_curr) << endl;
+            out << std::format("D Current:\t\t{:.6f}", curr_state.d_curr) << endl;
+            out << std::format("Voltage:\t\t{:.2f}", curr_state.voltage) << endl;
+            out << std::format("Temperature:\t{:.2f}", curr_state.temperature) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
 
+        out << "Trajectory Complete:\t";
+
+        if  (curr_state.TrajectoryComplete != 0)
+        {
+            out << "True" << endl;
+        }
+        else
+        {
+            out << "False" << endl;
+        }
+#endif
         unsigned int fault = static_cast<unsigned int>(curr_state.fault);
         switch (fault)
         {
@@ -1224,7 +1324,19 @@ void Motorworker::Motorworker::getFromMain_diagnostic_write_commands(QString msg
         ReadState(Motor_id, curr_state);
 
         out.str("");
+#ifdef CPP23
         std::println(out,"Motor: {} Position:\t{:.6f}", Motor_id , curr_state.position);
+#else
+        try
+        {
+            out << std::format("Motor: {} Position:\t{:.6f}", Motor_id , curr_state.position) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
+#endif
+
         emit sendToMain(QString::fromStdString(out.str()));
     }
     else if (msg == "set rotor_to_output_ratio")
@@ -1851,35 +1963,90 @@ void Motorworker::getFromMain_position_commands(QString msg, int Motor_id, doubl
             if ( !(dist < outer_r * outer_r))
             {
                out.str("");
+#ifdef CPP23
                std::println(out,"X {:.3f} ,Y {:.3f} is not inside the radius of arm1 {:.3f} + arm2 {:.3f} ", x , y,L1,L2);
+#else
+        try
+        {
+            out << std::format("X {:.3f} ,Y {:.3f} is not inside the radius of arm1 {:.3f} + arm2 {:.3f} ", x , y,L1,L2) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
+#endif
 
                emit sendToMain(QString::fromStdString(out.str()));
             }
             else if ( inner_radius > 0 && (dist < inner_radius * inner_radius) )
             {
                out.str("");
+#ifdef CPP23
                std::println(out,"X {:.3f} ,Y {:.3f} is not outside inner radius of {:.3f} ", x , y,inner_radius);
+#else
+        try
+        {
+            out << std::format("X {:.3f} ,Y {:.3f} is not outside inner radius of {:.3f} ", x , y,inner_radius) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
+#endif
 
                emit sendToMain(QString::fromStdString(out.str()));
             }
             else if ( y < min_Y )
             {
                out.str("");
+#ifdef CPP23
                std::println(out,"Y {:.3f} is less than minimum Y {:.3f} ", y,min_Y);
+#else
+        try
+        {
+            out << std::format("Y {:.3f} is less than minimum Y {:.3f} ", y,min_Y) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
+#endif
 
                emit sendToMain(QString::fromStdString(out.str()));
             }
             else if ( y < 0 && x >= 0 && x < min_Pos_X )
             {
                out.str("");
+#ifdef CPP23
                std::println(out,"X {:.3f} is less than minimum positive X below y 0 {:.3f} ", x, min_Pos_X);
+#else
+        try
+        {
+            out << std::format("X {:.3f} is less than minimum positive X below y 0 {:.3f} ", x, min_Pos_X) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
+#endif
 
                emit sendToMain(QString::fromStdString(out.str()));
             }
             else if ( y < 0 && x < 0 && x > min_Neg_X )
             {
                out.str("");
+#ifdef CPP23
                std::println(out,"X {:.3f} is less than minimum negative X below y 0 {:.3f} ", x,min_Neg_X);
+#else
+        try
+        {
+            out << std::format("X {:.3f} is less than minimum negative X below y 0 {:.3f} ", x,min_Neg_X) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
+#endif
 
                emit sendToMain(QString::fromStdString(out.str()));
             }
@@ -1930,8 +2097,20 @@ void Motorworker::getFromMain_position_commands(QString msg, int Motor_id, doubl
                     if (Elbow_Up_limit_error)
                         out << "Elbow Up motor limit error" << endl;
 
+#ifdef CPP23
                 std::println(out,"motor 1 revolutions1 = \t{:.6f} \tmotor 2 revolutions1 =\t{:.6f}", motor1_revolutions1 , motor2_revolutions1);
                 std::println(out,"motor 1 revolutions2 = \t{:.6f} \tmotor 2 revolutions2 =\t{:.6f}", motor1_revolutions2 , motor2_revolutions2);
+#else
+        try
+        {
+            out << std::format("motor 1 revolutions1 = \t{:.6f} \tmotor 2 revolutions1 =\t{:.6f}", motor1_revolutions1 , motor2_revolutions1) << endl;
+            out << std::format("motor 1 revolutions2 = \t{:.6f} \tmotor 2 revolutions2 =\t{:.6f}", motor1_revolutions2 , motor2_revolutions2) << endl;
+        }
+        catch(std::format_error& error)
+        {
+            cout  << error.what();
+        }
+#endif
 
                 emit sendToMain(QString::fromStdString(out.str()));
 
