@@ -71,7 +71,7 @@ private:
     QTimer * myTimer;
     QString dev_name = "/dev/ttyACM0";
     int moteus_id = 1;
-    int Number_of_Motors = 3;
+    int Number_of_Motors = 1;
     double Motor_rest_position[10] ={0.217,0.140,0.2085,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
     double bounds_min[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
     double bounds_max[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
