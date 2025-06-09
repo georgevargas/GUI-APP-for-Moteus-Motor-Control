@@ -99,6 +99,8 @@ class Controller {
     query_reply_size_ = Query::Make(&query_write, options_.query_format);
   }
 
+  const Options& options() const { return options_; }
+
   Transport* transport() {
     if (!transport_) {
       transport_ = MakeSingletonTransport({});
@@ -405,7 +407,7 @@ class Controller {
                      query_override);
   }
 
-  Optional<Result> SetRequireReindex(const RequireReindex::Command& cmd,
+  Optional<Result> SetRequireReindex(const RequireReindex::Command& cmd = {},
                                      const RequireReindex::Format* command_override = nullptr,
                                      const Query::Format* query_override = nullptr) {
     return ExecuteSingleCommand(
@@ -418,6 +420,38 @@ class Controller {
                            const Query::Format* query_override = nullptr) {
     AsyncStartSingleCommand(
         MakeRequireReindex(cmd, command_override, query_override),
+        result, callback);
+  }
+
+
+  /////////////////////////////////////////
+  // RecapturePositionVelocity
+
+  CanFdFrame MakeRecapturePositionVelocity(
+      const RecapturePositionVelocity::Command& cmd = {},
+      const RecapturePositionVelocity::Format* command_override = nullptr,
+      const Query::Format* query_override = nullptr) {
+    return MakeFrame(RecapturePositionVelocity(), cmd,
+                     (command_override == nullptr ?
+                      RecapturePositionVelocity::Format() : *command_override),
+                     query_override);
+  }
+
+  Optional<Result> SetRecapturePositionVelocity(
+      const RecapturePositionVelocity::Command& cmd = {},
+      const RecapturePositionVelocity::Format* command_override = nullptr,
+      const Query::Format* query_override = nullptr) {
+    return ExecuteSingleCommand(
+        MakeRecapturePositionVelocity(cmd, command_override, query_override));
+  }
+
+  void AsyncRecapturePositionVelocity(
+      const RecapturePositionVelocity::Command& cmd,
+      Result* result, CompletionCallback callback,
+      const RecapturePositionVelocity::Format* command_override = nullptr,
+      const Query::Format* query_override = nullptr) {
+    AsyncStartSingleCommand(
+        MakeRecapturePositionVelocity(cmd, command_override, query_override),
         result, callback);
   }
 
@@ -585,6 +619,89 @@ class Controller {
 
 
   /////////////////////////////////////////
+  // GPIO Write
+
+  CanFdFrame MakeWriteGpio(const GpioWrite::Command& cmd,
+                           const GpioWrite::Format* command_override = nullptr,
+                           const Query::Format* query_override = nullptr) {
+    return MakeFrame(GpioWrite(), cmd,
+                     (command_override == nullptr ?
+                      GpioWrite::Format() : *command_override),
+                     query_override);
+  }
+
+  Optional<Result> SetWriteGpio(const GpioWrite::Command& cmd,
+                                const GpioWrite::Format* command_override = nullptr,
+                                const Query::Format* query_override = nullptr) {
+    return ExecuteSingleCommand(
+        MakeWriteGpio(cmd, command_override, query_override));
+  }
+
+  void AsyncWriteGpio(const GpioWrite::Command& cmd,
+                      Result* result, CompletionCallback callback,
+                      const GpioWrite::Format* command_override = nullptr,
+                      const Query::Format* query_override = nullptr) {
+    AsyncStartSingleCommand(
+        MakeWriteGpio(cmd, command_override, query_override),
+        result, callback);
+  }
+
+  /////////////////////////////////////////
+  // GPIO Read
+
+  CanFdFrame MakeGpioRead(const GpioRead::Format* command_override = nullptr,
+                          const Query::Format* query_override = nullptr) {
+    return MakeFrame(GpioRead(), GpioRead::Command(),
+                     (command_override == nullptr ?
+                      GpioRead::Format() : *command_override),
+                     query_override);
+
+  }
+
+  Optional<Result> SeGpioRead(const GpioRead::Format* command_override = nullptr,
+                              const Query::Format* query_override = nullptr) {
+    return ExecuteSingleCommand(
+        MakeGpioRead(command_override, query_override));
+  }
+
+  void AsyncGpioRead(Result* result, CompletionCallback callback,
+                     const GpioRead::Format* command_override = nullptr,
+                     const Query::Format* query_override = nullptr) {
+    AsyncStartSingleCommand(
+        MakeGpioRead(command_override, query_override),
+        result, callback);
+  }
+
+
+  /////////////////////////////////////////
+  // Aux PWM Write
+
+  CanFdFrame MakeAuxPwmWrite(const AuxPwmWrite::Command& cmd,
+                             const AuxPwmWrite::Format* command_override = nullptr,
+                             const Query::Format* query_override = nullptr) {
+    return MakeFrame(AuxPwmWrite(), cmd,
+                     (command_override == nullptr ?
+                      AuxPwmWrite::Format() : *command_override),
+                     query_override);
+  }
+
+  Optional<Result> SetAuxPwmWrite(const AuxPwmWrite::Command& cmd,
+                                  const AuxPwmWrite::Format* command_override = nullptr,
+                                  const Query::Format* query_override = nullptr) {
+    return ExecuteSingleCommand(
+        MakeAuxPwmWrite(cmd, command_override, query_override));
+  }
+
+  void AsyncAuxPwmWrite(const AuxPwmWrite::Command& cmd,
+                        Result* result, CompletionCallback callback,
+                        const AuxPwmWrite::Format* command_override = nullptr,
+                        const Query::Format* query_override = nullptr) {
+    AsyncStartSingleCommand(
+        MakeAuxPwmWrite(cmd, command_override, query_override),
+        result, callback);
+  }
+
+  /////////////////////////////////////////
   // Schema version checking
 
   CanFdFrame MakeSchemaVersionQuery() {
@@ -672,7 +789,8 @@ class Controller {
       auto help_strs =
           moteus::TransportRegistry::singleton().cmdline_arguments();
       help_strs.insert(help_strs.begin(),
-                       {"--help", 0, "Display this usage message"});
+                       TransportFactory::Argument(
+                           "--help", 0, "Display this usage message"));
 
       int max_item = 0;
       for (const auto& item : help_strs) {

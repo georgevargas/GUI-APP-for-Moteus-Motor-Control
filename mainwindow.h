@@ -1,14 +1,15 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
-
 #pragma once
+
+#define CPP23
 
 #include <QMainWindow>
 #include <QThread>
-#include <regex>
+//#include <regex>
 #include <iostream>
 #include <string>
-#include <algorithm>
+//#include <algorithm>
 #include <QPainter>
 #include <QBrush>
 #include <QPen>
@@ -71,7 +72,7 @@ private:
     QTimer * myTimer;
     QString dev_name = "/dev/ttyACM0";
     int moteus_id = 1;
-    int Number_of_Motors = 1;
+    int Number_of_Motors = 3;
     double Motor_rest_position[10] ={0.217,0.140,0.2085,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
     double bounds_min[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
     double bounds_max[10] ={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
@@ -133,23 +134,25 @@ private slots:
     void on_btnGo_To_Rest_Position_clicked();
     void on_btnStart_Motor_clicked();
 
-    void on_Slider_Accel_Limit_valueChanged(double value);
-    void on_Slider_Position_valueChanged(double value);
-    void on_Slider_Velocity_Limit_valueChanged(double value);
-    void on_Slider_Max_Torque_valueChanged(double value);
-    void on_Slider_Feedforward_valueChanged(double value);
-    void on_Slider_KP_Scale_valueChanged(double value);
-    void on_Slider_KD_Scale_valueChanged(double value);
-    void on_Slider_Cycle_Start_Stop_valueChanged(double value);
-    void on_Slider_Cycle_Delay_valueChanged(double value);
-    void on_Slider_Limit_Min_valueChanged(double value);
-    void on_Slider_Limit_Max_valueChanged(double value);
-    void on_Slider_KP_valueChanged(double value);
-    void on_Slider_KD_valueChanged(double value);
-    void on_Slider_KI_valueChanged(double value);
-    void on_Slider_Gear_Ratio_valueChanged(double value);
-    void on_Slider_Break_voltage_valueChanged(double value);
-    void on_Slider_Position_Offset_valueChanged(double value);
+    void on_Slider_Position_valueChanged(int value);
+    void on_Slider_Velocity_Limit_valueChanged(int value);
+    void on_Slider_Accel_Limit_valueChanged(int value);
+    void on_Slider_Max_Torque_valueChanged(int value);
+    void on_Slider_Feedforward_valueChanged(int value);
+    void on_Slider_KP_Scale_valueChanged(int value);
+    void on_Slider_KD_Scale_valueChanged(int value);
+    void on_Slider_Cycle_Delay_valueChanged(int value);
+    void on_Slider_Cycle_Start_Stop_valueChanged(int value);
+    void on_Slider_Position_X_valueChanged(int value);
+    void on_Slider_Position_Y_valueChanged(int value);
+    void on_Slider_KP_valueChanged(int value);
+    void on_Slider_KD_valueChanged(int value);
+    void on_Slider_KI_valueChanged(int value);
+    void on_Slider_Limit_Min_valueChanged(int value);
+    void on_Slider_Limit_Max_valueChanged(int value);
+    void on_Slider_Gear_Ratio_valueChanged(int value);
+    void on_Slider_Break_voltage_valueChanged(int value);
+    void on_Slider_Position_Offset_valueChanged(int value);
 
     void on_Counter_Accel_Limit_valueChanged(double value);
     void on_Counter_Position_valueChanged(double value);
@@ -168,6 +171,8 @@ private slots:
     void on_Counter_Gear_Ratio_valueChanged(double value);
     void on_Counter_Break_voltage_valueChanged(double value);
     void on_Counter_Position_Offset_valueChanged(double value);
+    void on_Counter_Position_X_valueChanged(double value);
+    void on_Counter_Position_Y_valueChanged(double value);
 
     void on_checkBox_Dymamic_clicked();
 
@@ -181,10 +186,6 @@ private slots:
     void on_actionTorque_changed();
     void on_actionTemperature_changed();
     void on_actionQ_Phase_Current_changed();
-    void on_Counter_Position_X_valueChanged(double value);
-    void on_Slider_Position_X_valueChanged(double value);
-    void on_Counter_Position_Y_valueChanged(double value);
-    void on_Slider_Position_Y_valueChanged(double value);
     void on_btnRun_Cur_X_Y_pos_clicked();
     void on_btn_record_X_Y_clicked();
 };

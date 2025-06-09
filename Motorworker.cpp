@@ -5,11 +5,13 @@
 #include <fcntl.h>   // File control definitions
 #include <stdio.h>   // Standard input/output definitions
 #include <string.h>  // String function definitions
-#include <sys/ioctl.h>
-#include <termios.h>  // POSIX terminal control definitions
-#include <unistd.h>   // UNIX standard function definitions
+//#include <sys/ioctl.h>
+//#include <termios.h>  // POSIX terminal control definitions
+//#include <unistd.h>   // UNIX standard function definitions
 #include <fstream>
 #include <format>
+#include <numbers> // Include the numbers header
+
 
 #ifdef CPP23
 #include <print>

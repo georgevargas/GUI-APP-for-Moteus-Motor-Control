@@ -44,23 +44,23 @@ HEADERS += \
 FORMS += \
         mainwindow.ui
 
-INCLUDEPATH += /usr/include/qwt
-
 LIBS += \
         -L/usr/local/lib \
 
 LIBS += \
-        -L/usr/lib \
-        -lqwt-qt5
+        -L/usr/lib
 
 RESOURCES += \
         resources.qrc
 
-        QMAKE_CXXFLAGS_CXX2A = -std:c++20
-        QMAKE_CXXFLAGS += -std=c++2a
-        QMAKE_CXX = g++-13
-#         QMAKE_CXXFLAGS_CXX2A = -std:c++23
-#         QMAKE_CXXFLAGS += -std=c++23
-#         QMAKE_CXX = g++-14.2.0
+#        QMAKE_CXXFLAGS_CXX2A = -std:c++20
+#        QMAKE_CXXFLAGS += -std=c++2a
+#        QMAKE_CXX = g++-13
+#        QMAKE_CXXFLAGS_CXX2A = -std:c++23
+#        QMAKE_CXXFLAGS += -std=c++23
+#        QMAKE_CXX = g++-14.2.0
+         QMAKE_CXXFLAGS_CXX2A = -std:c++23
+         QMAKE_CXXFLAGS += -std=c++23
+         QMAKE_CXX = g++-15.1.0
 
 DISTFILES +=

@@ -16,10 +16,14 @@
 
 #include <fcntl.h>
 #include <glob.h>
+#include <linux/can.h>
+#include <linux/can/raw.h>
 #include <linux/serial.h>
+#include <net/if.h>
 #include <poll.h>
 #include <stdarg.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <termios.h>
@@ -32,6 +36,7 @@
 #include <functional>
 #include <fstream>
 #include <memory>
+#include <mutex>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -40,6 +45,10 @@
 
 #include "moteus_protocol.h"
 #include "moteus_tokenizer.h"
+
+#ifdef CANFD_FDF
+#define MJBOTS_MOTEUS_ENABLE_SOCKETCAN 1
+#endif
 
 namespace mjbots {
 namespace moteus {
@@ -109,36 +118,48 @@ class Transport {
   virtual void Post(std::function<void()> callback) = 0;
 };
 
-class Fdcanusb : public Transport {
+namespace details {
+/// This is just a simple RAII class for managing file descriptors.
+class FileDescriptor {
  public:
-  struct Options {
-    bool disable_brs = false;
-
-    uint32_t min_ok_wait_ns = 1000000;
-    uint32_t min_rcv_wait_ns = 2000000;
-
-    uint32_t rx_extra_wait_ns = 1000000;
-
-    Options() {}
-  };
-
-  // This is purely to catch out of control queues earlier, as
-  // typically there will just be 1 outstanding event at a time.
-  static constexpr int kMaxQueueSize = 2;
-
-  // If @p device is empty, attempt to auto-detect a fdcanusb in the
-  // system.
-  Fdcanusb(const std::string& device_in, const Options& options = {})
-      : options_(options) {
-    Open(device_in);
+  FileDescriptor() {}
+  FileDescriptor(int fd) { fd_ = fd; }
+  ~FileDescriptor() {
+    if (fd_ >= 0) { ::close(fd_); }
   }
 
-  Fdcanusb(int read_fd, int write_fd, const Options& options = {})
-      : options_(options) {
-    Open(read_fd, write_fd);
+  FileDescriptor& operator=(int fd) {
+    if (fd_ >= 0) { ::close(fd_); }
+    fd_ = fd;
+    return *this;
   }
 
-  virtual ~Fdcanusb() {
+  bool operator==(const FileDescriptor& rhs) const {
+    return fd_ == rhs.fd_;
+  }
+
+  operator int() const {
+    return fd_;
+  }
+
+  int release() {
+    const auto result = fd_;
+    fd_ = -1;
+    return result;
+  }
+
+ private:
+  int fd_ = -1;
+};
+
+/// A basic event loop implemented using C++11 primitives.
+class ThreadedEventLoop {
+ public:
+  ThreadedEventLoop() {
+    thread_ = std::thread(std::bind(&ThreadedEventLoop::CHILD_Run, this));
+  }
+
+  ~ThreadedEventLoop() {
     {
       std::unique_lock<std::recursive_mutex> lock(mutex_);
       done_ = true;
@@ -146,25 +167,13 @@ class Fdcanusb : public Transport {
       something_cv_.notify_one();
     }
     thread_.join();
-
-    if (read_fd_ != write_fd_) {
-      ::close(write_fd_);
-    }
-    ::close(read_fd_);
   }
 
-  virtual void Cycle(const CanFdFrame* frames,
-                     size_t size,
-                     std::vector<CanFdFrame>* replies,
-                     CompletionCallback completed_callback) override {
-    std::unique_lock<std::recursive_mutex> lock(mutex_);
-    work_ = std::bind(&Fdcanusb::CHILD_Cycle,
-                      this, frames, size, replies, completed_callback);
-    do_something_ = true;
-    something_cv_.notify_one();
-  }
+  // This is purely to catch out of control queues earlier, as
+  // typically there will just be 1 outstanding event at a time.
+  static constexpr int kMaxQueueSize = 2;
 
-  virtual void Post(std::function<void()> callback) override {
+  void Post(std::function<void()> callback) {
     std::unique_lock<std::recursive_mutex> lock(mutex_);
     event_queue_.push_back(std::move(callback));
     if (event_queue_.size() > kMaxQueueSize) {
@@ -174,13 +183,272 @@ class Fdcanusb : public Transport {
     something_cv_.notify_one();
   }
 
-  static void Fail(const std::string& str) {
-    throw std::runtime_error(str);
+ private:
+  void CHILD_Run() {
+    std::unique_lock<std::recursive_mutex> lock(mutex_);
+
+    while (true) {
+      something_cv_.wait(lock, [&]() {
+        return do_something_ || !event_queue_.empty();
+      });
+      do_something_ = false;
+
+      if (done_) {
+        return;
+      }
+
+      // Do at most one event.
+      if (!event_queue_.empty()) {
+        auto top = event_queue_.front();
+        event_queue_.pop_front();
+        top();
+      }
+    }
+  }
+
+  std::thread thread_;
+
+  // The following variables are controlled by 'something_mutex'.
+  std::recursive_mutex mutex_;
+  std::condition_variable_any something_cv_;
+
+  bool do_something_ = false;
+  bool done_ = false;
+
+  std::deque<std::function<void()>> event_queue_;
+};
+
+/// A helper base class for transports that want to manage timeout
+/// behavior in a similar manner.
+class TimeoutTransport : public Transport {
+ public:
+  struct Options {
+    bool disable_brs = false;
+
+    uint32_t min_ok_wait_ns = 1000000;
+    uint32_t min_rcv_wait_ns = 5000000;
+
+    uint32_t rx_extra_wait_ns = 5000000;
+
+    // Send at most this many frames before waiting for responses.  -1
+    // means no limit.
+    int max_pipeline = -1;
+
+    Options() {}
+  };
+
+  TimeoutTransport(const Options& options) : t_options_(options) {}
+
+  virtual void Cycle(const CanFdFrame* frames,
+                     size_t size,
+                     std::vector<CanFdFrame>* replies,
+                     CompletionCallback completed_callback) override {
+    // The event loop should never be empty here, but we make a copy
+    // just to assert that.
+    auto copy = std::atomic_load(&UNPROTECTED_event_loop_);
+    FailIf(!copy, "unexpected null event loop");
+    copy->Post(
+        std::bind(&TimeoutTransport::CHILD_Cycle,
+                  this, frames, size, replies, completed_callback));
+  }
+
+  virtual void Post(std::function<void()> callback) override {
+    // We might have an attempt to post an event while we are being
+    // destroyed.  In that case, just ignore it.
+    auto copy = std::atomic_load(&UNPROTECTED_event_loop_);
+    if (copy) {
+      copy->Post(callback);
+    }
+  }
+
+  static int64_t GetNow() {
+    struct timespec ts = {};
+    ::clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+    return static_cast<int64_t>(ts.tv_sec) * 1000000000ll +
+      static_cast<int64_t>(ts.tv_nsec);
+  }
+
+  static void Fail(const std::string& message) {
+    throw std::runtime_error(message);
+  }
+
+  static void FailIf(bool terminate, const std::string& message) {
+    if (terminate) {
+      Fail(message);
+    }
   }
 
   static void FailIfErrno(bool terminate) {
     if (terminate) {
       Fail(::strerror(errno));
+    }
+  }
+
+
+ protected:
+  virtual int CHILD_GetReadFd() const = 0;
+  virtual void CHILD_SendCanFdFrame(const CanFdFrame&) = 0;
+
+  struct ConsumeCount {
+    int rcv = 0;
+    int ok = 0;
+  };
+
+  virtual ConsumeCount CHILD_ConsumeData(
+      std::vector<CanFdFrame>* replies,
+      int expected_ok_count,
+      std::vector<int>* expected_reply_count) = 0;
+  virtual void CHILD_FlushTransmit() = 0;
+
+  void CHILD_Cycle(const CanFdFrame* frames,
+                   size_t size,
+                   std::vector<CanFdFrame>* replies,
+                   CompletionCallback completed_callback) {
+    if (replies) { replies->clear(); }
+    CHILD_CheckReplies(replies, kFlush, 0, nullptr);
+
+    const auto advance = t_options_.max_pipeline < 0 ?
+        size : t_options_.max_pipeline;
+
+    for (size_t start = 0; start < size; start += advance) {
+      int expected_ok_count = 0;
+      for (auto& v : expected_reply_count_) { v = 0; }
+
+      for (size_t i = start; i < (start + advance) && i < size; i++) {
+        expected_ok_count++;
+        CHILD_SendCanFdFrame(frames[i]);
+        if (frames[i].reply_required) {
+          if ((frames[i].destination + 1) >
+              static_cast<int>(expected_reply_count_.size())) {
+            expected_reply_count_.resize(frames[i].destination + 1);
+          }
+          expected_reply_count_[frames[i].destination]++;
+        }
+      }
+
+      CHILD_FlushTransmit();
+
+      CHILD_CheckReplies(replies,
+                         kWait,
+                         expected_ok_count,
+                         &expected_reply_count_);
+    }
+
+    Post(std::bind(completed_callback, 0));
+  }
+
+  enum ReadDelay {
+    kWait,
+    kFlush,
+  };
+
+  void CHILD_CheckReplies(std::vector<CanFdFrame>* replies,
+                          ReadDelay read_delay,
+                          int expected_ok_count,
+                          std::vector<int>* expected_reply_count) {
+    const auto start = GetNow();
+
+    const auto any_reply_checker = [&]() {
+      if (!expected_reply_count) { return false; }
+      for (auto v : *expected_reply_count) {
+        if (v) { return true; }
+      }
+      return false;
+    };
+    auto end_time =
+        start +
+        (read_delay == kWait ?
+         std::max(expected_ok_count != 0 ? t_options_.min_ok_wait_ns : 0,
+                  any_reply_checker() ? t_options_.min_rcv_wait_ns : 0) :
+         5000);
+
+    struct pollfd fds[1] = {};
+    fds[0].fd = CHILD_GetReadFd();
+    fds[0].events = POLLIN;
+
+    int ok_count = 0;
+
+    while (true) {
+      const auto now = GetNow();
+      fds[0].revents = 0;
+
+      struct timespec tmo = {};
+      const auto to_sleep_ns = std::max<int64_t>(0, end_time - now);
+      tmo.tv_sec = to_sleep_ns / 1000000000;
+      tmo.tv_nsec = to_sleep_ns % 1000000000;
+
+      const int poll_ret = ::ppoll(&fds[0], 1, &tmo, nullptr);
+      if (poll_ret < 0) {
+        if (errno == EINTR) {
+          // Go back and try again.
+          continue;
+        }
+        FailIfErrno(true);
+      }
+      if (poll_ret == 0) { return; }
+
+      const auto consume_count = CHILD_ConsumeData(
+          replies, expected_ok_count, expected_reply_count);
+
+      ok_count += consume_count.ok;
+
+      if (read_delay != kFlush &&
+          !any_reply_checker() && ok_count >= expected_ok_count) {
+        // Once we have the expected number of CAN replies and OKs,
+        // return immediately.
+        return;
+      }
+
+      if (consume_count.rcv || consume_count.ok) {
+        const auto finish_time = GetNow();
+        end_time = finish_time + t_options_.rx_extra_wait_ns;
+      }
+    }
+  }
+
+  // This is protected, because derived classes need to delete it
+  // before freeing any file descriptors.  The public methods of the
+  // ThreadedEventLoop require no locking, but the shared_ptr itself
+  // requires either synchronization or access using the atomic std
+  // library methods.  We'll exclusively use the atomic std library
+  // methods.
+  std::shared_ptr<details::ThreadedEventLoop> UNPROTECTED_event_loop_ =
+      std::make_shared<details::ThreadedEventLoop>();
+
+ private:
+  const Options t_options_;
+
+  std::vector<int> expected_reply_count_;
+};
+}
+
+class Fdcanusb : public details::TimeoutTransport {
+ public:
+  struct Options : details::TimeoutTransport::Options {
+    Options() {}
+  };
+
+  // If @p device is empty, attempt to auto-detect a fdcanusb in the
+  // system.
+  Fdcanusb(const std::string& device_in, const Options& options = {})
+      : details::TimeoutTransport(options),
+        options_(options) {
+    Open(device_in);
+  }
+
+  // This constructor overload is intended for use in unit tests,
+  // where the file descriptors will likely be pipes.
+  Fdcanusb(int read_fd, int write_fd, const Options& options = {})
+      : details::TimeoutTransport(options),
+        options_(options) {
+    Open(read_fd, write_fd);
+  }
+
+  virtual ~Fdcanusb() {
+    std::atomic_store(&UNPROTECTED_event_loop_, {});
+
+    if (read_fd_ == write_fd_) {
+      write_fd_.release();
     }
   }
 
@@ -210,13 +478,6 @@ class Fdcanusb : public Transport {
     }
 
     return "";
-  }
-
-  static int64_t GetNow() {
-    struct timespec ts = {};
-    ::clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-    return static_cast<int64_t>(ts.tv_sec) * 1000000000ll +
-      static_cast<int64_t>(ts.tv_nsec);
   }
 
  private:
@@ -252,6 +513,8 @@ class Fdcanusb : public Transport {
     }
 #else  // _WIN32
     {
+      // Windows is likely broken for many other reasons, but if we do
+      // fix all the other problems, this will be necessary.
       COMMTIMEOUTS new_timeouts = {MAXDWORD, 0, 0, 0, 0};
       SetCommTimeouts(fd, &new_timeouts);
     }
@@ -263,145 +526,49 @@ class Fdcanusb : public Transport {
   void Open(int read_fd, int write_fd) {
     read_fd_ = read_fd;
     write_fd_ = write_fd;
-    thread_ = std::thread(std::bind(&Fdcanusb::CHILD_Run, this));
   }
 
-  void CHILD_Run() {
-    std::unique_lock<std::recursive_mutex> lock(mutex_);
+  virtual int CHILD_GetReadFd() const override {
+    return read_fd_;
+  }
 
-    while (true) {
-      something_cv_.wait(lock, [&]() {
-        return do_something_ || !event_queue_.empty();
-      });
-      do_something_ = false;
-
-      if (done_) {
-        return;
-      }
-      if (work_) {
-        work_();
-        work_ = {};
-      }
-      // Do at most one event.
-      if (!event_queue_.empty()) {
-        auto top = event_queue_.front();
-        event_queue_.pop_front();
-        top();
-      }
+  virtual ConsumeCount CHILD_ConsumeData(
+      std::vector<CanFdFrame>* replies,
+      int /* expected_ok_count */,
+      std::vector<int>* expected_reply_count) override {
+    // Read into our line buffer.
+    const int to_read = sizeof(line_buffer_) - line_buffer_pos_;
+    const int read_ret = ::read(
+        read_fd_, &line_buffer_[line_buffer_pos_], to_read);
+    if (read_ret < 0) {
+      if (errno == EINTR || errno == EAGAIN) { return {}; }
+      FailIfErrno(true);
     }
-  }
+    line_buffer_pos_ += read_ret;
 
-  void CHILD_Cycle(const CanFdFrame* frames,
-                   size_t size,
-                   std::vector<CanFdFrame>* replies,
-                   CompletionCallback completed_callback) {
-    if (replies) { replies->clear(); }
-    CHILD_CheckReplies(replies, kNoWait, 0, 0);
-
-    int expected_reply_count = 0;
-
-    for (size_t i = 0; i < size; i++) {
-      CHILD_SendCanFdFrame(frames[i]);
-      if (frames[i].reply_required) { expected_reply_count++; }
+    const auto consume_count = CHILD_ConsumeLines(
+        replies, expected_reply_count);
+    if (line_buffer_pos_ >= sizeof(line_buffer_)) {
+      // We overran our line buffer.  For now, just drop everything
+      // and start from 0.
+      line_buffer_pos_ = 0;
     }
 
-    CHILD_CheckReplies(replies,
-                       kWait,
-                       size,
-                       expected_reply_count);
-    Post(std::bind(completed_callback, 0));
+    return consume_count;
   }
-
-  enum ReadDelay {
-    kNoWait,
-    kWait,
-  };
-
-  void CHILD_CheckReplies(std::vector<CanFdFrame>* replies,
-                          ReadDelay read_delay,
-                          int expected_ok_count,
-                          int expected_rcv_count) {
-    const auto start = GetNow();
-    auto end_time =
-        start +
-        (read_delay == kWait ?
-         std::max(expected_ok_count != 0 ? options_.min_ok_wait_ns : 0,
-                  expected_rcv_count != 0 ? options_.min_rcv_wait_ns : 0) : 0);
-
-    struct pollfd fds[1] = {};
-    fds[0].fd = read_fd_;
-    fds[0].events = POLLIN;
-
-    int ok_count = 0;
-    int rcv_count = 0;
-
-    while (true) {
-      const auto now = GetNow();
-      fds[0].revents = 0;
-
-      struct timespec tmo = {};
-      const auto to_sleep_ns = std::max<int64_t>(0, end_time - now);
-      tmo.tv_sec = to_sleep_ns / 1000000000;
-      tmo.tv_nsec = to_sleep_ns % 1000000000;
-
-      const int poll_ret = ::ppoll(&fds[0], 1, &tmo, nullptr);
-      if (poll_ret < 0) {
-        if (errno == EINTR) {
-          // Go back and try again.
-          continue;
-        }
-        FailIfErrno(true);
-      }
-      if (poll_ret == 0) { return; }
-
-      // Read into our line buffer.
-      const int to_read = sizeof(line_buffer_) - line_buffer_pos_;
-      const int read_ret = ::read(
-          read_fd_, &line_buffer_[line_buffer_pos_], to_read);
-      if (read_ret < 0) {
-        if (errno == EINTR || errno == EAGAIN) { continue; }
-        FailIfErrno(true);
-      }
-      line_buffer_pos_ += read_ret;
-
-      const auto consume_count = CHILD_ConsumeLines(replies);
-      if (line_buffer_pos_ >= sizeof(line_buffer_)) {
-        // We overran our line buffer.  For now, just drop everything
-        // and start from 0.
-        line_buffer_pos_ = 0;
-      }
-
-      rcv_count += consume_count.rcv;
-      ok_count += consume_count.ok;
-
-      if (rcv_count >= expected_rcv_count && ok_count >= expected_ok_count) {
-        // Once we have the expected number of CAN replies and OKs,
-        // return immediately.
-        return;
-      }
-
-      if (read_delay == kWait && consume_count.rcv) {
-        const auto finish_time = GetNow();
-        end_time = finish_time + options_.rx_extra_wait_ns;
-      }
-    }
-  }
-
-  struct ConsumeCount {
-    int rcv = 0;
-    int ok = 0;
-  };
 
   /// Return the number of CAN frames received.
-  ConsumeCount CHILD_ConsumeLines(std::vector<CanFdFrame>* replies) {
+  ConsumeCount CHILD_ConsumeLines(std::vector<CanFdFrame>* replies,
+                                  std::vector<int>* expected_reply_count) {
     const auto start_size = replies ? replies->size() : 0;
     ConsumeCount result;
-    while (CHILD_ConsumeLine(replies, &result.ok)) {}
+    while (CHILD_ConsumeLine(replies, &result.ok, expected_reply_count)) {}
     result.rcv = replies ? (replies->size() - start_size) : 0;
     return result;
   }
 
-  bool CHILD_ConsumeLine(std::vector<CanFdFrame>* replies, int* ok_count) {
+  bool CHILD_ConsumeLine(std::vector<CanFdFrame>* replies, int* ok_count,
+                         std::vector<int>* expected_reply_count) {
     const auto line_end = [&]() -> int {
       for (size_t i = 0; i < line_buffer_pos_; i++) {
         if (line_buffer_[i] == '\r' || line_buffer_[i] == '\n') { return i; }
@@ -410,10 +577,11 @@ class Fdcanusb : public Transport {
     }();
     if (line_end < 0) { return false; }
 
-    CHILD_ProcessLine(std::string(&line_buffer_[0], line_end), replies, ok_count);
+    CHILD_ProcessLine(std::string(&line_buffer_[0], line_end), replies,
+                      ok_count, expected_reply_count);
 
     std::memmove(&line_buffer_[0], &line_buffer_[line_end + 1],
-                 line_buffer_pos_ - line_end);
+                 line_buffer_pos_ - line_end - 1);
     line_buffer_pos_ -= (line_end + 1);
 
     return true;
@@ -421,7 +589,8 @@ class Fdcanusb : public Transport {
 
   void CHILD_ProcessLine(const std::string& line,
                          std::vector<CanFdFrame>* replies,
-                         int* ok_count) {
+                         int* ok_count,
+                         std::vector<int>* expected_reply_count) {
     if (line == "OK") {
       (*ok_count)++;
       return;
@@ -456,6 +625,14 @@ class Fdcanusb : public Transport {
       }
     }
 
+    if (expected_reply_count) {
+      if (this_frame.source <
+          static_cast<int>(expected_reply_count->size())) {
+        (*expected_reply_count)[this_frame.source] = std::max(
+            (*expected_reply_count)[this_frame.source] - 1, 0);
+      }
+    }
+
     if (replies) {
       replies->emplace_back(std::move(this_frame));
     }
@@ -482,14 +659,19 @@ class Fdcanusb : public Transport {
     const size_t capacity_;
   };
 
-  void CHILD_SendCanFdFrame(const CanFdFrame& frame) {
+  virtual void CHILD_SendCanFdFrame(const CanFdFrame& frame) override {
     char buf[256] = {};
 
     Printer p(buf, sizeof(buf));
 
     p("can send %04x ", frame.arbitration_id);
+
+    const auto dlc = RoundUpDlc(frame.size);
     for (size_t i = 0; i < frame.size; i++) {
       p("%02x", static_cast<int>(frame.data[i]));
+    }
+    for (size_t i = frame.size; i < dlc; i++) {
+      p("50");
     }
 
     if (options_.disable_brs || frame.brs == CanFdFrame::kForceOff) {
@@ -504,8 +686,17 @@ class Fdcanusb : public Transport {
     }
     p("\n");
 
-    for (size_t n = 0; n < p.size(); ) {
-      int ret = ::write(write_fd_, &buf[n], p.size() - n);
+    if (p.size() > (sizeof(tx_buffer_) - tx_buffer_size_)) {
+      CHILD_FlushTransmit();
+    }
+
+    std::memcpy(&tx_buffer_[tx_buffer_size_], &buf[0], p.size());
+    tx_buffer_size_ += p.size();
+  }
+
+  virtual void CHILD_FlushTransmit() override {
+    for (size_t n = 0; n < tx_buffer_size_; ) {
+      int ret = ::write(write_fd_, &tx_buffer_[n], tx_buffer_size_ - n);
       if (ret < 0) {
         if (errno == EINTR || errno == EAGAIN) { continue; }
 
@@ -514,6 +705,19 @@ class Fdcanusb : public Transport {
         n += ret;
       }
     }
+    tx_buffer_size_ = 0;
+  }
+
+  static size_t RoundUpDlc(size_t size) {
+    if (size <= 8) { return size; }
+    if (size <= 12) { return 12; }
+    if (size <= 16) { return 16; }
+    if (size <= 20) { return 20; }
+    if (size <= 24) { return 24; }
+    if (size <= 32) { return 32; }
+    if (size <= 48) { return 48; }
+    if (size <= 64) { return 64; }
+    return size;
   }
 
   static int ParseHexNybble(char c) {
@@ -540,24 +744,153 @@ class Fdcanusb : public Transport {
   }
 
   // This is set in the parent, then used in the child.
-  std::thread thread_;
   const Options options_;
-  int read_fd_ = -1;
-  int write_fd_ = -1;
 
-  // The following variables are controlled by 'something_mutex'.
-  std::recursive_mutex mutex_;
-  std::condition_variable_any something_cv_;
-  bool do_something_ = false;
-  bool done_ = false;
-  std::function<void()> work_;
-  std::deque<std::function<void()>> event_queue_;
+  // We have these scoped file descriptors first in our member list,
+  // so they will only be closed after the threaded event loop has
+  // been destroyed during destruction.
+  details::FileDescriptor read_fd_;
+  details::FileDescriptor write_fd_;
 
   // The following variables are only used in the child.
   char line_buffer_[4096] = {};
   size_t line_buffer_pos_ = 0;
+
+  char tx_buffer_[4096] = {};
+  size_t tx_buffer_size_ = 0;
 };
 
+
+#ifdef MJBOTS_MOTEUS_ENABLE_SOCKETCAN
+class Socketcan : public details::TimeoutTransport {
+ public:
+  struct Options : details::TimeoutTransport::Options {
+    std::string ifname = "can0";
+    bool ignore_errors = false;
+
+    Options() {}
+  };
+
+  Socketcan(const Options& options)
+      : details::TimeoutTransport(options),
+        options_(options) {
+    socket_ = Open(options_.ifname);
+  }
+
+  virtual ~Socketcan() {
+    std::atomic_store(&UNPROTECTED_event_loop_, {});
+  }
+
+ private:
+  static void SetNonblock(int fd) {
+    int flags = ::fcntl(fd, F_GETFL, 0);
+    FailIf(flags < 0, "error getting flags");
+    flags |= O_NONBLOCK;
+    FailIf(::fcntl(fd, F_SETFL, flags), "error setting flags");
+  }
+
+  static int Open(const std::string& ifname) {
+    const int fd = ::socket(PF_CAN, SOCK_RAW, CAN_RAW);
+    FailIf(fd < 0, "error opening CAN socket");
+
+    SetNonblock(fd);
+
+    struct ifreq ifr = {};
+    std::strncpy(&ifr.ifr_name[0], ifname.c_str(),
+                 sizeof(ifr.ifr_name) - 1);
+    FailIf(::ioctl(fd, SIOCGIFINDEX, &ifr) < 0,
+           "could not find CAN: " + ifname);
+
+    const int enable_canfd = 1;
+    FailIf(::setsockopt(fd, SOL_CAN_RAW, CAN_RAW_FD_FRAMES,
+                        &enable_canfd, sizeof(enable_canfd)) != 0,
+           "could not set CAN-FD mode");
+
+    struct sockaddr_can addr = {};
+    addr.can_family = AF_CAN;
+    addr.can_ifindex = ifr.ifr_ifindex;
+    FailIf(::bind(fd,
+                  reinterpret_cast<struct sockaddr*>(&addr),
+                  sizeof(addr)) < 0,
+           "could not bind to CAN if");
+
+    return fd;
+  }
+
+  virtual int CHILD_GetReadFd() const override {
+    return socket_;
+  }
+
+  virtual void CHILD_SendCanFdFrame(const CanFdFrame& frame) override {
+    struct canfd_frame send_frame = {};
+    send_frame.can_id = frame.arbitration_id;
+    if (send_frame.can_id >= 0x7ff) {
+      // Set the frame format flag if we need an extended ID.
+      send_frame.can_id |= (1 << 31);
+    }
+    send_frame.len = frame.size;
+    std::memcpy(send_frame.data, frame.data, frame.size);
+
+    using F = CanFdFrame;
+
+    send_frame.flags =
+        ((frame.fdcan_frame == F::kDefault ||
+          frame.fdcan_frame == F::kForceOn) ? CANFD_FDF : 0) |
+        (((frame.brs == F::kDefault && !options_.disable_brs) ||
+          frame.brs == F::kForceOn) ? CANFD_BRS : 0);
+
+    const auto write_result = ::write(socket_, &send_frame, sizeof(send_frame));
+    if (!options_.ignore_errors) {
+      FailIf(write_result < 0, "error writing CAN");
+    }
+  }
+
+  virtual ConsumeCount CHILD_ConsumeData(
+      std::vector<CanFdFrame>* replies,
+      int /* expected_ok_count */,
+      std::vector<int>* expected_reply_count) override {
+    struct canfd_frame recv_frame = {};
+    FailIf(::read(socket_, &recv_frame, sizeof(recv_frame)) < 0,
+           "error reading CAN frame");
+
+    CanFdFrame this_frame;
+    this_frame.arbitration_id = recv_frame.can_id & 0x1fffffff;
+    this_frame.destination = this_frame.arbitration_id & 0x7f;
+    this_frame.source = (this_frame.arbitration_id >> 8) & 0x7f;
+    this_frame.can_prefix = (this_frame.arbitration_id >> 16);
+
+    this_frame.brs = (recv_frame.flags & CANFD_BRS) ?
+        CanFdFrame::kForceOn : CanFdFrame::kForceOff;
+    this_frame.fdcan_frame = (recv_frame.flags & CANFD_FDF) ?
+        CanFdFrame::kForceOn : CanFdFrame::kForceOff;
+
+    std::memcpy(this_frame.data, recv_frame.data, recv_frame.len);
+    this_frame.size = recv_frame.len;
+
+    if (expected_reply_count) {
+      if (this_frame.source <
+          static_cast<int>(expected_reply_count->size())) {
+        (*expected_reply_count)[this_frame.source] = std::max(
+            (*expected_reply_count)[this_frame.source] - 1, 0);
+      }
+    }
+
+    if (replies) {
+      replies->emplace_back(std::move(this_frame));
+    }
+
+    ConsumeCount result;
+    result.ok = 1;
+    result.rcv = 1;
+    return result;
+  }
+
+  virtual void CHILD_FlushTransmit() override {}
+
+  const Options options_;
+  details::FileDescriptor socket_;
+};
+#endif  // MJBOTS_MOTEUS_ENABLE_SOCKETCAN
 
 /// A factory which can create transports given an optional set of
 /// commandline arguments.
@@ -581,6 +914,13 @@ class TransportFactory {
       if (name > rhs.name) { return false; }
       return help < rhs.help;
     }
+
+    Argument(const std::string& name_in,
+             int nargs_in,
+             const std::string& help_in)
+        : name(name_in),
+          nargs(nargs_in),
+          help(help_in) {}
   };
 
   virtual std::vector<Argument> cmdline_arguments() = 0;
@@ -640,6 +980,69 @@ class FdcanusbFactory : public TransportFactory {
   }
 };
 
+#ifdef MJBOTS_MOTEUS_ENABLE_SOCKETCAN
+class SocketcanFactory : public TransportFactory {
+ public:
+  virtual ~SocketcanFactory() {}
+
+  virtual int priority() override { return 11; }
+  virtual std::string name() override { return "socketcan"; }
+
+  virtual TransportArgPair make(const std::vector<std::string>& args_in) override {
+    auto args = args_in;
+
+    Socketcan::Options options;
+    std::string device;
+
+    {
+      auto it = std::find(args.begin(), args.end(), "--can-disable-brs");
+      if (it != args.end()) {
+        options.disable_brs = true;
+        args.erase(it);
+      }
+    }
+
+    {
+      auto it = std::find(args.begin(), args.end(), "--socketcan-iface");
+      if (it != args.end()) {
+        if ((it + 1) != args.end()) {
+          options.ifname = *(it + 1);
+          args.erase(it, it + 2);
+        } else {
+          throw std::runtime_error("--socketcan-iface requires an interface name");
+        }
+      }
+    }
+    {
+      auto it = std::find(args.begin(), args.end(), "--socketcan-ignore-errors");
+      if (it != args.end()) {
+        options.ignore_errors = true;
+        args.erase(it);
+      }
+    }
+
+    auto result = std::make_shared<Socketcan>(options);
+    return TransportArgPair(result, args);
+  }
+
+  virtual std::vector<Argument> cmdline_arguments() override {
+    return {
+      { "--socketcan-iface", 1, "socketcan iface name" },
+      { "--socketcan-ignore-errors", 0, "ignore errors sending socketcan frames" },
+      { "--can-disable-brs", 0, "do not set BRS" },
+    };
+  }
+
+  virtual bool is_args_set(const std::vector<std::string>& args) override {
+    for (const auto& arg : args) {
+      if (arg == "--socketcan-iface") { return true; }
+      if (arg == "--socketcan-ignore-errors") { return true; }
+    }
+    return false;
+  }
+};
+#endif  // MJBOTS_MOTEUS_ENABLE_SOCKETCAN
+
 class TransportRegistry {
  public:
   template <typename T>
@@ -656,8 +1059,9 @@ class TransportRegistry {
     std::vector<TransportFactory::Argument> result;
     std::set<TransportFactory::Argument> uniqifier;
 
-    result.push_back({"--force-transport", 1,
-        "force the given transport type to be used"});
+    result.push_back(TransportFactory::Argument(
+                         "--force-transport", 1,
+                         "force the given transport type to be used"));
     uniqifier.insert(result.back());
 
     for (const auto& item : items_) {
@@ -725,6 +1129,9 @@ class TransportRegistry {
  private:
   TransportRegistry() {
     Register<FdcanusbFactory>();
+#ifdef MJBOTS_MOTEUS_ENABLE_SOCKETCAN
+    Register<SocketcanFactory>();
+#endif
   }
 
   std::vector<std::shared_ptr<TransportFactory>> items_;

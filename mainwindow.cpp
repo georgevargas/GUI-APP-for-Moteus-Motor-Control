@@ -15,6 +15,7 @@
 #include <QMessageBox>
 #include <QInputDialog>
 #include <format>
+
 #ifdef CPP23
 #include <print>
 #endif
@@ -151,9 +152,7 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
     }
     else if (msg == "Get Cur X,Y")
     {
-        ui->Slider_Cur_Position_X->setValue(Value1);
         ui->Counter_Cur_Position_X->setValue(Value1);
-        ui->Slider_Cur_Position_Y->setValue(Value2);
         ui->Counter_Cur_Position_Y->setValue(Value2);
 
     }
@@ -178,9 +177,9 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         }
 #endif
 
-        ui->Slider_Limit_Min->setValue(bounds_min[moteus_id -1]);
+        ui->Slider_Limit_Min->setValue(static_cast<int>(bounds_min[moteus_id -1]));
         ui->Counter_Limit_Min->setValue(bounds_min[moteus_id -1]);
-        ui->Slider_Limit_Max->setValue(bounds_max[moteus_id -1]);
+        ui->Slider_Limit_Max->setValue(static_cast<int>(bounds_max[moteus_id -1]));
         ui->Counter_Limit_Max->setValue(bounds_max[moteus_id -1]);
 
         MainWindow::ui->txtXYRadius->appendPlainText(QString::fromStdString(out.str()));
@@ -193,11 +192,11 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
         kd[Motor_id-1] =  Value2;
         ki[Motor_id-1] =  Value3;
 
-        ui->Slider_KP->setValue(kp[moteus_id -1]);
+        ui->Slider_KP->setValue(static_cast<int>(kp[moteus_id -1]));
         ui->Counter_KP->setValue(kp[moteus_id -1]);
-        ui->Slider_KD->setValue(kd[moteus_id -1]);
+        ui->Slider_KD->setValue(static_cast<int>(kd[moteus_id -1]));
         ui->Counter_KD->setValue(kd[moteus_id -1]);
-        ui->Slider_KI->setValue(ki[moteus_id -1]);
+        ui->Slider_KI->setValue(static_cast<int>(ki[moteus_id -1]));
         ui->Counter_KI->setValue(ki[moteus_id -1]);
 
         out.str("");
@@ -223,7 +222,7 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
 
         Gear_Ratio[Motor_id-1] =  Value1;
 
-        ui->Slider_Gear_Ratio->setValue(Gear_Ratio[moteus_id -1]);
+        ui->Slider_Gear_Ratio->setValue(static_cast<int>(Gear_Ratio[moteus_id -1]));
         ui->Counter_Gear_Ratio->setValue(Gear_Ratio[moteus_id -1]);
 
         out.str("");
@@ -248,7 +247,7 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
 
         position_offset[Motor_id-1] =  Value1;
 
-        ui->Slider_Position_Offset->setValue(position_offset[moteus_id -1]);
+        ui->Slider_Position_Offset->setValue(static_cast<int>(position_offset[moteus_id -1]));
         ui->Counter_Position_Offset->setValue(position_offset[moteus_id -1]);
 
         out.str("");
@@ -273,7 +272,7 @@ void MainWindow::receiveMsg(QString msg, int Motor_id, double Value1, double Val
 
         Break_Voltage[Motor_id-1] =  Value1;
 
-        ui->Slider_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
+        ui->Slider_Break_voltage->setValue(static_cast<int>(Break_Voltage[moteus_id -1]));
         ui->Counter_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
 
         out.str("");
@@ -586,15 +585,15 @@ void MainWindow:: Init_Motor()
         ui->Counter_KP_Scale->setValue(kp_scale);
         ui->Counter_Cycle_Start_Stop->setValue(Cycle_Start_Stop);
         ui->Counter_Cycle_Delay->setValue(Cycle_Delay);
-        ui->Slider_Accel_Limit->setValue(accel_limit);
-        ui->Slider_Position->setValue(position);
-        ui->Slider_Velocity_Limit->setValue(velocity_limit);
-        ui->Slider_Max_Torque->setValue(max_torque);
-        ui->Slider_Feedforward->setValue(feedforward_torque);
-        ui->Slider_KD_Scale->setValue(kd_scale);
-        ui->Slider_KP_Scale->setLowerBound(kp_scale);
-        ui->Slider_Cycle_Start_Stop->setValue(Cycle_Start_Stop);
-        ui->Slider_Cycle_Delay->setValue(Cycle_Delay);
+        ui->Slider_Accel_Limit->setValue(static_cast<int>(accel_limit));
+        ui->Slider_Position->setValue(static_cast<int>(position));
+        ui->Slider_Velocity_Limit->setValue(static_cast<int>(velocity_limit));
+        ui->Slider_Max_Torque->setValue(static_cast<int>(max_torque));
+        ui->Slider_Feedforward->setValue(static_cast<int>(feedforward_torque));
+        ui->Slider_KD_Scale->setValue(static_cast<int>(kd_scale));
+        ui->Slider_KP_Scale->setValue(static_cast<int>(kp_scale));
+        ui->Slider_Cycle_Start_Stop->setValue(static_cast<int>(Cycle_Start_Stop));
+        ui->Slider_Cycle_Delay->setValue(static_cast<int>(Cycle_Delay));
         if (ui->checkBox_Dymamic->isChecked())
         {
             Dynamic = true;
@@ -672,87 +671,110 @@ void MainWindow::on_btnStop_Cycle_clicked()
 
 }
 
-void MainWindow::on_Slider_Position_valueChanged(double value)
+void MainWindow::on_Slider_Position_valueChanged(int value)
 {
-    position = value;
-    ui->Counter_Position->setValue(value);
-}
-
-void MainWindow::on_Slider_Velocity_Limit_valueChanged(double value)
-{
-    velocity_limit = value;
-    ui->Counter_Velocity_Limit->setValue(value);
-    if (Dynamic)
+    if (value != static_cast<int>(position))
     {
-        emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay,0,0);
-    }
-}
-void MainWindow::on_Slider_Accel_Limit_valueChanged(double value)
-{
-    accel_limit = value;
-    ui->Counter_Accel_Limit->setValue(value);
-    if (Dynamic)
-    {
-        emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay,0,0);
-    }
-
-}
-void MainWindow::on_Slider_Max_Torque_valueChanged(double value)
-{
-    max_torque = value;
-    ui->Counter_Max_Torque->setValue(value);
-    if (Dynamic)
-    {
-        emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay,0,0);
+        position = static_cast<double>(value);
+        ui->Counter_Position->setValue(position);
     }
 }
 
-void MainWindow::on_Slider_Feedforward_valueChanged(double value)
+void MainWindow::on_Slider_Velocity_Limit_valueChanged(int value)
 {
-    feedforward_torque = value;
-    ui->Counter_Feedforward->setValue(value);
-    if (Dynamic)
+    if (value != static_cast<int>(velocity_limit))
     {
-        emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay,0,0);
+        velocity_limit = static_cast<double>(value);
+        ui->Counter_Velocity_Limit->setValue(velocity_limit);
+        if (Dynamic)
+        {
+            emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                                kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay,0,0);
+        }
     }
 }
 
-void MainWindow::on_Slider_KP_Scale_valueChanged(double value)
+void MainWindow::on_Slider_Accel_Limit_valueChanged(int value)
 {
-    kp_scale = value;
-    ui->Counter_KP_Scale->setValue(value);
-    if (Dynamic)
+    if (value != static_cast<int>(accel_limit))
     {
-        emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay,0,0);
+        accel_limit = static_cast<double>(value);
+        ui->Counter_Accel_Limit->setValue(accel_limit);
+        if (Dynamic)
+        {
+            emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                                kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay,0,0);
+        }
     }
 }
 
-void MainWindow::on_Slider_KD_Scale_valueChanged(double value)
+void MainWindow::on_Slider_Max_Torque_valueChanged(int value)
 {
-    kd_scale = value;
-    ui->Counter_KD_Scale->setValue(value);
-    if (Dynamic)
+    if (value != static_cast<int>(max_torque))
     {
-        emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
-                          kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay,0,0);
+        max_torque = static_cast<double>(value);
+        ui->Counter_Max_Torque->setValue(max_torque);
+        if (Dynamic)
+        {
+            emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                                kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay,0,0);
+        }
+    }
+
+}
+
+void MainWindow::on_Slider_Feedforward_valueChanged(int value)
+{
+    if (value != static_cast<int>(feedforward_torque))
+    {
+        feedforward_torque = static_cast<double>(value);
+        ui->Counter_Feedforward->setValue(feedforward_torque);
+        if (Dynamic)
+        {
+            emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                                kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay,0,0);
+        }
+    }
+}
+
+void MainWindow::on_Slider_KP_Scale_valueChanged(int value)
+{
+    if (value != static_cast<int>(kp_scale))
+    {
+        kp_scale = static_cast<double>(value);
+        ui->Counter_KP_Scale->setValue(kp_scale);
+        if (Dynamic)
+        {
+            emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                                kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay,0,0);
+        }
+    }
+}
+
+void MainWindow::on_Slider_KD_Scale_valueChanged(int value)
+{
+    if (value != static_cast<int>(kd_scale))
+    {
+        kd_scale = static_cast<double>(value);
+        ui->Counter_KD_Scale->setValue(kd_scale);
+        if (Dynamic)
+        {
+            emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                                kd_scale,bounds_min[moteus_id -1],bounds_max[moteus_id -1],Cycle_Start_Stop,Cycle_Delay,0,0);
+        }
     }
 }
 
 void MainWindow::on_Counter_Position_valueChanged(double value)
 {
     position = value;
-    ui->Slider_Position->setValue(value);
+    ui->Slider_Position->setValue(static_cast<int>(position));
 }
 
 void MainWindow::on_Counter_Velocity_Limit_valueChanged(double value)
 {
     velocity_limit = value;
-    ui->Slider_Velocity_Limit->setValue(value);
+    ui->Slider_Velocity_Limit->setValue(static_cast<int>(value));
     if (Dynamic)
     {
         emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
@@ -762,7 +784,7 @@ void MainWindow::on_Counter_Velocity_Limit_valueChanged(double value)
 void MainWindow::on_Counter_Accel_Limit_valueChanged(double value)
 {
     accel_limit = value;
-    ui->Slider_Accel_Limit->setValue(value);
+    ui->Slider_Accel_Limit->setValue(static_cast<int>(value));
     if (Dynamic)
     {
         emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
@@ -772,7 +794,7 @@ void MainWindow::on_Counter_Accel_Limit_valueChanged(double value)
 void MainWindow::on_Counter_Max_Torque_valueChanged(double value)
 {
     max_torque = value;
-    ui->Slider_Max_Torque->setValue(value);
+    ui->Slider_Max_Torque->setValue(static_cast<int>(value));
     if (Dynamic)
     {
         emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
@@ -784,7 +806,7 @@ void MainWindow::on_Counter_Max_Torque_valueChanged(double value)
 void MainWindow::on_Counter_Feedforward_valueChanged(double value)
 {
     feedforward_torque = value;
-    ui->Slider_Feedforward->setValue(value);
+    ui->Slider_Feedforward->setValue(static_cast<int>(value));
     if (Dynamic)
     {
         emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
@@ -795,7 +817,7 @@ void MainWindow::on_Counter_Feedforward_valueChanged(double value)
 void MainWindow::on_Counter_KP_Scale_valueChanged(double value)
 {
     kp_scale = value;
-    ui->Slider_KP_Scale->setValue(value);
+    ui->Slider_KP_Scale->setValue(static_cast<int>(value));
     if (Dynamic)
     {
         emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
@@ -806,7 +828,7 @@ void MainWindow::on_Counter_KP_Scale_valueChanged(double value)
 void MainWindow::on_Counter_KD_Scale_valueChanged(double value)
 {
     kd_scale = value;
-    ui->Slider_KD_Scale->setValue(value);
+    ui->Slider_KD_Scale->setValue(static_cast<int>(value));
     if (Dynamic)
     {
         emit sendToWorker_position_commands("Update Dynamic",moteus_id,accel_limit,position,velocity_limit,max_torque,feedforward_torque,kp_scale,
@@ -837,46 +859,52 @@ void MainWindow::on_actionHelp_triggered()
 void MainWindow::on_comboBox_currentIndexChanged(int index)
 {
     moteus_id  = index + 1;
-    ui->Slider_Limit_Min->setValue(bounds_min[moteus_id -1]);
+    ui->Slider_Limit_Min->setValue(static_cast<int>(bounds_min[moteus_id -1]));
     ui->Counter_Limit_Min->setValue(bounds_min[moteus_id -1]);
-    ui->Slider_Limit_Max->setValue(bounds_max[moteus_id -1]);
+    ui->Slider_Limit_Max->setValue(static_cast<int>(bounds_max[moteus_id -1]));
     ui->Counter_Limit_Max->setValue(bounds_max[moteus_id -1]);
     ui->Counter_KP->setValue(kp[moteus_id -1]);
-    ui->Slider_KP->setValue(kp[moteus_id -1]);
+    ui->Slider_KP->setValue(static_cast<int>(kp[moteus_id -1]));
     ui->Counter_KD->setValue(kd[moteus_id -1]);
-    ui->Slider_KD->setValue(kd[moteus_id -1]);
+    ui->Slider_KD->setValue(static_cast<int>(kd[moteus_id -1]));
     ui->Counter_KI->setValue(ki[moteus_id -1]);
-    ui->Slider_KI->setValue(ki[moteus_id -1]);
-    ui->Slider_Gear_Ratio->setValue(Gear_Ratio[moteus_id -1]);
+    ui->Slider_KI->setValue(static_cast<int>(ki[moteus_id -1]));
+    ui->Slider_Gear_Ratio->setValue(static_cast<int>(Gear_Ratio[moteus_id -1]));
     ui->Counter_Gear_Ratio->setValue(Gear_Ratio[moteus_id -1]);
-    ui->Slider_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
+    ui->Slider_Break_voltage->setValue(static_cast<int>(Break_Voltage[moteus_id -1]));
     ui->Counter_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
-    ui->Slider_Position_Offset->setValue(position_offset[moteus_id -1]);
+    ui->Slider_Position_Offset->setValue(static_cast<int>(position_offset[moteus_id -1]));
     ui->Counter_Position_Offset->setValue(position_offset[moteus_id -1]);
 }
 
 void MainWindow::on_Counter_Cycle_Start_Stop_valueChanged(double value)
 {
     Cycle_Start_Stop = value;
-    ui->Slider_Cycle_Start_Stop->setValue(value);
+    ui->Slider_Cycle_Start_Stop->setValue(static_cast<int>(value));
 }
 
-void MainWindow::on_Slider_Cycle_Start_Stop_valueChanged(double value)
+void MainWindow::on_Slider_Cycle_Start_Stop_valueChanged(int value)
 {
-    Cycle_Start_Stop = value;
-    ui->Counter_Cycle_Start_Stop->setValue(value);
+    if (value != static_cast<int>(Cycle_Start_Stop))
+    {
+        Cycle_Start_Stop = static_cast<double>(value);
+        ui->Counter_Cycle_Start_Stop->setValue(Cycle_Start_Stop);
+    }
 }
 
 void MainWindow::on_Counter_Cycle_Delay_valueChanged(double value)
 {
     Cycle_Delay = value;
-    ui->Slider_Cycle_Delay->setValue(value);
+    ui->Slider_Cycle_Delay->setValue(static_cast<int>(value));
 }
 
-void MainWindow::on_Slider_Cycle_Delay_valueChanged(double value)
+void MainWindow::on_Slider_Cycle_Delay_valueChanged(int value)
 {
-    Cycle_Delay = value;
-    ui->Counter_Cycle_Delay->setValue(value);
+    if (value != static_cast<int>(Cycle_Delay))
+    {
+        Cycle_Delay = static_cast<double>(value);
+        ui->Counter_Cycle_Delay->setValue(Cycle_Delay);
+    }
 }
 
 
@@ -1041,96 +1069,121 @@ void MainWindow::on_btnPosition_Offset_clicked()
 void MainWindow::on_Counter_Limit_Min_valueChanged(double value)
 {
     bounds_min[moteus_id -1] = value;
-    ui->Slider_Limit_Min->setValue(value);
+    ui->Slider_Limit_Min->setValue(static_cast<int>(value));
 }
 
-void MainWindow::on_Slider_Limit_Min_valueChanged(double value)
+void MainWindow::on_Slider_Limit_Min_valueChanged(int value)
 {
-    bounds_min[moteus_id -1] = value;
-    ui->Counter_Limit_Min->setValue(value);
+    if (value != static_cast<int>(bounds_min[moteus_id -1]))
+    {
+        bounds_min[moteus_id -1] = static_cast<double>(value);
+        ui->Counter_Limit_Min->setValue(bounds_min[moteus_id -1]);
+    }
 }
 
 void MainWindow::on_Counter_Limit_Max_valueChanged(double value)
 {
     bounds_max[moteus_id -1] = value;
-    ui->Slider_Limit_Max->setValue(value);
+    ui->Slider_Limit_Max->setValue(static_cast<int>(value));
 }
 
-void MainWindow::on_Slider_Limit_Max_valueChanged(double value)
+void MainWindow::on_Slider_Limit_Max_valueChanged(int value)
 {
-    bounds_max[moteus_id -1] = value;
-    ui->Counter_Limit_Max->setValue(value);
+    if (value != static_cast<int>(bounds_max[moteus_id -1]))
+    {
+        bounds_max[moteus_id -1] = static_cast<double>(value);
+        ui->Counter_Limit_Max->setValue(bounds_max[moteus_id -1]);
+    }
 }
 
 void MainWindow::on_Counter_KP_valueChanged(double value)
 {
     kp[moteus_id -1] = value;
-    ui->Slider_KP->setValue(value);
+    ui->Slider_KP->setValue(static_cast<int>(value));
 }
 
-void MainWindow::on_Slider_KP_valueChanged(double value)
+void MainWindow::on_Slider_KP_valueChanged(int value)
 {
-    kp[moteus_id -1] = value;
-    ui->Counter_KP->setValue(value);
+    if (value != static_cast<int>(kp[moteus_id -1]))
+    {
+        kp[moteus_id -1] = static_cast<double>(value);
+        ui->Counter_KP->setValue(kp[moteus_id -1]);
+    }
 }
 
 void MainWindow::on_Counter_KD_valueChanged(double value)
 {
     kd[moteus_id -1] = value;
-    ui->Slider_KD->setValue(value);
+    ui->Slider_KD->setValue(static_cast<int>(value));
 }
 
-void MainWindow::on_Slider_KD_valueChanged(double value)
+void MainWindow::on_Slider_KD_valueChanged(int value)
 {
-    kd[moteus_id -1] = value;
-    ui->Counter_KD->setValue(value);
+    if (value != static_cast<int>(kd[moteus_id -1]))
+    {
+        kd[moteus_id -1] = static_cast<double>(value);
+        ui->Counter_KD->setValue(kd[moteus_id -1]);
+    }
 }
 
 void MainWindow::on_Counter_KI_valueChanged(double value)
 {
     ki[moteus_id -1] = value;
-    ui->Slider_KI->setValue(value);
+    ui->Slider_KI->setValue(static_cast<int>(value));
 }
 
-void MainWindow::on_Slider_KI_valueChanged(double value)
+void MainWindow::on_Slider_KI_valueChanged(int value)
 {
-    ki[moteus_id -1] = value;
-    ui->Counter_KI->setValue(value);
+    if (value != static_cast<int>(ki[moteus_id -1]))
+    {
+        ki[moteus_id -1] = static_cast<double>(value);
+        ui->Counter_KI->setValue(ki[moteus_id -1]);
+    }
 }
+
 void MainWindow::on_Counter_Gear_Ratio_valueChanged(double value)
 {
     Gear_Ratio[moteus_id -1] = value;
-    ui->Slider_Gear_Ratio->setValue(value);
+    ui->Slider_Gear_Ratio->setValue(static_cast<int>(value));
 }
 
-void MainWindow::on_Slider_Gear_Ratio_valueChanged(double value)
+void MainWindow::on_Slider_Gear_Ratio_valueChanged(int value)
 {
-    Gear_Ratio[moteus_id -1] = value;
-    ui->Counter_Gear_Ratio->setValue(value);
+    if (value != static_cast<int>(Gear_Ratio[moteus_id -1]))
+    {
+        Gear_Ratio[moteus_id -1] = static_cast<double>(value);
+        ui->Counter_Gear_Ratio->setValue(Gear_Ratio[moteus_id -1]);
+    }
 }
+
 void MainWindow::on_Counter_Break_voltage_valueChanged(double value)
 {
     Break_Voltage[moteus_id -1] = value;
-    ui->Slider_Break_voltage->setValue(value);
+    ui->Slider_Break_voltage->setValue(static_cast<int>(value));
 }
 
-void MainWindow::on_Slider_Break_voltage_valueChanged(double value)
+void MainWindow::on_Slider_Break_voltage_valueChanged(int value)
 {
-    Break_Voltage[moteus_id -1] = value;
-    ui->Counter_Break_voltage->setValue(value);
+    if (value != static_cast<int>(Break_Voltage[moteus_id -1]))
+    {
+        Break_Voltage[moteus_id -1] = static_cast<double>(value);
+        ui->Counter_Break_voltage->setValue(Break_Voltage[moteus_id -1]);
+    }
 }
 
 void MainWindow::on_Counter_Position_Offset_valueChanged(double value)
 {
         position_offset[moteus_id -1] = value;
-        ui->Slider_Position_Offset->setValue(value);
+    ui->Slider_Position_Offset->setValue(static_cast<int>(value));
 }
 
-void MainWindow::on_Slider_Position_Offset_valueChanged(double value)
+void MainWindow::on_Slider_Position_Offset_valueChanged(int value)
 {
-    position_offset[moteus_id -1] = value;
-    ui->Counter_Position_Offset->setValue(value);
-
+    if (value != static_cast<int>(position_offset[moteus_id -1]))
+    {
+        position_offset[moteus_id -1] = static_cast<double>(value);
+        ui->Counter_Position_Offset->setValue(position_offset[moteus_id -1]);
+    }
 }
 
 void MainWindow::on_btnConf_Write_clicked()
@@ -1165,25 +1218,32 @@ void MainWindow::on_btnConf_Read_clicked()
 void MainWindow::on_Counter_Position_X_valueChanged(double value)
 {
     position_X = value;
-    ui->Slider_Position_X->setValue(value);
+    ui->Slider_Position_X->setValue(static_cast<int>(value));
 }
 
-void MainWindow::on_Slider_Position_X_valueChanged(double value)
+void MainWindow::on_Slider_Position_X_valueChanged(int value)
 {
-    position_X = value;
-    ui->Counter_Position_X->setValue(value);
+    if (value != static_cast<int>(position_X))
+    {
+        position_X = static_cast<double>(value);
+        ui->Counter_Position_X->setValue(position_X);
+    }
+
 }
 
 void MainWindow::on_Counter_Position_Y_valueChanged(double value)
 {
     position_Y = value;
-    ui->Slider_Position_Y->setValue(value);
+    ui->Slider_Position_Y->setValue(static_cast<int>(value));
 }
 
-void MainWindow::on_Slider_Position_Y_valueChanged(double value)
+void MainWindow::on_Slider_Position_Y_valueChanged(int value)
 {
-    position_Y = value;
-    ui->Counter_Position_Y->setValue(value);
+    if (value != static_cast<int>(position_Y))
+    {
+        position_Y = static_cast<double>(value);
+        ui->Counter_Position_Y->setValue(position_Y);
+    }
 }
 
 void MainWindow::on_btn_record_X_Y_clicked()
@@ -1195,3 +1255,4 @@ void MainWindow::on_btnRun_Cur_X_Y_pos_clicked()
 {
     emit sendToWorker_diagnostic_write_commands("Get Cur X,Y",0,0,0,0);
 }
+

@@ -25,8 +25,10 @@
 
 #ifndef ARDUINO
 
+#include <cmath>
 #include <limits>
-#define NaN std::numeric_limits<double>::quiet_NaN();
+#include <vector>
+#define NaN std::numeric_limits<double>::quiet_NaN()
 
 #else
 
@@ -104,6 +106,7 @@ enum Register : uint16_t {
   kQCurrent = 0x004,
   kDCurrent = 0x005,
   kAbsPosition = 0x006,
+  kPower = 0x007,
 
   kMotorTemperature = 0x00a,
   kTrajectoryComplete = 0x00b,
@@ -136,6 +139,10 @@ enum Register : uint16_t {
   kCommandPositionMaxTorque = 0x025,
   kCommandStopPosition = 0x026,
   kCommandTimeout = 0x027,
+  kCommandVelocityLimit = 0x028,
+  kCommandAccelLimit = 0x029,
+  kCommandFixedVoltageOverride = 0x02a,
+  kCommandIlimitScale = 0x02b,
 
   kPositionKp = 0x030,
   kPositionKi = 0x031,
@@ -157,6 +164,7 @@ enum Register : uint16_t {
   kCommandStayWithinKdScale = 0x044,
   kCommandStayWithinPositionMaxTorque = 0x045,
   kCommandStayWithinTimeout = 0x046,
+  kCommandStayWithinIlimitScale = 0x047,
 
   kEncoder0Position = 0x050,
   kEncoder0Velocity = 0x051,
@@ -187,6 +195,17 @@ enum Register : uint16_t {
   kMillisecondCounter = 0x070,
   kClockTrim = 0x071,
 
+  kAux1Pwm1 = 0x076,
+  kAux1Pwm2 = 0x077,
+  kAux1Pwm3 = 0x078,
+  kAux1Pwm4 = 0x079,
+  kAux1Pwm5 = 0x07a,
+  kAux2Pwm1 = 0x07b,
+  kAux2Pwm2 = 0x07c,
+  kAux2Pwm3 = 0x07d,
+  kAux2Pwm4 = 0x07e,
+  kAux2Pwm5 = 0x07f,
+
   kRegisterMapVersion = 0x102,
   kSerialNumber = 0x120,
   kSerialNumber1 = 0x120,
@@ -197,6 +216,7 @@ enum Register : uint16_t {
   kSetOutputNearest = 0x130,
   kSetOutputExact = 0x131,
   kRequireReindex = 0x132,
+  kRecapturePositionVelocity = 0x133,
 
   kDriverFault1 = 0x140,
   kDriverFault2 = 0x141,
@@ -270,6 +290,7 @@ struct Query {
     double q_current = NaN;
     double d_current = NaN;
     double abs_position = NaN;
+    double power = NaN;
     double motor_temperature = NaN;
     bool trajectory_complete = false;
     HomeState home_state = HomeState::kRelative;
@@ -303,6 +324,7 @@ struct Query {
     Resolution q_current = kIgnore;
     Resolution d_current = kIgnore;
     Resolution abs_position = kIgnore;
+    Resolution power = kIgnore;
     Resolution motor_temperature = kIgnore;
     Resolution trajectory_complete = kIgnore;
     Resolution home_state = kIgnore;
@@ -332,6 +354,7 @@ struct Query {
         format.q_current,
         format.d_current,
         format.abs_position,
+        format.power,
       };
       const uint16_t kResolutionsSize = sizeof(kResolutions) / sizeof(*kResolutions);
       WriteCombiner combiner(
@@ -399,7 +422,11 @@ struct Query {
       // below.
       if (required_registers > 512) { ::abort(); }
 
+#ifndef ARDUINO
+      std::vector<Resolution> resolutions(required_registers);
+#else
       Resolution resolutions[required_registers];
+#endif
       ::memset(&resolutions[0], 0, sizeof(Resolution) * required_registers);
 
       for (int16_t this_register = min_register_number, index = 0;
@@ -415,7 +442,7 @@ struct Query {
       }
       WriteCombiner combiner(
           frame, 0x10, min_register_number,
-          resolutions, required_registers);
+          &resolutions[0], required_registers);
       for (uint16_t i = 0; i < required_registers; i++) {
         combiner.MaybeWrite();
       }
@@ -475,6 +502,10 @@ struct Query {
         }
         case Register::kAbsPosition: {
           result.abs_position = parser->ReadPosition(res);
+          break;
+        }
+        case Register::kPower: {
+          result.power = parser->ReadPower(res);
           break;
         }
         case Register::kMotorTemperature: {
@@ -550,6 +581,7 @@ struct Query {
       { R::kQCurrent,    2, MP::kCurrent, },
       // { R::kDCurrent,  1,  MP::kCurrent, },
       { R::kAbsPosition, 1, MP::kPosition, },
+      { R::kPower,       1, MP::kPower, },
       { R::kMotorTemperature, 1, MP::kTemperature, },
       { R::kTrajectoryComplete, 2, MP::kInt, },
       // { R::kHomeState,  1, MP::kInt, },
@@ -581,6 +613,9 @@ struct Query {
       { R::kCommandPositionMaxTorque, 1, MP::kTorque, },
       { R::kCommandStopPosition, 1, MP::kPosition, },
       { R::kCommandTimeout, 1, MP::kTime, },
+      { R::kCommandVelocityLimit, 1, MP::kVelocity, },
+      { R::kCommandAccelLimit, 1, MP::kAcceleration, },
+      { R::kCommandFixedVoltageOverride, 1, MP::kVoltage },
 
       { R::kPositionKp, 5, MP::kTorque, },
       // { R::kPositionKi, 1, MP::kTorque, },
@@ -602,6 +637,7 @@ struct Query {
       // { R::kCommandStayWithinKdScale, 1, MP::kPwm, },
       { R::kCommandStayWithinPositionMaxTorque, 1, MP::kTorque, },
       { R::kCommandStayWithinTimeout, 1, MP::kTime, },
+      { R::kCommandStayWithinIlimitScale, 1, MP::kPwm },
 
       { R::kEncoder0Position, 1, MP::kPosition, },
       { R::kEncoder0Velocity, 1, MP::kVelocity, },
@@ -632,6 +668,17 @@ struct Query {
       { R::kMillisecondCounter, 2, MP::kInt, },
       // { R::kClockTrim, 1, MP::kInt, },
 
+      { R::kAux1Pwm1, 10, MP::kPwm },
+      // { R::kAux1Pwm2, 1, MP::kPwm },
+      // { R::kAux1Pwm3, 1, MP::kPwm },
+      // { R::kAux1Pwm4, 1, MP::kPwm },
+      // { R::kAux1Pwm5, 1, MP::kPwm },
+      // { R::kAux2Pwm1, 1, MP::kPwm },
+      // { R::kAux2Pwm2, 1, MP::kPwm },
+      // { R::kAux2Pwm3, 1, MP::kPwm },
+      // { R::kAux2Pwm4, 1, MP::kPwm },
+      // { R::kAux2Pwm5, 1, MP::kPwm },
+
       { R::kRegisterMapVersion, 1, MP::kInt, },
       { R::kSerialNumber1,  3, MP::kInt, },
       // { R::kSerialNumber2, 1, MP::kInt, },
@@ -640,11 +687,16 @@ struct Query {
       { R::kSetOutputNearest, 3, MP::kInt, },
       // { R::kSetOutputExact, 1, MP::kInt, },
       // { R::kRequireReindex, 1, MP::kInt, },
+      // { R::kRecapturePositionVelocity, 1, MP::kInt, }
 
       { R::kDriverFault1, 2, MP::kInt, },
       // { R::kDriverFault2, 1, MP::kInt, },
 
+#ifndef ARDUINO
     };
+#else
+    };
+#endif
     for (uint16_t i = 0;
          i < sizeof(kRegisterDefinitions) / sizeof (*kRegisterDefinitions);
          i ++) {
@@ -656,7 +708,7 @@ struct Query {
 #else
       const int16_t start_reg = pgm_read_word_near(&kRegisterDefinitions[i].register_number);
       const uint8_t block_size = pgm_read_byte_near(&kRegisterDefinitions[i].block_size);
-      const int8_t concrete_type = pgm_read_byte_near(kRegisterDefinitions[i].concrete);
+      const int8_t concrete_type = pgm_read_byte_near(&kRegisterDefinitions[i].concrete);
 #endif
       if (register_number >= start_reg &&
           register_number < (start_reg + block_size)) {
@@ -721,7 +773,11 @@ struct GenericQuery {
     // below.
     if (required_registers > 512) { ::abort(); }
 
+#ifndef ARDUINO
+    std::vector<Resolution> resolutions(required_registers);
+#else
     Resolution resolutions[required_registers];
+#endif
     ::memset(&resolutions[0], 0, sizeof(Resolution) * required_registers);
 
     for (int16_t this_register = min_register_number, index = 0;
@@ -737,7 +793,7 @@ struct GenericQuery {
     }
     WriteCombiner combiner(
         frame, 0x10, min_register_number,
-          resolutions, required_registers);
+          &resolutions[0], required_registers);
     for (uint16_t i = 0; i < required_registers; i++) {
       combiner.MaybeWrite();
     }
@@ -790,6 +846,7 @@ struct PositionMode {
     double velocity_limit = NaN;
     double accel_limit = NaN;
     double fixed_voltage_override = NaN;
+    double ilimit_scale = 1.0;
   };
 
   struct Format {
@@ -804,6 +861,7 @@ struct PositionMode {
     Resolution velocity_limit = kIgnore;
     Resolution accel_limit = kIgnore;
     Resolution fixed_voltage_override = kIgnore;
+    Resolution ilimit_scale = kIgnore;
   };
 
   static uint8_t Make(WriteCanData* frame,
@@ -827,6 +885,7 @@ struct PositionMode {
       format.velocity_limit,
       format.accel_limit,
       format.fixed_voltage_override,
+      format.ilimit_scale,
     };
     WriteCombiner combiner(
         frame, 0x00,
@@ -867,6 +926,9 @@ struct PositionMode {
     if (combiner.MaybeWrite()) {
       frame->WriteVoltage(command.fixed_voltage_override,
                           format.fixed_voltage_override);
+    }
+    if (combiner.MaybeWrite()) {
+      frame->WritePwm(command.ilimit_scale, format.ilimit_scale);
     }
     return 0;
   }
@@ -984,6 +1046,7 @@ struct StayWithinMode {
     double kd_scale = 1.0;
     double maximum_torque = 0.0;
     double watchdog_timeout = NaN;
+    double ilimit_scale = 1.0;
   };
 
   struct Format {
@@ -994,6 +1057,7 @@ struct StayWithinMode {
     Resolution kd_scale = kIgnore;
     Resolution maximum_torque = kIgnore;
     Resolution watchdog_timeout = kIgnore;
+    Resolution ilimit_scale = kIgnore;
   };
 
   static uint8_t Make(WriteCanData* frame,
@@ -1011,6 +1075,7 @@ struct StayWithinMode {
       format.kd_scale,
       format.maximum_torque,
       format.watchdog_timeout,
+      format.ilimit_scale,
     };
 
     WriteCombiner combiner(
@@ -1040,6 +1105,9 @@ struct StayWithinMode {
     }
     if (combiner.MaybeWrite()) {
       frame->WriteTime(command.watchdog_timeout, format.watchdog_timeout);
+    }
+    if (combiner.MaybeWrite()) {
+      frame->WritePwm(command.ilimit_scale, format.ilimit_scale);
     }
     return 0;
   }
@@ -1108,6 +1176,38 @@ struct GpioWrite {
   }
 };
 
+struct GpioRead {
+  struct Command {
+  };
+
+  struct Format {
+    Resolution aux1 = kInt8;
+    Resolution aux2 = kInt8;
+  };
+
+  static uint8_t Make(WriteCanData* frame,
+                      const Command&,
+                      const Format& format) {
+    uint8_t reply_size = 0;
+
+    const Resolution kResolutions[] = {
+      format.aux1,
+      format.aux2,
+    };
+    const uint16_t kResolutionsSize = sizeof(kResolutions) / sizeof(*kResolutions);
+    WriteCombiner combiner(
+        frame, 0x10, Register::kAux1GpioStatus,
+        kResolutions, kResolutionsSize);
+    for (uint16_t i = 0; i < kResolutionsSize; i++) {
+      combiner.MaybeWrite();
+    }
+
+    reply_size += combiner.reply_size();
+
+    return reply_size;
+  }
+};
+
 struct OutputNearest {
   struct Command {
     double position = 0.0;
@@ -1145,6 +1245,18 @@ struct RequireReindex {
   static uint8_t Make(WriteCanData* frame, const Command&, const Format&) {
     frame->Write<int8_t>(Multiplex::kWriteInt8 | 0x01);
     frame->WriteVaruint(Register::kRequireReindex);
+    frame->Write<int8_t>(1);
+    return 0;
+  }
+};
+
+struct RecapturePositionVelocity {
+  struct Command {};
+  struct Format {};
+
+  static uint8_t Make(WriteCanData* frame, const Command&, const Format&) {
+    frame->Write<int8_t>(Multiplex::kWriteInt8 | 0x01);
+    frame->WriteVaruint(Register::kRecapturePositionVelocity);
     frame->Write<int8_t>(1);
     return 0;
   }
@@ -1228,6 +1340,90 @@ struct ClockTrim {
     frame->Write<int8_t>(Multiplex::kWriteInt32 | 0x01);
     frame->WriteVaruint(Register::kClockTrim);
     frame->Write<int32_t>(command.trim);
+    return 0;
+  }
+};
+
+struct AuxPwmWrite {
+  struct Command {
+    float aux1_pwm1 = NaN;
+    float aux1_pwm2 = NaN;
+    float aux1_pwm3 = NaN;
+    float aux1_pwm4 = NaN;
+    float aux1_pwm5 = NaN;
+    float aux2_pwm1 = NaN;
+    float aux2_pwm2 = NaN;
+    float aux2_pwm3 = NaN;
+    float aux2_pwm4 = NaN;
+    float aux2_pwm5 = NaN;
+  };
+
+  struct Format {
+    Resolution aux1_pwm1 = kInt16;
+    Resolution aux1_pwm2 = kInt16;
+    Resolution aux1_pwm3 = kInt16;
+    Resolution aux1_pwm4 = kInt16;
+    Resolution aux1_pwm5 = kInt16;
+    Resolution aux2_pwm1 = kInt16;
+    Resolution aux2_pwm2 = kInt16;
+    Resolution aux2_pwm3 = kInt16;
+    Resolution aux2_pwm4 = kInt16;
+    Resolution aux2_pwm5 = kInt16;
+  };
+
+  static uint8_t Make(WriteCanData* frame,
+                      const Command& command,
+                      const Format& format) {
+    const Resolution kResolutions[] = {
+      std::isfinite(command.aux1_pwm1) ? format.aux1_pwm1 : kIgnore,
+      std::isfinite(command.aux1_pwm2) ? format.aux1_pwm2 : kIgnore,
+      std::isfinite(command.aux1_pwm3) ? format.aux1_pwm3 : kIgnore,
+      std::isfinite(command.aux1_pwm4) ? format.aux1_pwm4 : kIgnore,
+      std::isfinite(command.aux1_pwm5) ? format.aux1_pwm5 : kIgnore,
+      std::isfinite(command.aux2_pwm1) ? format.aux2_pwm1 : kIgnore,
+      std::isfinite(command.aux2_pwm2) ? format.aux2_pwm2 : kIgnore,
+      std::isfinite(command.aux2_pwm3) ? format.aux2_pwm3 : kIgnore,
+      std::isfinite(command.aux2_pwm4) ? format.aux2_pwm4 : kIgnore,
+      std::isfinite(command.aux2_pwm5) ? format.aux2_pwm5 : kIgnore,
+    };
+
+    WriteCombiner combiner(
+        frame, 0x00,
+        Register::kAux1Pwm1,
+        kResolutions,
+        sizeof(kResolutions) / sizeof(*kResolutions));
+
+    if (combiner.MaybeWrite()) {
+      frame->WritePwm(command.aux1_pwm1, format.aux1_pwm1);
+    }
+    if (combiner.MaybeWrite()) {
+      frame->WritePwm(command.aux1_pwm2, format.aux1_pwm2);
+    }
+    if (combiner.MaybeWrite()) {
+      frame->WritePwm(command.aux1_pwm3, format.aux1_pwm3);
+    }
+    if (combiner.MaybeWrite()) {
+      frame->WritePwm(command.aux1_pwm4, format.aux1_pwm4);
+    }
+    if (combiner.MaybeWrite()) {
+      frame->WritePwm(command.aux1_pwm5, format.aux1_pwm5);
+    }
+    if (combiner.MaybeWrite()) {
+      frame->WritePwm(command.aux2_pwm1, format.aux2_pwm1);
+    }
+    if (combiner.MaybeWrite()) {
+      frame->WritePwm(command.aux2_pwm2, format.aux2_pwm2);
+    }
+    if (combiner.MaybeWrite()) {
+      frame->WritePwm(command.aux2_pwm3, format.aux2_pwm3);
+    }
+    if (combiner.MaybeWrite()) {
+      frame->WritePwm(command.aux2_pwm4, format.aux2_pwm4);
+    }
+    if (combiner.MaybeWrite()) {
+      frame->WritePwm(command.aux2_pwm5, format.aux2_pwm5);
+    }
+
     return 0;
   }
 };
