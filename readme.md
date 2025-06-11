@@ -2,7 +2,7 @@ Designed for use with an MJBOTS moteus controller using an fdcanusb.
 
 Caution: This program allows a sequence of user programmed motor movements to be run in cycles. It is the users responsibility to insure safety so no damage can occur. Remove all obstructions, and run at 1 cycle at first to insure safety.
 
-![App pic](https://github.com/user-attachments/assets/16af86ad-40f6-4d38-87a7-80928928a2f8)
+![App pic](https://github.com/user-attachments/assets/33a83830-d853-44cb-ab23-7aa13e992959)
 
 https://github.com/georgevargas/GUI-APP-for-Moteus-Motor-Control/assets/10259360/dd57bec8-9009-4d42-a9e1-9305ce02af5a
 
