@@ -2,7 +2,8 @@
 #define MAINWINDOW_H
 #pragma once
 
-//#define CPP23
+#include <QObject>
+#include <QMetaType>
 
 #include <QMainWindow>
 #include <QThread>
@@ -18,6 +19,51 @@
 #include <QTimer>
 #include "qcustomplot.h"
 
+enum class Worker_Cmd : int {
+    Record_XY,
+    Go_To_Rest_Position,
+    Send_Start,
+    Go_To_Position,
+    Run_Forever,
+    Update_Dynamic,
+    Record_Position,
+    Run_Recorded,
+    Step_Recorded,
+    Open_File,
+    Save_File,
+    Update_Velocity,
+    Set_Dynamic,
+    Clear_Dynamic,
+    Check_Device,
+    Read_Status,
+    Send_Stop,
+    Clear_Recorded,
+    set_motor_limits,
+    set_rotor_to_output_ratio,
+    set_break_voltage,
+    set_PID,
+    set_Position_Offset,
+    conf_write,
+    Get_Cur_XY,
+    Set_Output_Nearest,
+    get_motor_limits,
+    get_PID,
+    get_rotor_to_output_ratio,
+    get_break_voltage,
+    get_Position_Offset
+};
+enum class Worker_Stat : int {
+    Check_Device,
+    Get_Cur_XY,
+    set_motor_limits,
+    get_PID,
+    get_gear_ratio,
+    get_Position_Offset,
+    get_Break_Voltage,
+    get_velocity
+};
+Q_DECLARE_METATYPE(Worker_Cmd);
+Q_DECLARE_METATYPE(Worker_Stat);
 QT_BEGIN_NAMESPACE
 class QPrinter;
 QT_END_NAMESPACE
@@ -91,6 +137,7 @@ private:
     double position_X = 0;
     double position_Y = 0;
     void setup();
+    void registerMyTypes();
     void Init_Motor();
 
 public:
@@ -100,15 +147,15 @@ public:
 
 signals:
     void sendSetup();
-    void sendToWorker_position_commands(QString msg, int Motor_id,double accel_limit,double position,double velocity_limit,double max_torque,double feedforward_torque,double kp_scale,
+    void sendToWorker_position_commands(Worker_Cmd msg, int Motor_id,double accel_limit,double position,double velocity_limit,double max_torque,double feedforward_torque,double kp_scale,
          double kd_scale,double bounds_min,double bounds_max,double Cycle,double Delay,double position_X,double position_Y);
-    void sendToWorker_file_commands(QString msg, QString file_name);
-    void sendToWorker_motor_commands(QString msg, int Motor_id);
-    void sendToWorker_diagnostic_write_commands(QString msg, int Motor_id, double Value1, double Value2, double Value3);
-    void sendToWorker_diagnostic_read_commands(QString msg, int Motor_id);
+    void sendToWorker_file_commands(Worker_Cmd msg, QString file_name);
+    void sendToWorker_motor_commands(Worker_Cmd msg, int Motor_id);
+    void sendToWorker_diagnostic_write_commands(Worker_Cmd msg, int Motor_id, double Value1, double Value2, double Value3);
+    void sendToWorker_diagnostic_read_commands(Worker_Cmd msg, int Motor_id);
 
 public slots:
-    void receiveMsg(QString  msg, int Motor_id,double Value1, double Value2, double Value3,double value4,double value5,double Value6,double Value7);
+    void receiveMsg(Worker_Stat  msg, int Motor_id,double Value1, double Value2, double Value3,double value4,double value5,double Value6,double Value7);
     void getFromWorker(QString);
     void updateDiagram();
 

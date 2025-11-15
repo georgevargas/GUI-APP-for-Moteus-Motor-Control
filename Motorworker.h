@@ -128,16 +128,16 @@ public:
     ~Motorworker();
 
 signals:
-    void sendMsg(QString  msg,int Motor_id,double value1,double value2,double value3,double value4,double value5,double value6,double value7);
+    void sendMsg(Worker_Stat  msg,int Motor_id,double value1,double value2,double value3,double value4,double value5,double value6,double value7);
     void sendToMain(QString);
 
 public slots:
-    void getFromMain_position_commands(QString msg, int Motor_id,double start_position,double position,double velocity_limit,double max_torque,double feedforward_torque,double kp_scale,
+    void getFromMain_position_commands(Worker_Cmd msg, int Motor_id,double start_position,double position,double velocity_limit,double max_torque,double feedforward_torque,double kp_scale,
                      double kd_scale,double bounds_min,double bounds_max,double Cycle,double Delay,double position_X,double position_Y);
-    void getFromMain_file_commands(QString msg, QString file_name);
-    void getFromMain_motor_commands(QString msg, int Motor_id);
-    void getFromMain_diagnostic_write_commands(QString msg, int Motor_id, double Value1, double Value2, double Value3);
-    void getFromMain_diagnostic_read_commands(QString msg, int Motor_id);
+    void getFromMain_file_commands(Worker_Cmd msg, QString file_name);
+    void getFromMain_motor_commands(Worker_Cmd msg, int Motor_id);
+    void getFromMain_diagnostic_write_commands(Worker_Cmd msg, int Motor_id, double Value1, double Value2, double Value3);
+    void getFromMain_diagnostic_read_commands(Worker_Cmd msg, int Motor_id);
     void receiveSetup();
     void run_cycles();
 

@@ -13,9 +13,7 @@
 #include <numbers> // Include the numbers header
 
 
-#ifdef CPP23
 #include <print>
-#endif
 
 #include "moteus.h"
 
@@ -469,18 +467,7 @@ bool Motorworker::Collision_Check( int Motor_id, double position)
     if ( y < min_Y )
     {
        out.str("");
-#ifdef CPP23
        std::println(out,"Y {:.3f} is less than minimum Y {:.3f} ", y,min_Y);
-#else
-       try
-       {
-           out << std::format("Y {:.3f} is less than minimum Y {:.3f} ", y,min_Y) << endl;
-       }
-       catch(std::format_error& error)
-       {
-           cout  << error.what();
-       }
-#endif
 
        emit sendToMain(QString::fromStdString(out.str()));
        Rec_run_Enable = false;
@@ -490,18 +477,7 @@ bool Motorworker::Collision_Check( int Motor_id, double position)
     else if ( y < 0 && x >= 0 && x < min_Pos_X )
     {
        out.str("");
-#ifdef CPP23
        std::println(out,"X {:.3f} is less than minimum positive X below y 0 {:.3f} ", x, min_Pos_X);
-#else
-        try
-        {
-            out << std::format("X {:.3f} is less than minimum positive X below y 0 {:.3f} ", x, min_Pos_X) << endl;
-        }
-        catch(std::format_error& error)
-        {
-            cout  << error.what();
-        }
-#endif
 
        emit sendToMain(QString::fromStdString(out.str()));
        Rec_run_Enable = false;
@@ -511,18 +487,7 @@ bool Motorworker::Collision_Check( int Motor_id, double position)
     else if ( y < 0 && x < 0 && x > min_Neg_X )
     {
        out.str("");
-#ifdef CPP23
        std::println(out,"X {:.3f} is less than minimum negative X below y 0 {:.3f} ", x,min_Neg_X);
-#else
-        try
-        {
-            out << std::format("X {:.3f} is less than minimum negative X below y 0 {:.3f} ", x,min_Neg_X) << endl;
-        }
-        catch(std::format_error& error)
-        {
-            cout  << error.what();
-        }
-#endif
 
        emit sendToMain(QString::fromStdString(out.str()));
        Rec_run_Enable = false;
@@ -691,7 +656,6 @@ void Motorworker::run_cycles()
                 out.str("");
                 if (Dynamic && Dynamic_Motor_id == list_Motor_id[current_list_index])
                 {
-#ifdef CPP23
                     std::print(out,"Position to: {:.3f}", list_Position[current_list_index]);
                     std::print(out,", Velocity: {:.3f}", l_velocity_limit);
                     std::print(out,", Accel: {:.3f}", l_accel_limit);
@@ -700,49 +664,15 @@ void Motorworker::run_cycles()
                     std::print(out,", Feedforward torque: {:.3f}", l_feedforward_torque);
                     std::print(out,", KP scale: {:.3f}", l_kp_scale);
                     std::println(out,", KD scale: {:.3f}", l_kd_scale);
-#else
-                    try
-                    {
-                        out << std::format("Position to: {:.3f}", list_Position[current_list_index])
-                            << std::format(", Velocity: {:.3f}", l_velocity_limit)
-                            << std::format(", Accel: {:.3f}", l_accel_limit)
-                            << std::format(", Motor: {}", list_Motor_id[current_list_index])
-                            << std::format(", Max torque: {:.3f}", l_max_torque)
-                            << std::format(", Feedforward torque: {:.3f}", l_feedforward_torque)
-                            << std::format(", KP scale: {:.3f}", l_kp_scale)
-                            << std::format(", KD scale: {:.3f}", l_kd_scale)
-                            << endl;
-                    }
-                    catch(std::format_error& error)
-                    {
-                        cout  << error.what();
-                    }
-#endif
 
                  }
                 else
                 {
-#ifdef CPP23
                     std::print(out,"Position to: {:.3f}", list_Position[current_list_index]);
                     std::print(out,", Velocity: {:.3f}", list_velocity_limit[current_list_index]);
                     std::print(out,", Accel: {:.3f}", list_accel_limit[current_list_index]);
                     std::print(out,", Motor: {}", list_Motor_id[current_list_index]);
                     std::println(out,", Delay: {}", list_Delay[current_list_index]);
-#else
-                    try
-                    {
-                        out << std::format("Position to: {:.3f}", list_Position[current_list_index])
-                            << std::format(", Velocity: {:.3f}", list_velocity_limit[current_list_index])
-                            << std::format(", Accel: {:.3f}", list_accel_limit[current_list_index])
-                            << std::format(", Motor: {}", list_Motor_id[current_list_index])
-                            << std::format(", Delay: {}", list_Delay[current_list_index])
-                            << endl;
-                    }
-                    catch(std::format_error& error)
-                    {
-                        cout  << error.what();
-                    }
-#endif
                 }
                 emit sendToMain(QString::fromStdString(out.str()));
 
@@ -791,62 +721,349 @@ void Motorworker::receiveSetup()
     out << " Run Cycles Stopped" << endl;
     emit sendToMain(QString::fromStdString(out.str()));
 }
-void Motorworker::getFromMain_file_commands(QString msg, QString file_name) // slot implementation
+void Motorworker::getFromMain_file_commands(Worker_Cmd msg, QString file_name) // slot implementation
 {
     // file commands
-    if (msg == "Save File")
+    switch (msg)
     {
-        Rec_run_Enable = false;
-        Position_wait = false;
-
-        std::ostringstream out;
-        string fileName = file_name.toStdString();
-        ofstream db;
-        db.open(fileName);
-        if( db.is_open() )
+        case Worker_Cmd::Save_File:
         {
-            for( current_list_index=0; current_list_index < (int)list_Position.size(); current_list_index++ )
+            Rec_run_Enable = false;
+            Position_wait = false;
+
+            std::ostringstream out;
+            string fileName = file_name.toStdString();
+            ofstream db;
+            db.open(fileName);
+            if( db.is_open() )
             {
-                db << current_list_index << endl;
-                db << "Position: " << list_Position[current_list_index] << endl
-                     << "Motor: " << list_Motor_id[current_list_index] << endl
-                     << "Delay: " << list_Delay[current_list_index] << endl
-                     << "Velocity_limit: " << list_velocity_limit[current_list_index] << endl
-                     << "Accel_limit: " << list_accel_limit[current_list_index] << endl
-                     << "Max_torque: " << list_Max_torque[current_list_index] << endl
-                     << "Feedforward_torque: " << list_Feedforward_torque[current_list_index] << endl
-                     << "Kp_scale: " << list_Kp_scale[current_list_index]  << endl
-                     << "Kd_scale: " << list_Kd_scale[current_list_index] << endl ;
+                for( current_list_index=0; current_list_index < (int)list_Position.size(); current_list_index++ )
+                {
+                    db << current_list_index << endl;
+                    db << "Position: " << list_Position[current_list_index] << endl
+                         << "Motor: " << list_Motor_id[current_list_index] << endl
+                         << "Delay: " << list_Delay[current_list_index] << endl
+                         << "Velocity_limit: " << list_velocity_limit[current_list_index] << endl
+                         << "Accel_limit: " << list_accel_limit[current_list_index] << endl
+                         << "Max_torque: " << list_Max_torque[current_list_index] << endl
+                         << "Feedforward_torque: " << list_Feedforward_torque[current_list_index] << endl
+                         << "Kp_scale: " << list_Kp_scale[current_list_index]  << endl
+                         << "Kd_scale: " << list_Kd_scale[current_list_index] << endl ;
+                }
             }
+            else
+            {
+                out.str("");
+                out << "Cannot open file for writing." << endl;
+                emit sendToMain(QString::fromStdString(out.str()));
+            }
+
+            db.close();
+            current_list_index = 0;
+            break;
         }
-        else
+        case Worker_Cmd::Open_File:
         {
-            out.str("");
-            out << "Cannot open file for writing." << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
+            Rec_run_Enable = false;
+            Step_Mode = false;
+            Position_wait = false;
+
+            std::ostringstream out;
+
+            QString fileName = file_name;
+            QString line;
+            int val_int;
+            double val_double;
+            string val_string;
+            std::istringstream iss;
+            QFile file(fileName);
+            if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+            {
+
+                list_Position.clear();
+                list_Motor_id.clear();
+                list_Delay.clear();
+                list_velocity_limit.clear();
+                list_Max_torque.clear();
+                list_Feedforward_torque.clear();
+                list_Kp_scale.clear();
+                list_Kd_scale.clear();
+                list_accel_limit.clear();
+                while  (!file.atEnd())
+                {
+                    line = file.readLine(); // read in sequence number
+                    iss.str(line.toStdString());
+                    iss >> val_int;
+                    if (iss.fail()) // check if not a number
+                    {
+                        // something wrong happened
+                        iss.clear();
+                        out.str("");
+                        out << "sequence number in recorded file is not a number. Check for extra eol at file end" << endl;
+                        emit sendToMain(QString::fromStdString(out.str()));
+                        break;
+                    }
+
+                    line = file.readLine();
+                    iss.str(line.toStdString());
+                    iss >> val_string;
+                    iss >> val_double;
+                    list_Position.push_back(val_double);
+
+                    line = file.readLine();
+                    iss.str(line.toStdString());
+                    iss >> val_string;
+                    iss >> val_int;
+                    list_Motor_id.push_back(val_int);
+
+                    line = file.readLine();
+                    iss.str(line.toStdString());
+                    iss >> val_string;
+                    iss >> val_double;
+                    list_Delay.push_back(val_double);
+
+                    line = file.readLine();
+                    iss.str(line.toStdString());
+                    iss >> val_string;
+                    iss >> val_double;
+                    list_velocity_limit.push_back(val_double);
+
+                    line = file.readLine();
+                    iss.str(line.toStdString());
+                    iss >> val_string;
+                    iss >> val_double;
+                    list_accel_limit.push_back(val_double);
+
+                    line = file.readLine();
+                    iss.str(line.toStdString());
+                    iss >> val_string;
+                    iss >> val_double;
+                    list_Max_torque.push_back(val_double);
+
+                    line = file.readLine();
+                    iss.str(line.toStdString());
+                    iss >> val_string;
+                    iss >> val_double;
+                    list_Feedforward_torque.push_back(val_double);
+
+                    line = file.readLine();
+                    iss.str(line.toStdString());
+                    iss >> val_string;
+                    iss >> val_double;
+                    list_Kp_scale.push_back(val_double);
+
+                    line = file.readLine();
+                    iss.str(line.toStdString());
+                    iss >> val_string;
+                    iss >> val_double;
+                    list_Kd_scale.push_back(val_double);
+
+                }
+            }
+            else
+            {
+                out.str("");
+                out << "Cannot open file for reading.\n" << endl;
+                emit sendToMain(QString::fromStdString(out.str()));
+            }
+
+            file.close();
+            current_list_index = 0;
+            break;
         }
-
-        db.close();
-        current_list_index = 0;
-
+        default:
+            break;
     }
-    else if (msg == "Open File")
+}
+
+void Motorworker::getFromMain_motor_commands(Worker_Cmd msg, int Motor_id) // slot implementation
+{
+    // status stuff
+
+    switch (msg)
     {
-        Rec_run_Enable = false;
-        Step_Mode = false;
-        Position_wait = false;
-
-        std::ostringstream out;
-
-        QString fileName = file_name;
-        QString line;
-        int val_int;
-        double val_double;
-        string val_string;
-        std::istringstream iss;
-        QFile file(fileName);
-        if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+        case Worker_Cmd::Update_Velocity:
         {
+
+            // define a state object
+            State curr_state;
+            std::ostringstream out;
+            out.str("");
+
+            // reset the state
+            curr_state.Reset();
+
+            //read current parameters
+            curr_state.EN_Position();
+            curr_state.EN_Velocity();
+            curr_state.EN_Torque();
+            curr_state.EN_Temp();
+            curr_state.EN_QCurr();
+
+            ReadState(Motor_id, curr_state);
+            emit sendMsg(Worker_Stat::get_velocity,Motor_id,curr_state.position,curr_state.velocity,curr_state.torque,curr_state.temperature,curr_state.q_curr,0,0);
+            break;
+        }
+        case Worker_Cmd::Read_Status:
+        {
+            // define a state object
+            State curr_state;
+            std::ostringstream out;
+            out.str("");
+
+            // reset the state
+            curr_state.Reset();
+
+            // enable read register flags
+            curr_state.EN_Position();
+            curr_state.EN_Velocity();
+            curr_state.EN_Torque();
+            curr_state.EN_QCurr();
+            curr_state.EN_DCurr();
+            curr_state.EN_Voltage();
+            curr_state.EN_Temp();
+            curr_state.EN_Fault();
+            curr_state.EN_Mode();
+            curr_state.EN_TrajectoryComplete();
+
+            // read registers
+            ReadState(Motor_id, curr_state);
+
+            // print everyting
+            std::println(out,"Position:\t\t{:.6f}", curr_state.position);
+            std::println(out,"Velocity:\t\t{:.6f}", curr_state.velocity);
+            std::println(out,"Torque:\t\t{:.6f}", curr_state.torque);
+            std::println(out,"Q Current:\t\t{:.6f}", curr_state.q_curr);
+            std::println(out,"D Current:\t\t{:.6f}", curr_state.d_curr);
+            std::println(out,"Voltage:\t\t{:.2f}", curr_state.voltage);
+            std::println(out,"Temperature:\t{:.2f}", curr_state.temperature);
+            out << "Trajectory Complete:\t" << std::boolalpha << curr_state.TrajectoryComplete << endl;
+
+            unsigned int fault = static_cast<unsigned int>(curr_state.fault);
+            switch (fault)
+            {
+                case 0:
+                    out << "Fault:\t\t" << curr_state.fault << " = no fault" << endl;
+                    break;
+
+                case 32:
+                    out << "Fault:\t\t" << curr_state.fault << " = calibration fault" << endl;
+                    break;
+                case 33:
+                    out << "Fault:\t\t" << curr_state.fault << " = motor driver fault" << endl;
+                    break;
+                case 34:
+                    out << "Fault:\t\t" << curr_state.fault << " =  over voltage fault" << endl;
+                    break;
+                case 35:
+                    out << "Fault:\t\t" << curr_state.fault << " =  encoder fault" << endl;
+                    break;
+                case 36:
+                    out << "Fault:\t\t" << curr_state.fault << " = motor not configured fault" << endl;
+                    break;
+                case 37:
+                    out << "Fault:\t\t" << curr_state.fault << " = pwm cycle overrun fault" << endl;
+                    break;
+                case 38:
+                    out << "Fault:\t\t" << curr_state.fault << " = over temperature fault" << endl;
+                    break;
+                case 39:
+                    out << "Fault:\t\t" << curr_state.fault << " = outside limit fault" << endl;
+                    break;
+                default:
+                    out << "Fault:\t\t" << curr_state.fault << " = unknown fault" << endl;
+            }
+            unsigned int mode = static_cast<unsigned int>(curr_state.mode);
+            switch (mode)
+            {
+                case 0:
+                    out << "Mode:\t\t" << curr_state.mode << " = Stopped" << endl;
+                    break;
+                case 1:
+                    out << "Mode:\t\t" << curr_state.mode << " = Fault" << endl;
+                    break;
+                case 2:
+                    out << "Mode:\t\t" << curr_state.mode << " = Enabling" << endl;
+                    break;
+                case 3:
+                    out << "Mode:\t\t" << curr_state.mode << " = Calibrating" << endl;
+                    break;
+                case 4:
+                    out << "Mode:\t\t" << curr_state.mode << " = CalibrationComplete" << endl;
+                    break;
+                case 5:
+                    out << "Mode:\t\t" << curr_state.mode << " = Pwm" << endl;
+                    break;
+                case 6:
+                    out << "Mode:\t\t" << curr_state.mode << " = Voltage" << endl;
+                    break;
+                case 7:
+                    out << "Mode:\t\t" << curr_state.mode << " = VoltageFoc" << endl;
+                    break;
+                case 8:
+                    out << "Mode:\t\t" << curr_state.mode << " = Voltage Dq" << endl;
+                    break;
+                case 9:
+                    out << "Mode:\t\t" << curr_state.mode << " = Current" << endl;
+                    break;
+                case 10:
+                    out << "Mode:\t\t" << curr_state.mode << " = Position" << endl;
+                    break;
+                case 11:
+                    out << "Mode:\t\t" << curr_state.mode << " = Position Timeout" << endl;
+                    break;
+                case 12:
+                    out << "Mode:\t\t" << curr_state.mode << " = Zero Velocity" << endl;
+                    break;
+                case 13:
+                    out << "Mode:\t\t" << curr_state.mode << " = Stay Within Bounds" << endl;
+                    break;
+                case 14:
+                    out << "Mode:\t\t" << curr_state.mode << " = Measure Inductance" << endl;
+                    break;
+
+                default:
+                    out << "Mode:\t\t" << curr_state.mode << " = unknown mode" << endl;
+            }
+
+            emit sendToMain(QString::fromStdString(out.str()));
+            break;
+        }
+        case Worker_Cmd::Send_Stop:
+        {
+            Rec_run_Enable = false;
+            Position_wait = false;
+
+            moteus::Controller::Options options;
+            options.id = Motor_id;
+            options.default_query = false;
+            moteus::Controller controller(options);
+
+            // Command a stop to the controller in order to clear any faults.
+            controller.SetStop();
+
+            // define a state object
+            State curr_state;
+            std::ostringstream out;
+            out.str("");
+
+            QThread::msleep(1500);  //Blocking delay 1500ms
+
+            // reset the state
+            curr_state.Reset();
+
+            //read current position
+            curr_state.EN_Position();
+            ReadState(Motor_id, curr_state);
+            out << "Motor: " << Motor_id << " Stopped position:\t" << curr_state.position << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+            break;
+        }
+        case Worker_Cmd::Clear_Recorded:
+        {
+            Rec_run_Enable = false;
+            Step_Mode = false;
+            Position_wait = false;
 
             list_Position.clear();
             list_Motor_id.clear();
@@ -857,985 +1074,654 @@ void Motorworker::getFromMain_file_commands(QString msg, QString file_name) // s
             list_Kp_scale.clear();
             list_Kd_scale.clear();
             list_accel_limit.clear();
-            while  (!file.atEnd())
-            {
-                line = file.readLine(); // read in sequence number
-                iss.str(line.toStdString());
-                iss >> val_int;
-                if (iss.fail()) // check if not a number
-                {
-                    // something wrong happened
-                    iss.clear();
-                    out.str("");
-                    out << "sequence number in recorded file is not a number. Check for extra eol at file end" << endl;
-                    emit sendToMain(QString::fromStdString(out.str()));
-                    break;
-                }
-
-                line = file.readLine();
-                iss.str(line.toStdString());
-                iss >> val_string;
-                iss >> val_double;
-                list_Position.push_back(val_double);
-
-                line = file.readLine();
-                iss.str(line.toStdString());
-                iss >> val_string;
-                iss >> val_int;
-                list_Motor_id.push_back(val_int);
-
-                line = file.readLine();
-                iss.str(line.toStdString());
-                iss >> val_string;
-                iss >> val_double;
-                list_Delay.push_back(val_double);
-
-                line = file.readLine();
-                iss.str(line.toStdString());
-                iss >> val_string;
-                iss >> val_double;
-                list_velocity_limit.push_back(val_double);
-
-                line = file.readLine();
-                iss.str(line.toStdString());
-                iss >> val_string;
-                iss >> val_double;
-                list_accel_limit.push_back(val_double);
-
-                line = file.readLine();
-                iss.str(line.toStdString());
-                iss >> val_string;
-                iss >> val_double;
-                list_Max_torque.push_back(val_double);
-
-                line = file.readLine();
-                iss.str(line.toStdString());
-                iss >> val_string;
-                iss >> val_double;
-                list_Feedforward_torque.push_back(val_double);
-
-                line = file.readLine();
-                iss.str(line.toStdString());
-                iss >> val_string;
-                iss >> val_double;
-                list_Kp_scale.push_back(val_double);
-
-                line = file.readLine();
-                iss.str(line.toStdString());
-                iss >> val_string;
-                iss >> val_double;
-                list_Kd_scale.push_back(val_double);
-
-            }
+            current_list_index = 0;
+            break;
         }
-        else
+        case Worker_Cmd::Set_Dynamic:
         {
-            out.str("");
-            out << "Cannot open file for reading.\n" << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
+            Dynamic = true;
+            Dynamic_Motor_id = Motor_id;
+            break;
         }
+        case Worker_Cmd::Clear_Dynamic:
+        {
+            Dynamic = false;
+            break;
+        }
+        case Worker_Cmd::Check_Device:
+        {
+            std::ostringstream out;
+            out.str("");
 
-        file.close();
-        current_list_index = 0;
+            bool device_evable = false;
+             try {
+                moteus::Controller::ProcessTransportArgs({});
+                moteus::Controller::Options options;
+                options.id = Motor_id;
+                options.default_query = false;
+                moteus::Controller controller(options);
 
-    }
-    else
-    {
-        emit sendToMain(msg);
+                controller.DiagnosticWrite("tel stop\n");
+                controller.DiagnosticFlush();
+                device_evable = true;
+
+             } catch (std::exception& e) {
+                cout << "Could not open moteus transport: " << e.what() << "\n";
+                device_evable = false;
+             }
+
+            emit sendMsg(Worker_Stat::Check_Device,device_evable,0,0,0,0,0,0,0);
+            break;
+        }
+        default:
+            break;
     }
 }
-
-void Motorworker::getFromMain_motor_commands(QString msg, int Motor_id) // slot implementation
+void Motorworker::Motorworker::getFromMain_diagnostic_write_commands(Worker_Cmd msg, int Motor_id, double Value1, double Value2, double Value3)
 {
-
-    // status stuff
-    if (msg == "Update Position")
+    switch (msg)
     {
-        double position_1 = 1.123;
-        double position_2 = 2.123;
-        double position_3 = 3.123;
-
-        // define a state object
-        State curr_state;
-        std::ostringstream out;
-        out.str("");
-
-        // reset the state
-        curr_state.Reset();
-        curr_state.EN_Position();
-
-        //read current velocity
-        ReadState(1, curr_state);
-        position_1 = curr_state.position;
-
-        ReadState(2, curr_state);
-        position_2 = curr_state.position;
-
-        ReadState(3, curr_state);
-        position_3 = curr_state.position;
-
-        // reset the state
-        curr_state.Reset();
-
-        //read current velocity
-        curr_state.EN_Velocity();
-        curr_state.EN_Torque();
-        curr_state.EN_Temp();
-        curr_state.EN_QCurr();
-
-        ReadState(Motor_id, curr_state);
-        emit sendMsg("get Position",Motor_id,position_1,curr_state.velocity,curr_state.torque,curr_state.temperature,curr_state.q_curr,position_2,position_3);
-    }
-    else if (msg == "Update Velocity")
-    {
-
-        // define a state object
-        State curr_state;
-        std::ostringstream out;
-        out.str("");
-
-        // reset the state
-        curr_state.Reset();
-
-        //read current parameters
-        curr_state.EN_Position();
-        curr_state.EN_Velocity();
-        curr_state.EN_Torque();
-        curr_state.EN_Temp();
-        curr_state.EN_QCurr();
-
-        ReadState(Motor_id, curr_state);
-        emit sendMsg("get velocity",Motor_id,curr_state.position,curr_state.velocity,curr_state.torque,curr_state.temperature,curr_state.q_curr,0,0);
-    }
-    else if (msg == "Read_Status")
-    {
-        // define a state object
-        State curr_state;
-        std::ostringstream out;
-        out.str("");
-
-        // reset the state
-        curr_state.Reset();
-
-        // enable read register flags
-        curr_state.EN_Position();
-        curr_state.EN_Velocity();
-        curr_state.EN_Torque();
-        curr_state.EN_QCurr();
-        curr_state.EN_DCurr();
-        curr_state.EN_Voltage();
-        curr_state.EN_Temp();
-        curr_state.EN_Fault();
-        curr_state.EN_Mode();
-        curr_state.EN_TrajectoryComplete();
-
-        // read registers
-        ReadState(Motor_id, curr_state);
-
-        // print everyting
-#ifdef CPP23
-        std::println(out,"Position:\t\t{:.6f}", curr_state.position);
-        std::println(out,"Velocity:\t\t{:.6f}", curr_state.velocity);
-        std::println(out,"Torque:\t\t{:.6f}", curr_state.torque);
-        std::println(out,"Q Current:\t\t{:.6f}", curr_state.q_curr);
-        std::println(out,"D Current:\t\t{:.6f}", curr_state.d_curr);
-        std::println(out,"Voltage:\t\t{:.2f}", curr_state.voltage);
-        std::println(out,"Temperature:\t{:.2f}", curr_state.temperature);
-        out << "Trajectory Complete:\t" << std::boolalpha << curr_state.TrajectoryComplete << endl;
-#else
-        try
+        case Worker_Cmd::set_PID:
         {
-            out << std::format("Position:\t\t{:.6f}", curr_state.position) << endl;
-            out << std::format("Velocity:\t\t{:.6f}", curr_state.velocity) << endl;
-            out << std::format("Torque:\t\t{:.6f}", curr_state.torque) << endl;
-            out << std::format("Q Current:\t\t{:.6f}", curr_state.q_curr) << endl;
-            out << std::format("D Current:\t\t{:.6f}", curr_state.d_curr) << endl;
-            out << std::format("Voltage:\t\t{:.2f}", curr_state.voltage) << endl;
-            out << std::format("Temperature:\t{:.2f}", curr_state.temperature) << endl;
-        }
-        catch(std::format_error& error)
-        {
-            cout  << error.what();
-        }
+            Rec_run_Enable = false;
+            Position_wait = false;
 
-        out << "Trajectory Complete:\t";
-
-        if  (curr_state.TrajectoryComplete != 0)
-        {
-            out << "True" << endl;
-        }
-        else
-        {
-            out << "False" << endl;
-        }
-#endif
-        unsigned int fault = static_cast<unsigned int>(curr_state.fault);
-        switch (fault)
-        {
-            case 0:
-                out << "Fault:\t\t" << curr_state.fault << " = no fault" << endl;
-                break;
-
-            case 32:
-                out << "Fault:\t\t" << curr_state.fault << " = calibration fault" << endl;
-                break;
-            case 33:
-                out << "Fault:\t\t" << curr_state.fault << " = motor driver fault" << endl;
-                break;
-            case 34:
-                out << "Fault:\t\t" << curr_state.fault << " =  over voltage fault" << endl;
-                break;
-            case 35:
-                out << "Fault:\t\t" << curr_state.fault << " =  encoder fault" << endl;
-                break;
-            case 36:
-                out << "Fault:\t\t" << curr_state.fault << " = motor not configured fault" << endl;
-                break;
-            case 37:
-                out << "Fault:\t\t" << curr_state.fault << " = pwm cycle overrun fault" << endl;
-                break;
-            case 38:
-                out << "Fault:\t\t" << curr_state.fault << " = over temperature fault" << endl;
-                break;
-            case 39:
-                out << "Fault:\t\t" << curr_state.fault << " = outside limit fault" << endl;
-                break;
-            default:
-                out << "Fault:\t\t" << curr_state.fault << " = unknown fault" << endl;
-        }
-        unsigned int mode = static_cast<unsigned int>(curr_state.mode);
-        switch (mode)
-        {
-            case 0:
-                out << "Mode:\t\t" << curr_state.mode << " = Stopped" << endl;
-                break;
-            case 1:
-                out << "Mode:\t\t" << curr_state.mode << " = Fault" << endl;
-                break;
-            case 2:
-                out << "Mode:\t\t" << curr_state.mode << " = Enabling" << endl;
-                break;
-            case 3:
-                out << "Mode:\t\t" << curr_state.mode << " = Calibrating" << endl;
-                break;
-            case 4:
-                out << "Mode:\t\t" << curr_state.mode << " = CalibrationComplete" << endl;
-                break;
-            case 5:
-                out << "Mode:\t\t" << curr_state.mode << " = Pwm" << endl;
-                break;
-            case 6:
-                out << "Mode:\t\t" << curr_state.mode << " = Voltage" << endl;
-                break;
-            case 7:
-                out << "Mode:\t\t" << curr_state.mode << " = VoltageFoc" << endl;
-                break;
-            case 8:
-                out << "Mode:\t\t" << curr_state.mode << " = Voltage Dq" << endl;
-                break;
-            case 9:
-                out << "Mode:\t\t" << curr_state.mode << " = Current" << endl;
-                break;
-            case 10:
-                out << "Mode:\t\t" << curr_state.mode << " = Position" << endl;
-                break;
-            case 11:
-                out << "Mode:\t\t" << curr_state.mode << " = Position Timeout" << endl;
-                break;
-            case 12:
-                out << "Mode:\t\t" << curr_state.mode << " = Zero Velocity" << endl;
-                break;
-            case 13:
-                out << "Mode:\t\t" << curr_state.mode << " = Stay Within Bounds" << endl;
-                break;
-            case 14:
-                out << "Mode:\t\t" << curr_state.mode << " = Measure Inductance" << endl;
-                break;
-
-            default:
-                out << "Mode:\t\t" << curr_state.mode << " = unknown mode" << endl;
-        }
-
-        emit sendToMain(QString::fromStdString(out.str()));
-
-    }
-    else if (msg == "Send Stop")
-    {
-        Rec_run_Enable = false;
-        Position_wait = false;
-
-        moteus::Controller::Options options;
-        options.id = Motor_id;
-        options.default_query = false;
-        moteus::Controller controller(options);
-
-        // Command a stop to the controller in order to clear any faults.
-        controller.SetStop();
-
-        // define a state object
-        State curr_state;
-        std::ostringstream out;
-        out.str("");
-
-        QThread::msleep(1500);  //Blocking delay 1500ms
-
-        // reset the state
-        curr_state.Reset();
-
-        //read current position
-        curr_state.EN_Position();
-        ReadState(Motor_id, curr_state);
-        out << "Motor: " << Motor_id << " Stopped position:\t" << curr_state.position << endl;
-        emit sendToMain(QString::fromStdString(out.str()));
-    }
-
-    else if (msg == "Clear Recorded")
-    {
-        Rec_run_Enable = false;
-        Step_Mode = false;
-        Position_wait = false;
-
-        list_Position.clear();
-        list_Motor_id.clear();
-        list_Delay.clear();
-        list_velocity_limit.clear();
-        list_Max_torque.clear();
-        list_Feedforward_torque.clear();
-        list_Kp_scale.clear();
-        list_Kd_scale.clear();
-        list_accel_limit.clear();
-        current_list_index = 0;
-
-        emit sendToMain(msg);
-    }
-    else if (msg == "Set Dynamic")
-    {
-        Dynamic = true;
-        Dynamic_Motor_id = Motor_id;
-    }
-    else if (msg == "Clear Dynamic")
-    {
-        Dynamic = false;
-    }
-    else if (msg == "Check Device")
-    {
-        std::ostringstream out;
-        out.str("");
-
-        bool device_evable = false;
-         try {
-            moteus::Controller::ProcessTransportArgs({});
             moteus::Controller::Options options;
             options.id = Motor_id;
             options.default_query = false;
             moteus::Controller controller(options);
 
-            controller.DiagnosticWrite("tel stop\n");
-            controller.DiagnosticFlush();
-            device_evable = true;
+            std::ostringstream out;
 
-         } catch (std::exception& e) {
-            cout << "Could not open moteus transport: " << e.what() << "\n";
-            device_evable = false;
-         }
+            // set KP command
+            out.str("");
+            out << "conf set servo.pid_position.kp " << Value1 << endl;
+            controller.DiagnosticCommand(out.str());
 
-        emit sendMsg("Check Device",device_evable,0,0,0,0,0,0,0);
-    }
-    else
-    {
-        emit sendToMain(msg);
-    }
-}
-void Motorworker::Motorworker::getFromMain_diagnostic_write_commands(QString msg, int Motor_id, double Value1, double Value2, double Value3)
-{
-    if (msg == "set PID")
-    {
-        Rec_run_Enable = false;
-        Position_wait = false;
+            // set KD command
+            out.str("");
+            out << "conf set servo.pid_position.kd " << Value2 << endl;
+            controller.DiagnosticCommand(out.str());
 
-        moteus::Controller::Options options;
-        options.id = Motor_id;
-        options.default_query = false;
-        moteus::Controller controller(options);
+            // set Ki command
+            out.str("");
+            out << "conf set servo.pid_position.ki " << Value3 << endl;
+            controller.DiagnosticCommand(out.str());
 
-        std::ostringstream out;
-
-        // set KP command
-        out.str("");
-        out << "conf set servo.pid_position.kp " << Value1 << endl;
-        controller.DiagnosticCommand(out.str());
-
-        // set KD command
-        out.str("");
-        out << "conf set servo.pid_position.kd " << Value2 << endl;
-        controller.DiagnosticCommand(out.str());
-
-        // set Ki command
-        out.str("");
-        out << "conf set servo.pid_position.ki " << Value3 << endl;
-        controller.DiagnosticCommand(out.str());
-
-        out.str("");
-        out << "Motor: " << Motor_id
-            << "\tkp: " << Value1
-            << "\tkd: " << Value2
-            << "\t ki: " << Value3
-            << endl;
-        emit sendToMain(QString::fromStdString(out.str()));
-    }
-    else if (msg == "Set Output Nearest")
-    {
-        Rec_run_Enable = false;
-        Position_wait = false;
-
-        moteus::Controller::Options options;
-        options.id = Motor_id;
-        options.default_query = false;
-        moteus::Controller controller(options);
-
-        // define a state object
-        State curr_state;
-        std::ostringstream out;
-        out.str("");
-
-        if (Value2 > 0)
+            out.str("");
+            out << "Motor: " << Motor_id
+                << "\tkp: " << Value1
+                << "\tkd: " << Value2
+                << "\t ki: " << Value3
+                << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+            break;
+        }
+        case Worker_Cmd::Set_Output_Nearest:
         {
-            // if value 2 is non zero, set nearsest is conditional on home state being < 2
+            Rec_run_Enable = false;
+            Position_wait = false;
+
+            moteus::Controller::Options options;
+            options.id = Motor_id;
+            options.default_query = false;
+            moteus::Controller controller(options);
+
+            // define a state object
+            State curr_state;
+            std::ostringstream out;
+            out.str("");
+
+            if (Value2 > 0)
+            {
+                // if value 2 is non zero, set nearsest is conditional on home state being < 2
+                curr_state.Reset();
+                curr_state.EN_home_state();
+                ReadState(Motor_id, curr_state);
+                if (curr_state.home_state > 1)
+                    return;
+            }
+
+            moteus::OutputNearest::Command cmd;
+            cmd.position = Value1;
+
+            moteus::OutputNearest::Format res;
+
+            // Command OutputNearest
+            controller.SetOutputNearest(cmd,&res);
+
+
+            // reset the state
             curr_state.Reset();
+
+            //read current position
+            curr_state.EN_Position();
             curr_state.EN_home_state();
             ReadState(Motor_id, curr_state);
-            if (curr_state.home_state > 1)
-                return;
+
+            out.str("");
+            std::println(out,"Motor: {} Position:\t{:.6f}", Motor_id , curr_state.position);
+
+            emit sendToMain(QString::fromStdString(out.str()));
+            break;
+        }
+        case Worker_Cmd::set_rotor_to_output_ratio:
+        {
+            Rec_run_Enable = false;
+            Position_wait = false;
+
+            moteus::Controller::Options options;
+            options.id = Motor_id;
+            options.default_query = false;
+            moteus::Controller controller(options);
+
+            std::ostringstream out;
+            out.str("");
+
+            // set rotor_to_output_ratiocommand
+            out << "conf set motor_position.rotor_to_output_ratio " << Value1 << endl;
+            controller.DiagnosticCommand(out.str());
+
+            out.str("");
+            out << "Motor: " << Motor_id
+                << "\t Gear Ratio: " << Value1
+                << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+            break;
+        }
+        case Worker_Cmd::set_break_voltage:
+        {
+            Rec_run_Enable = false;
+            Position_wait = false;
+
+            moteus::Controller::Options options;
+            options.id = Motor_id;
+            options.default_query = false;
+            moteus::Controller controller(options);
+
+            std::ostringstream out;
+            out.str("");
+
+            // set break voltage command
+            out << "conf set servo.flux_brake_min_voltage " << Value1 << endl;
+            controller.DiagnosticCommand(out.str());
+
+            out.str("");
+            out << "Motor: " << Motor_id
+                << "\t Break Min Voltage: " << Value1
+                << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+            break;
+        }
+        case Worker_Cmd::set_Position_Offset:
+        {
+            Rec_run_Enable = false;
+            Position_wait = false;
+
+            moteus::Controller::Options options;
+            options.id = Motor_id;
+            options.default_query = false;
+            moteus::Controller controller(options);
+
+            std::ostringstream out;
+            out.str("");
+
+            // set Position Offset command
+            out << "conf set motor_position.output.offset " << Value1 << endl;
+            controller.DiagnosticCommand(out.str());
+
+            out.str("");
+            out << "Motor: " << Motor_id
+                << "\t motor_position.output.offset: " << Value1
+                << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+            break;
+        }
+        case Worker_Cmd::set_motor_limits:
+        {
+            Rec_run_Enable = false;
+            Position_wait = false;
+
+            moteus::Controller::Options options;
+            options.id = Motor_id;
+            options.default_query = false;
+            moteus::Controller controller(options);
+
+            std::ostringstream out;
+            out.str("");
+
+            // set min limit command
+            out << "conf set servopos.position_min " << Value1 << endl;
+            controller.DiagnosticCommand(out.str());
+            l_bounds_min[Motor_id-1] = Value1;
+
+            // set max limit command
+            out.str("");
+            out << "conf set servopos.position_max " << Value2 << endl;
+            controller.DiagnosticCommand(out.str());
+            l_bounds_max[Motor_id-1] = Value2;
+
+            out.str("");
+            out << "Motor: " << Motor_id
+                << " limit min:\t" << l_bounds_min[Motor_id-1]
+                << "\tlimit max:\t" << l_bounds_max[Motor_id-1] << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+            break;
+        }
+        case Worker_Cmd::conf_write:
+        {
+            Rec_run_Enable = false;
+            Position_wait = false;
+
+            moteus::Controller::Options options;
+            options.id = Motor_id;
+            options.default_query = false;
+            moteus::Controller controller(options);
+
+            std::ostringstream out;
+            out.str("");
+
+            // save conf
+            controller.DiagnosticCommand("conf write");
+
+            out.str("");
+            out << "configuration write" << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+            break;
         }
 
-        moteus::OutputNearest::Command cmd;
-        cmd.position = Value1;
-
-        moteus::OutputNearest::Format res;
-
-        // Command OutputNearest
-        controller.SetOutputNearest(cmd,&res);
-
-
-        // reset the state
-        curr_state.Reset();
-
-        //read current position
-        curr_state.EN_Position();
-        curr_state.EN_home_state();
-        ReadState(Motor_id, curr_state);
-
-        out.str("");
-#ifdef CPP23
-        std::println(out,"Motor: {} Position:\t{:.6f}", Motor_id , curr_state.position);
-#else
-        try
+        case Worker_Cmd::Get_Cur_XY:
         {
-            out << std::format("Motor: {} Position:\t{:.6f}", Motor_id , curr_state.position) << endl;
+            std::ostringstream out;
+            std::istringstream iss;
+
+            if (Collision_Check_enable)
+            {
+
+                double X = 0;
+                double Y = 0;
+
+                double position_1 = 0;
+                double position_2 = 0;
+
+                // define a state object
+                State curr_state;
+
+                // reset the state
+                curr_state.Reset();
+                curr_state.EN_Position();
+
+                //read current velocity
+                ReadState(1, curr_state);
+                position_1 = curr_state.position;
+
+                ReadState(2, curr_state);
+                position_2 = curr_state.position;
+
+                double motor1_revolutions = position_1;
+                double motor2_revolutions = position_2;
+
+                // convert revolutions to radians
+                double theta1 = -motor1_revolutions * 2 * std::numbers::pi;
+                double theta2 = motor2_revolutions * 2 * std::numbers::pi;
+
+                out.str("");
+
+                double result[2] = {0.0,0.0};
+                forward_kin(result, theta1, theta2);
+
+                // Eliminate very small numbers using format.
+                try
+                {
+                    iss.str(std::format("{:.3f}\n" , result[0]));
+                    iss >> X;
+
+                    iss.str(std::format("{:.3f}\n" , result[1]));
+                    iss >> Y;
+                }
+                catch(std::format_error& error)
+                {
+                    cout  << error.what();
+                }
+                emit sendMsg(Worker_Stat::Get_Cur_XY,0,X,Y,0,0,0,0,0);
+            }
+            else
+            {
+                out.str("");
+                out << "Function Not enabled" << endl;
+                emit sendToMain(QString::fromStdString(out.str()));
+            }
+            break;
         }
-        catch(std::format_error& error)
+        default:
+            break;
+    }
+}
+
+void Motorworker::getFromMain_diagnostic_read_commands(Worker_Cmd msg, int Motor_id)
+{
+    switch (msg)
+    {
+        case Worker_Cmd::get_rotor_to_output_ratio:
         {
-            cout  << error.what();
+            Rec_run_Enable = false;
+            Position_wait = false;
+
+            moteus::Controller::Options options;
+            options.id = Motor_id;
+            options.default_query = false;
+            moteus::Controller controller(options);
+
+            double value = std::numeric_limits<double>::quiet_NaN();
+
+            std::ostringstream out;
+            // get rotor_to_output_ratio
+                value = std::stod(
+                    controller.DiagnosticCommand("conf get motor_position.rotor_to_output_ratio",
+                                                 moteus::Controller::kExpectSingleLine));
+           emit sendMsg(Worker_Stat::get_gear_ratio,Motor_id,value,0,0,0,0,0,0);
+           break;
         }
-#endif
-
-        emit sendToMain(QString::fromStdString(out.str()));
-    }
-    else if (msg == "set rotor_to_output_ratio")
-    {
-        Rec_run_Enable = false;
-        Position_wait = false;
-
-        moteus::Controller::Options options;
-        options.id = Motor_id;
-        options.default_query = false;
-        moteus::Controller controller(options);
-
-        std::ostringstream out;
-        out.str("");
-
-        // set rotor_to_output_ratiocommand
-        out << "conf set motor_position.rotor_to_output_ratio " << Value1 << endl;
-        controller.DiagnosticCommand(out.str());
-
-        out.str("");
-        out << "Motor: " << Motor_id
-            << "\t Gear Ratio: " << Value1
-            << endl;
-        emit sendToMain(QString::fromStdString(out.str()));
-    }
-    else if (msg == "set break voltage")
-    {
-        Rec_run_Enable = false;
-        Position_wait = false;
-
-        moteus::Controller::Options options;
-        options.id = Motor_id;
-        options.default_query = false;
-        moteus::Controller controller(options);
-
-        std::ostringstream out;
-        out.str("");
-
-        // set break voltage command
-        out << "conf set servo.flux_brake_min_voltage " << Value1 << endl;
-        controller.DiagnosticCommand(out.str());
-
-        out.str("");
-        out << "Motor: " << Motor_id
-            << "\t Break Min Voltage: " << Value1
-            << endl;
-        emit sendToMain(QString::fromStdString(out.str()));
-    }
-    else if (msg == "set Position Offset")
-    {
-        Rec_run_Enable = false;
-        Position_wait = false;
-
-        moteus::Controller::Options options;
-        options.id = Motor_id;
-        options.default_query = false;
-        moteus::Controller controller(options);
-
-        std::ostringstream out;
-        out.str("");
-
-        // set Position Offset command
-        out << "conf set motor_position.output.offset " << Value1 << endl;
-        controller.DiagnosticCommand(out.str());
-
-        out.str("");
-        out << "Motor: " << Motor_id
-            << "\t motor_position.output.offset: " << Value1
-            << endl;
-        emit sendToMain(QString::fromStdString(out.str()));
-    }
-    else if (msg == "set motor limits")
-    {
-        Rec_run_Enable = false;
-        Position_wait = false;
-
-        moteus::Controller::Options options;
-        options.id = Motor_id;
-        options.default_query = false;
-        moteus::Controller controller(options);
-
-        std::ostringstream out;
-        out.str("");
-
-        // set min limit command
-        out << "conf set servopos.position_min " << Value1 << endl;
-        controller.DiagnosticCommand(out.str());
-        l_bounds_min[Motor_id-1] = Value1;
-
-        // set max limit command
-        out.str("");
-        out << "conf set servopos.position_max " << Value2 << endl;
-        controller.DiagnosticCommand(out.str());
-        l_bounds_max[Motor_id-1] = Value2;
-
-        out.str("");
-        out << "Motor: " << Motor_id
-            << " limit min:\t" << l_bounds_min[Motor_id-1]
-            << "\tlimit max:\t" << l_bounds_max[Motor_id-1] << endl;
-        emit sendToMain(QString::fromStdString(out.str()));
-    }
-    else if (msg == "conf write")
-    {
-        Rec_run_Enable = false;
-        Position_wait = false;
-
-        moteus::Controller::Options options;
-        options.id = Motor_id;
-        options.default_query = false;
-        moteus::Controller controller(options);
-
-        std::ostringstream out;
-        out.str("");
-
-        // save conf
-        controller.DiagnosticCommand("conf write");
-
-        out.str("");
-        out << "configuration write" << endl;
-        emit sendToMain(QString::fromStdString(out.str()));
-    }
-
-    else if (msg == "Get Cur X,Y")
-    {
-        std::ostringstream out;
-        std::istringstream iss;
-
-        if (Collision_Check_enable)
+        case Worker_Cmd::get_break_voltage:
         {
+            Rec_run_Enable = false;
+            Position_wait = false;
 
-            double X = 0;
-            double Y = 0;
+            moteus::Controller::Options options;
+            options.id = Motor_id;
+            options.default_query = false;
+            moteus::Controller controller(options);
 
-            double position_1 = 0;
-            double position_2 = 0;
+            double value = std::numeric_limits<double>::quiet_NaN();
+
+            std::ostringstream out;
+
+            // get min break voltage
+            value = std::stod(
+                controller.DiagnosticCommand("conf get servo.flux_brake_min_voltage",
+                                             moteus::Controller::kExpectSingleLine));
+
+            emit sendMsg(Worker_Stat::get_Break_Voltage,Motor_id,value,0,0,0,0,0,0);
+            break;
+        }
+        case Worker_Cmd::get_Position_Offset:
+        {
+            Rec_run_Enable = false;
+            Position_wait = false;
+
+            moteus::Controller::Options options;
+            options.id = Motor_id;
+            options.default_query = false;
+            moteus::Controller controller(options);
+
+            double value = std::numeric_limits<double>::quiet_NaN();
+
+            std::ostringstream out;
+
+            // get min break voltage
+            value = std::stod(
+                controller.DiagnosticCommand("conf get motor_position.output.offset",
+                                             moteus::Controller::kExpectSingleLine));
+            emit sendMsg(Worker_Stat::get_Position_Offset,Motor_id,value,0,0,0,0,0,0);
+            break;
+        }
+        case Worker_Cmd::get_motor_limits:
+        {
+            Rec_run_Enable = false;
+            Position_wait = false;
+
+            moteus::Controller::Options options;
+            options.id = Motor_id;
+            options.default_query = false;
+            moteus::Controller controller(options);
+
+            // get min limit command
+            l_bounds_min[Motor_id-1] = std::stod(
+                controller.DiagnosticCommand("conf get servopos.position_min",
+                                             moteus::Controller::kExpectSingleLine));
+
+            // get max limit command
+            l_bounds_max[Motor_id-1] = std::stod(
+                controller.DiagnosticCommand("conf get servopos.position_max",
+                                             moteus::Controller::kExpectSingleLine));
+
+            emit sendMsg(Worker_Stat::set_motor_limits,Motor_id,l_bounds_min[Motor_id-1],l_bounds_max[Motor_id-1],0,0,0,0,0);
+            break;
+        }
+        case Worker_Cmd::get_PID:
+        {
+            Rec_run_Enable = false;
+            Position_wait = false;
+
+            moteus::Controller::Options options;
+            options.id = Motor_id;
+            options.default_query = false;
+            moteus::Controller controller(options);
+
+            double value1 = std::numeric_limits<double>::quiet_NaN();
+            double value2 = std::numeric_limits<double>::quiet_NaN();
+            double value3 = std::numeric_limits<double>::quiet_NaN();
+
+            // get kp command
+            value1 = std::stod(
+                controller.DiagnosticCommand("conf get servo.pid_position.kp",
+                                             moteus::Controller::kExpectSingleLine));
+            // get kd command
+            value2 = std::stod(
+                controller.DiagnosticCommand("conf get servo.pid_position.kd",
+                                             moteus::Controller::kExpectSingleLine));
+            // get ki command
+            value3 = std::stod(
+                controller.DiagnosticCommand("conf get servo.pid_position.ki",
+                                             moteus::Controller::kExpectSingleLine));
+
+            emit sendMsg(Worker_Stat::get_PID,Motor_id,value1,value2,value3,0,0,0,0);
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+void Motorworker::getFromMain_position_commands(Worker_Cmd msg, int Motor_id, double accel_limit, double position, double velocity_limit, double max_torque, double feedforward_torque, double kp_scale,
+                               double kd_scale, double bounds_min, double bounds_max, double Cycle, double Delay,double position_X,double position_Y) // slot implementation
+{
+    switch (msg)
+    {
+        case Worker_Cmd::Record_Position:
+        {
+            // define a state object
+            State curr_state;
+
+            // reset the state
+            curr_state.Reset();
+
+            //read current position
+            curr_state.EN_Position();
+            ReadState(Motor_id, curr_state);
+            Record_Position(Motor_id, accel_limit,curr_state.position, velocity_limit,max_torque, feedforward_torque,kp_scale,
+                                           kd_scale, bounds_min,bounds_max,Delay);
+            break;
+
+        }
+        case Worker_Cmd::Run_Recorded:
+        {
+            Rec_run_Enable = false;
+            Step_Mode = false;
+            Position_wait = false;
+
+            l_velocity_limit = velocity_limit;
+            l_accel_limit = accel_limit;
+            l_max_torque = max_torque;
+            l_feedforward_torque = feedforward_torque;
+            l_kp_scale = kp_scale;
+            l_kd_scale = kd_scale;
+            l_Cycle_Start_Stop = Cycle;
+            current_list_index = 0;
+            l_Cycle = 0;
+            // set l_Cycle_Delay and delay equal to cause first list load
+            l_Cycle_Delay = 1;
+            delay = 1;
+           if (!list_Position.empty()) // check if list is empty
+            {
+               TrajectoryComplete_pause = false;
+               Rec_run_Enable = true;
+            }
+           break;
+
+        }
+        case Worker_Cmd::Step_Recorded:
+        {
+            Rec_run_Enable = false;
+            Step_Mode = false;
+            Position_wait = false;
+
+            l_velocity_limit = velocity_limit;
+            l_accel_limit = accel_limit;
+            l_max_torque = max_torque;
+            l_feedforward_torque = feedforward_torque;
+            l_kp_scale = kp_scale;
+            l_kd_scale = kd_scale;
+
+            l_Cycle_Start_Stop = Cycle;
+            l_Cycle = 0;
+            // set l_Cycle_Delay and delay equal to cause first list load
+            l_Cycle_Delay = 1;
+            delay = 1;
+           if (!list_Position.empty()) // check if list is empty
+            {
+               TrajectoryComplete_pause = false;
+               Step_Mode = true;
+            }
+           break;
+
+        }
+        case Worker_Cmd::Update_Dynamic:
+        {
+            l_velocity_limit = velocity_limit;
+            l_accel_limit = accel_limit;
+            l_max_torque = max_torque;
+            l_feedforward_torque = feedforward_torque;
+            l_kp_scale = kp_scale;
+            l_kd_scale = kd_scale;
+            Dynamic_Motor_id = Motor_id;
+            break;
+        }
+
+        case Worker_Cmd::Send_Start:
+        {
+            Rec_run_Enable = false;
+            Position_wait = false;
+
+            if (!Check_Motor(Motor_id))
+            {
+               if (Motor_error)
+               {
+                   // send one stop command
+                   SendStopCommand(Motor_id);
+               }
+               else if (TrajectoryComplete_error)
+               {
+                   // wait for TrajectoryComplete
+                   Wait_TrajectoryComplete(Motor_id);
+               }
+            }
 
             // define a state object
             State curr_state;
 
             // reset the state
             curr_state.Reset();
-            curr_state.EN_Position();
-
-            //read current velocity
-            ReadState(1, curr_state);
-            position_1 = curr_state.position;
-
-            ReadState(2, curr_state);
-            position_2 = curr_state.position;
-
-            double motor1_revolutions = position_1;
-            double motor2_revolutions = position_2;
-
-            // convert revolutions to radians
-            double theta1 = -motor1_revolutions * 2 * std::numbers::pi;
-            double theta2 = motor2_revolutions * 2 * std::numbers::pi;
-
-            out.str("");
-
-            double result[2] = {0.0,0.0};
-            forward_kin(result, theta1, theta2);
-
-            // Eliminate very small numbers using format.
-            try
-            {
-                iss.str(std::format("{:.3f}\n" , result[0]));
-                iss >> X;
-
-                iss.str(std::format("{:.3f}\n" , result[1]));
-                iss >> Y;
-            }
-            catch(std::format_error& error)
-            {
-                cout  << error.what();
-            }
-            emit sendMsg("Get Cur X,Y",0,X,Y,0,0,0,0,0);
-        }
-        else
-        {
-            out.str("");
-            out << "Function Not enabled" << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
-
-    }
-    else
-    {
-        emit sendToMain(msg);
-    }
-}
-
-void Motorworker::getFromMain_diagnostic_read_commands(QString msg, int Motor_id)
-{
-    if (msg == "get rotor_to_output_ratio")
-    {
-        Rec_run_Enable = false;
-        Position_wait = false;
-
-        moteus::Controller::Options options;
-        options.id = Motor_id;
-        options.default_query = false;
-        moteus::Controller controller(options);
-
-        double value = std::numeric_limits<double>::quiet_NaN();
-
-        std::ostringstream out;
-        // get rotor_to_output_ratio
-            value = std::stod(
-                controller.DiagnosticCommand("conf get motor_position.rotor_to_output_ratio",
-                                             moteus::Controller::kExpectSingleLine));
-       emit sendMsg("get gear ratio",Motor_id,value,0,0,0,0,0,0);
-
-    }
-    else if (msg == "get break voltage")
-    {
-        Rec_run_Enable = false;
-        Position_wait = false;
-
-        moteus::Controller::Options options;
-        options.id = Motor_id;
-        options.default_query = false;
-        moteus::Controller controller(options);
-
-        double value = std::numeric_limits<double>::quiet_NaN();
-
-        std::ostringstream out;
-
-        // get min break voltage
-        value = std::stod(
-            controller.DiagnosticCommand("conf get servo.flux_brake_min_voltage",
-                                         moteus::Controller::kExpectSingleLine));
-
-        emit sendMsg("get Break Voltage",Motor_id,value,0,0,0,0,0,0);
-    }
-    else if (msg == "get Position Offset")
-    {
-        Rec_run_Enable = false;
-        Position_wait = false;
-
-        moteus::Controller::Options options;
-        options.id = Motor_id;
-        options.default_query = false;
-        moteus::Controller controller(options);
-
-        double value = std::numeric_limits<double>::quiet_NaN();
-
-        std::ostringstream out;
-
-        // get min break voltage
-        value = std::stod(
-            controller.DiagnosticCommand("conf get motor_position.output.offset",
-                                         moteus::Controller::kExpectSingleLine));
-        emit sendMsg("get Position Offset",Motor_id,value,0,0,0,0,0,0);
-    }
-    else if (msg == "get motor limits")
-    {
-        Rec_run_Enable = false;
-        Position_wait = false;
-
-        moteus::Controller::Options options;
-        options.id = Motor_id;
-        options.default_query = false;
-        moteus::Controller controller(options);
-
-        // get min limit command
-        l_bounds_min[Motor_id-1] = std::stod(
-            controller.DiagnosticCommand("conf get servopos.position_min",
-                                         moteus::Controller::kExpectSingleLine));
-
-        // get max limit command
-        l_bounds_max[Motor_id-1] = std::stod(
-            controller.DiagnosticCommand("conf get servopos.position_max",
-                                         moteus::Controller::kExpectSingleLine));
-
-        emit sendMsg("set motor limits",Motor_id,l_bounds_min[Motor_id-1],l_bounds_max[Motor_id-1],0,0,0,0,0);
-    }
-    else if (msg == "get PID")
-    {
-        Rec_run_Enable = false;
-        Position_wait = false;
-
-        moteus::Controller::Options options;
-        options.id = Motor_id;
-        options.default_query = false;
-        moteus::Controller controller(options);
-
-        double value1 = std::numeric_limits<double>::quiet_NaN();
-        double value2 = std::numeric_limits<double>::quiet_NaN();
-        double value3 = std::numeric_limits<double>::quiet_NaN();
-
-        // get kp command
-        value1 = std::stod(
-            controller.DiagnosticCommand("conf get servo.pid_position.kp",
-                                         moteus::Controller::kExpectSingleLine));
-        // get kd command
-        value2 = std::stod(
-            controller.DiagnosticCommand("conf get servo.pid_position.kd",
-                                         moteus::Controller::kExpectSingleLine));
-        // get ki command
-        value3 = std::stod(
-            controller.DiagnosticCommand("conf get servo.pid_position.ki",
-                                         moteus::Controller::kExpectSingleLine));
-
-        emit sendMsg("get PID",Motor_id,value1,value2,value3,0,0,0,0);
-    }
-    else
-    {
-        emit sendToMain(msg);
-    }
-}
-
-void Motorworker::getFromMain_position_commands(QString msg, int Motor_id, double accel_limit, double position, double velocity_limit, double max_torque, double feedforward_torque, double kp_scale,
-                               double kd_scale, double bounds_min, double bounds_max, double Cycle, double Delay,double position_X,double position_Y) // slot implementation
-{
-    if (msg == "Record Position")
-    {
-        // define a state object
-        State curr_state;
-
-        // reset the state
-        curr_state.Reset();
-
-        //read current position
-        curr_state.EN_Position();
-        ReadState(Motor_id, curr_state);
-        Record_Position(Motor_id, accel_limit,curr_state.position, velocity_limit,max_torque, feedforward_torque,kp_scale,
-                                       kd_scale, bounds_min,bounds_max,Delay);
-    }
-    else if (msg == "Run Recorded")
-    {
-        Rec_run_Enable = false;
-        Step_Mode = false;
-        Position_wait = false;
-
-        l_velocity_limit = velocity_limit;
-        l_accel_limit = accel_limit;
-        l_max_torque = max_torque;
-        l_feedforward_torque = feedforward_torque;
-        l_kp_scale = kp_scale;
-        l_kd_scale = kd_scale;
-        l_Cycle_Start_Stop = Cycle;
-        current_list_index = 0;
-        l_Cycle = 0;
-        // set l_Cycle_Delay and delay equal to cause first list load
-        l_Cycle_Delay = 1;
-        delay = 1;
-       if (!list_Position.empty()) // check if list is empty
-        {
-           TrajectoryComplete_pause = false;
-           Rec_run_Enable = true;
-        }
-    }
-    else if (msg == "Step Recorded")
-    {
-        Rec_run_Enable = false;
-        Step_Mode = false;
-        Position_wait = false;
-
-        l_velocity_limit = velocity_limit;
-        l_accel_limit = accel_limit;
-        l_max_torque = max_torque;
-        l_feedforward_torque = feedforward_torque;
-        l_kp_scale = kp_scale;
-        l_kd_scale = kd_scale;
-
-        l_Cycle_Start_Stop = Cycle;
-        l_Cycle = 0;
-        // set l_Cycle_Delay and delay equal to cause first list load
-        l_Cycle_Delay = 1;
-        delay = 1;
-       if (!list_Position.empty()) // check if list is empty
-        {
-           TrajectoryComplete_pause = false;
-           Step_Mode = true;
-        }
-    }    else if (msg == "Update Dynamic")
-    {
-        l_velocity_limit = velocity_limit;
-        l_accel_limit = accel_limit;
-        l_max_torque = max_torque;
-        l_feedforward_torque = feedforward_torque;
-        l_kp_scale = kp_scale;
-        l_kd_scale = kd_scale;
-        Dynamic_Motor_id = Motor_id;
-    }
-
-    else if (msg == "Send Start")
-    {
-        Rec_run_Enable = false;
-        Position_wait = false;
-
-        if (!Check_Motor(Motor_id))
-        {
-           if (Motor_error)
-           {
-               // send one stop command
-               SendStopCommand(Motor_id);
-           }
-           else if (TrajectoryComplete_error)
-           {
-               // wait for TrajectoryComplete
-               Wait_TrajectoryComplete(Motor_id);
-           }
-        }
-
-        // define a state object
-        State curr_state;
-
-        // reset the state
-        curr_state.Reset();
-
-        //read current position
-        curr_state.EN_Position();
-        ReadState(Motor_id, curr_state);
-
-        std::ostringstream out;
-        out.str("");
-        out << "Current position:\t" << curr_state.position << endl;
-        emit sendToMain(QString::fromStdString(out.str()));
-        if (!SendPositionCommand(   Motor_id,
-                                    curr_state.position,
-                                    velocity_limit,
-                                    accel_limit,
-                                    max_torque,
-                                    feedforward_torque,
-                                    kp_scale,
-                                    kd_scale,
-                                    0.0 // end velocity
-                                    ))
-        {
-            out << "error on posiion command " << Motor_id << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
-
-        position_Motor_id = Motor_id;
-        Position_wait = true;
-     }
-    else if (msg == "Go To Rest Position")
-    {
-        Rec_run_Enable = false;
-        Position_wait = false;
-
-        if (!Check_Motor(Motor_id))
-        {
-           if (Motor_error)
-           {
-               // send one stop command
-               SendStopCommand(Motor_id);
-           }
-           else if (TrajectoryComplete_error)
-           {
-               // wait for TrajectoryComplete
-               Wait_TrajectoryComplete(Motor_id);
-           }
-        }
-
-        // define a state object
-        State curr_state;
-
-        // reset the state
-        curr_state.Reset();
-
-        std::ostringstream out;
-        out.str("");
-        double position_limited = position;
-        if (bounds_max != NAN && position_limited > bounds_max)
-            position_limited = bounds_max;
-        else if (bounds_min != NAN && position_limited < bounds_min)
-            position_limited = bounds_min;
-        if (!SendPositionCommand( Motor_id,
-                                  position_limited, // position
-                                  velocity_limit,
-                                  accel_limit,
-                                  max_torque,
-                                  feedforward_torque,
-                                  kp_scale,
-                                  kd_scale,
-                                  0.0 // end velocity
-                                ))
-        {
-            out << "error on posiion command " << Motor_id << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
-        else
-        {
-            Wait_TrajectoryComplete(Motor_id);
 
             //read current position
-            curr_state.Reset();
             curr_state.EN_Position();
             ReadState(Motor_id, curr_state);
-            out << "Motor: " << Motor_id << " Position:\t" << curr_state.position << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
 
-    }
-    else if (msg == "Go To Position")
+            std::ostringstream out;
+            out.str("");
+            out << "Current position:\t" << curr_state.position << endl;
+            emit sendToMain(QString::fromStdString(out.str()));
+            if (!SendPositionCommand(   Motor_id,
+                                        curr_state.position,
+                                        velocity_limit,
+                                        accel_limit,
+                                        max_torque,
+                                        feedforward_torque,
+                                        kp_scale,
+                                        kd_scale,
+                                        0.0 // end velocity
+                                        ))
+            {
+                out << "error on posiion command " << Motor_id << endl;
+                emit sendToMain(QString::fromStdString(out.str()));
+            }
+
+            position_Motor_id = Motor_id;
+            Position_wait = true;
+            break;
+
+        }
+        case Worker_Cmd::Go_To_Rest_Position:
+        {
+            Rec_run_Enable = false;
+            Position_wait = false;
+
+            if (!Check_Motor(Motor_id))
+            {
+               if (Motor_error)
+               {
+                   // send one stop command
+                   SendStopCommand(Motor_id);
+               }
+               else if (TrajectoryComplete_error)
+               {
+                   // wait for TrajectoryComplete
+                   Wait_TrajectoryComplete(Motor_id);
+               }
+            }
+
+            // define a state object
+            State curr_state;
+
+            // reset the state
+            curr_state.Reset();
+
+            std::ostringstream out;
+            out.str("");
+            double position_limited = position;
+            if (bounds_max != NAN && position_limited > bounds_max)
+                position_limited = bounds_max;
+            else if (bounds_min != NAN && position_limited < bounds_min)
+                position_limited = bounds_min;
+            if (!SendPositionCommand( Motor_id,
+                                      position_limited, // position
+                                      velocity_limit,
+                                      accel_limit,
+                                      max_torque,
+                                      feedforward_torque,
+                                      kp_scale,
+                                      kd_scale,
+                                      0.0 // end velocity
+                                    ))
+            {
+                out << "error on posiion command " << Motor_id << endl;
+                emit sendToMain(QString::fromStdString(out.str()));
+            }
+            else
+            {
+                Wait_TrajectoryComplete(Motor_id);
+
+                //read current position
+                curr_state.Reset();
+                curr_state.EN_Position();
+                ReadState(Motor_id, curr_state);
+                out << "Motor: " << Motor_id << " Position:\t" << curr_state.position << endl;
+                emit sendToMain(QString::fromStdString(out.str()));
+            }
+            break;
+
+        }
+    case Worker_Cmd::Go_To_Position:
     {
         Rec_run_Enable = false;
         Position_wait = false;
@@ -1892,309 +1778,244 @@ void Motorworker::getFromMain_position_commands(QString msg, int Motor_id, doubl
 
         position_Motor_id = Motor_id;
         Position_wait = true;
-
+        break;
     }
-    else if (msg == "Run Forever")
-    {
-        Rec_run_Enable = false;
-        Position_wait = false;
-
-        if (!Check_Motor(Motor_id))
+        case Worker_Cmd::Run_Forever:
         {
-           if (Motor_error)
-           {
-               // send one stop command
-               SendStopCommand(Motor_id);
-           }
-           else if (TrajectoryComplete_error)
-           {
-               // wait for TrajectoryComplete
-               Wait_TrajectoryComplete(Motor_id);
-           }
-        }
+            Rec_run_Enable = false;
+            Position_wait = false;
 
-        // define a state object
-        State curr_state;
-        std::ostringstream out;
-        out.str("");
+            if (!Check_Motor(Motor_id))
+            {
+               if (Motor_error)
+               {
+                   // send one stop command
+                   SendStopCommand(Motor_id);
+               }
+               else if (TrajectoryComplete_error)
+               {
+                   // wait for TrajectoryComplete
+                   Wait_TrajectoryComplete(Motor_id);
+               }
+            }
 
-        // reset the state
-        curr_state.Reset();
+            // define a state object
+            State curr_state;
+            std::ostringstream out;
+            out.str("");
 
-        //read current position
-        curr_state.EN_Position();
-        ReadState(Motor_id, curr_state);
+            // reset the state
+            curr_state.Reset();
 
-        out.str("");
-        out << "Starting position:\t" << curr_state.position << endl;
-        emit sendToMain(QString::fromStdString(out.str()));
-        float final_velocity = velocity_limit;
-        if (position < 0.0)
-            final_velocity = -velocity_limit;
+            //read current position
+            curr_state.EN_Position();
+            ReadState(Motor_id, curr_state);
 
-        if (!SendPositionCommand(Motor_id,
-                                curr_state.position,
-                                velocity_limit,
-                                accel_limit,
-                                max_torque,
-                                feedforward_torque,
-                                kp_scale,
-                                kd_scale,
-                                final_velocity // end velocity
-                                ))
-        {
-            out << "error on posiion command " << Motor_id << endl;
+            out.str("");
+            out << "Starting position:\t" << curr_state.position << endl;
             emit sendToMain(QString::fromStdString(out.str()));
-        }
+            float final_velocity = velocity_limit;
+            if (position < 0.0)
+                final_velocity = -velocity_limit;
 
-        position_Motor_id = Motor_id;
-        Position_wait = true;
-    }
-    else if (msg == "Record X,Y")
-    {
-        std::ostringstream out;
-        if (Collision_Check_enable)
-        {
-
-            double x = position_X;
-            double y = position_Y;
-
-            double outer_r = L1+L2;
-
-            double dist = x * x  + y  * y ;
-            if ( !(dist < outer_r * outer_r))
+            if (!SendPositionCommand(Motor_id,
+                                    curr_state.position,
+                                    velocity_limit,
+                                    accel_limit,
+                                    max_torque,
+                                    feedforward_torque,
+                                    kp_scale,
+                                    kd_scale,
+                                    final_velocity // end velocity
+                                    ))
             {
-               out.str("");
-#ifdef CPP23
-               std::println(out,"X {:.3f} ,Y {:.3f} is not inside the radius of arm1 {:.3f} + arm2 {:.3f} ", x , y,L1,L2);
-#else
-        try
-        {
-            out << std::format("X {:.3f} ,Y {:.3f} is not inside the radius of arm1 {:.3f} + arm2 {:.3f} ", x , y,L1,L2) << endl;
-        }
-        catch(std::format_error& error)
-        {
-            cout  << error.what();
-        }
-#endif
-
-               emit sendToMain(QString::fromStdString(out.str()));
+                out << "error on posiion command " << Motor_id << endl;
+                emit sendToMain(QString::fromStdString(out.str()));
             }
-            else if ( inner_radius > 0 && (dist < inner_radius * inner_radius) )
-            {
-               out.str("");
-#ifdef CPP23
-               std::println(out,"X {:.3f} ,Y {:.3f} is not outside inner radius of {:.3f} ", x , y,inner_radius);
-#else
-        try
-        {
-            out << std::format("X {:.3f} ,Y {:.3f} is not outside inner radius of {:.3f} ", x , y,inner_radius) << endl;
-        }
-        catch(std::format_error& error)
-        {
-            cout  << error.what();
-        }
-#endif
 
-               emit sendToMain(QString::fromStdString(out.str()));
-            }
-            else if ( y < min_Y )
-            {
-               out.str("");
-#ifdef CPP23
-               std::println(out,"Y {:.3f} is less than minimum Y {:.3f} ", y,min_Y);
-#else
-        try
-        {
-            out << std::format("Y {:.3f} is less than minimum Y {:.3f} ", y,min_Y) << endl;
-        }
-        catch(std::format_error& error)
-        {
-            cout  << error.what();
-        }
-#endif
+            position_Motor_id = Motor_id;
+            Position_wait = true;
+            break;
 
-               emit sendToMain(QString::fromStdString(out.str()));
-            }
-            else if ( y < 0 && x >= 0 && x < min_Pos_X )
+        }
+        case Worker_Cmd::Record_XY:
+        {
+            std::ostringstream out;
+            if (Collision_Check_enable)
             {
-               out.str("");
-#ifdef CPP23
-               std::println(out,"X {:.3f} is less than minimum positive X below y 0 {:.3f} ", x, min_Pos_X);
-#else
-        try
-        {
-            out << std::format("X {:.3f} is less than minimum positive X below y 0 {:.3f} ", x, min_Pos_X) << endl;
-        }
-        catch(std::format_error& error)
-        {
-            cout  << error.what();
-        }
-#endif
 
-               emit sendToMain(QString::fromStdString(out.str()));
-            }
-            else if ( y < 0 && x < 0 && x > min_Neg_X )
-            {
-               out.str("");
-#ifdef CPP23
-               std::println(out,"X {:.3f} is less than minimum negative X below y 0 {:.3f} ", x,min_Neg_X);
-#else
-        try
-        {
-            out << std::format("X {:.3f} is less than minimum negative X below y 0 {:.3f} ", x,min_Neg_X) << endl;
-        }
-        catch(std::format_error& error)
-        {
-            cout  << error.what();
-        }
-#endif
+                double x = position_X;
+                double y = position_Y;
 
-               emit sendToMain(QString::fromStdString(out.str()));
+                double outer_r = L1+L2;
+
+                double dist = x * x  + y  * y ;
+                if ( !(dist < outer_r * outer_r))
+                {
+                   out.str("");
+                   std::println(out,"X {:.3f} ,Y {:.3f} is not inside the radius of arm1 {:.3f} + arm2 {:.3f} ", x , y,L1,L2);
+
+                   emit sendToMain(QString::fromStdString(out.str()));
+                }
+                else if ( inner_radius > 0 && (dist < inner_radius * inner_radius) )
+                {
+                   out.str("");
+                   std::println(out,"X {:.3f} ,Y {:.3f} is not outside inner radius of {:.3f} ", x , y,inner_radius);
+
+                   emit sendToMain(QString::fromStdString(out.str()));
+                }
+                else if ( y < min_Y )
+                {
+                   out.str("");
+                   std::println(out,"Y {:.3f} is less than minimum Y {:.3f} ", y,min_Y);
+
+                   emit sendToMain(QString::fromStdString(out.str()));
+                }
+                else if ( y < 0 && x >= 0 && x < min_Pos_X )
+                {
+                   out.str("");
+                   std::println(out,"X {:.3f} is less than minimum positive X below y 0 {:.3f} ", x, min_Pos_X);
+
+                   emit sendToMain(QString::fromStdString(out.str()));
+                }
+                else if ( y < 0 && x < 0 && x > min_Neg_X )
+                {
+                   out.str("");
+                   std::println(out,"X {:.3f} is less than minimum negative X below y 0 {:.3f} ", x,min_Neg_X);
+
+                   emit sendToMain(QString::fromStdString(out.str()));
+                }
+                else
+                {
+                    double theta[4] = {0.0, 0.0, 0.0, 0.0};
+                    inverse_kin(theta,x,y);
+
+                    out.str("");
+
+                    // convert radians to revolutions
+                    double motor1_revolutions1 = theta[0]/(2*std::numbers::pi);
+                    double motor2_revolutions1 = theta[1]/(2*std::numbers::pi);
+                    double motor1_revolutions2 = theta[2]/(2*std::numbers::pi);
+                    double motor2_revolutions2 = theta[3]/(2*std::numbers::pi);
+
+                    position_Gen_Elbow_Up[0] = motor1_revolutions2;
+                    position_Gen_Elbow_Up[1] = motor2_revolutions2;
+                    position_Gen_Elbow_Down[0] = motor1_revolutions1;
+                    position_Gen_Elbow_Down[1] = motor2_revolutions1;
+
+                    bool Elbow_Up_limit_error = false;
+                    bool Elbow_Down_limit_error = false;
+
+                    // check for position outside limits
+                    if (    (l_bounds_max[0] != NAN && position_Gen_Elbow_Up[0] > l_bounds_max[0]) ||
+                            (l_bounds_min[0] != NAN && position_Gen_Elbow_Up[0] < l_bounds_min[0]) ||
+                            (l_bounds_max[1] != NAN && position_Gen_Elbow_Up[1] > l_bounds_max[1]) ||
+                            (l_bounds_min[1] != NAN && position_Gen_Elbow_Up[1] < l_bounds_min[1]) ||
+                            (position_Gen_Elbow_Up[1] > Motor2_rotation_limit)  ||
+                            (position_Gen_Elbow_Up[1] < -Motor2_rotation_limit))
+                    {
+                        Elbow_Up_limit_error = true;
+                    }
+
+                    if (    (l_bounds_max[0] != NAN && position_Gen_Elbow_Down[0] > l_bounds_max[0]) ||
+                            (l_bounds_min[0] != NAN && position_Gen_Elbow_Down[0] < l_bounds_min[0]) ||
+                            (l_bounds_max[1] != NAN && position_Gen_Elbow_Down[1] > l_bounds_max[1]) ||
+                            (l_bounds_min[1] != NAN && position_Gen_Elbow_Down[1] < l_bounds_min[1]) ||
+                            (position_Gen_Elbow_Down[1] > Motor2_rotation_limit)  ||
+                            (position_Gen_Elbow_Down[1] < -Motor2_rotation_limit))
+                    {
+                        Elbow_Down_limit_error = true;
+                    }
+
+                       if (Elbow_Down_limit_error)
+                            out << "Elbow Down motor limit error" << endl;
+                        if (Elbow_Up_limit_error)
+                            out << "Elbow Up motor limit error" << endl;
+
+                    std::println(out,"motor 1 revolutions1 = \t{:.6f} \tmotor 2 revolutions1 =\t{:.6f}", motor1_revolutions1 , motor2_revolutions1);
+                    std::println(out,"motor 1 revolutions2 = \t{:.6f} \tmotor 2 revolutions2 =\t{:.6f}", motor1_revolutions2 , motor2_revolutions2);
+                    emit sendToMain(QString::fromStdString(out.str()));
+
+                    if (list_Position.empty())
+                    {
+                        // define a state object
+                        State curr_state;
+
+                        // reset the state
+                        curr_state.Reset();
+                        curr_state.EN_Position();
+                        //read current position
+                        ReadState(1, curr_state);
+                        last_record_destination[0] = curr_state.position;
+                        ReadState(2, curr_state);
+                        last_record_destination[1] = curr_state.position;
+                    }
+
+                    if ( !Elbow_Up_limit_error || !Elbow_Down_limit_error)
+                    {
+                        if (!Elbow_Up_limit_error)
+                        {
+                            // if X > 0 && motor 1 going positive, move motor 2 first
+                            // if X < 0 && motor 1 going negative, move motor 2 first
+                            if ( (x >= 0 && position_Gen_Elbow_Up[0] > last_record_destination[0]) ||
+                                 (x <= 0 && position_Gen_Elbow_Up[0] < last_record_destination[0]) )
+                            {
+                                //Position motor 2
+                                Record_Position(2,accel_limit,position_Gen_Elbow_Up[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                                  kd_scale,l_bounds_min[1],l_bounds_max[1],Delay);
+                                //Position motor 1
+                                Record_Position(1,accel_limit,position_Gen_Elbow_Up[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                                  kd_scale,l_bounds_min[0],l_bounds_max[0],Delay);
+                            }
+                            else
+                            {
+                                //Position motor 1
+                                Record_Position(1,accel_limit,position_Gen_Elbow_Up[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                                  kd_scale,l_bounds_min[0],l_bounds_max[0],Delay);
+                                //Position motor 2
+                                Record_Position(2,accel_limit,position_Gen_Elbow_Up[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                                  kd_scale,l_bounds_min[1],l_bounds_max[1],Delay);
+                            }
+                        }
+                        else if (!Elbow_Down_limit_error)
+                        {
+                            // if X > 0 && motor 1 going positive, move motor 2 first
+                            // if X < 0 && motor 1 going negative, move motor 2 first
+                            if ( (x >= 0 && position_Gen_Elbow_Down[0] > last_record_destination[0]) ||
+                                 (x <= 0 && position_Gen_Elbow_Down[0] < last_record_destination[0]) )
+                            {
+                                //Position motor 2
+                                Record_Position(2,accel_limit,position_Gen_Elbow_Down[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                                  kd_scale,l_bounds_min[1],l_bounds_max[1],Delay);
+                                //Position motor 1
+                                Record_Position(1,accel_limit,position_Gen_Elbow_Down[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                                  kd_scale,l_bounds_min[0],l_bounds_max[0],Delay);
+                            }
+                            else
+                            {
+                                //Position motor 1
+                                Record_Position(1,accel_limit,position_Gen_Elbow_Down[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                                  kd_scale,l_bounds_min[0],l_bounds_max[0],Delay);
+                                //Position motor 2
+                                Record_Position(2,accel_limit,position_Gen_Elbow_Down[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
+                                                  kd_scale,l_bounds_min[1],l_bounds_max[1],Delay);
+                            }
+                        }
+                    }
+
+                }
             }
             else
             {
-                double theta[4] = {0.0, 0.0, 0.0, 0.0};
-                inverse_kin(theta,x,y);
-
                 out.str("");
-
-                // convert radians to revolutions
-                double motor1_revolutions1 = theta[0]/(2*std::numbers::pi);
-                double motor2_revolutions1 = theta[1]/(2*std::numbers::pi);
-                double motor1_revolutions2 = theta[2]/(2*std::numbers::pi);
-                double motor2_revolutions2 = theta[3]/(2*std::numbers::pi);
-
-                position_Gen_Elbow_Up[0] = motor1_revolutions2;
-                position_Gen_Elbow_Up[1] = motor2_revolutions2;
-                position_Gen_Elbow_Down[0] = motor1_revolutions1;
-                position_Gen_Elbow_Down[1] = motor2_revolutions1;
-
-                bool Elbow_Up_limit_error = false;
-                bool Elbow_Down_limit_error = false;
-
-                // check for position outside limits
-                if (    (l_bounds_max[0] != NAN && position_Gen_Elbow_Up[0] > l_bounds_max[0]) ||
-                        (l_bounds_min[0] != NAN && position_Gen_Elbow_Up[0] < l_bounds_min[0]) ||
-                        (l_bounds_max[1] != NAN && position_Gen_Elbow_Up[1] > l_bounds_max[1]) ||
-                        (l_bounds_min[1] != NAN && position_Gen_Elbow_Up[1] < l_bounds_min[1]) ||
-                        (position_Gen_Elbow_Up[1] > Motor2_rotation_limit)  ||
-                        (position_Gen_Elbow_Up[1] < -Motor2_rotation_limit))
-                {
-                    Elbow_Up_limit_error = true;
-                }
-
-                if (    (l_bounds_max[0] != NAN && position_Gen_Elbow_Down[0] > l_bounds_max[0]) ||
-                        (l_bounds_min[0] != NAN && position_Gen_Elbow_Down[0] < l_bounds_min[0]) ||
-                        (l_bounds_max[1] != NAN && position_Gen_Elbow_Down[1] > l_bounds_max[1]) ||
-                        (l_bounds_min[1] != NAN && position_Gen_Elbow_Down[1] < l_bounds_min[1]) ||
-                        (position_Gen_Elbow_Down[1] > Motor2_rotation_limit)  ||
-                        (position_Gen_Elbow_Down[1] < -Motor2_rotation_limit))
-                {
-                    Elbow_Down_limit_error = true;
-                }
-
-                   if (Elbow_Down_limit_error)
-                        out << "Elbow Down motor limit error" << endl;
-                    if (Elbow_Up_limit_error)
-                        out << "Elbow Up motor limit error" << endl;
-
-#ifdef CPP23
-                std::println(out,"motor 1 revolutions1 = \t{:.6f} \tmotor 2 revolutions1 =\t{:.6f}", motor1_revolutions1 , motor2_revolutions1);
-                std::println(out,"motor 1 revolutions2 = \t{:.6f} \tmotor 2 revolutions2 =\t{:.6f}", motor1_revolutions2 , motor2_revolutions2);
-#else
-        try
-        {
-            out << std::format("motor 1 revolutions1 = \t{:.6f} \tmotor 2 revolutions1 =\t{:.6f}", motor1_revolutions1 , motor2_revolutions1) << endl;
-            out << std::format("motor 1 revolutions2 = \t{:.6f} \tmotor 2 revolutions2 =\t{:.6f}", motor1_revolutions2 , motor2_revolutions2) << endl;
-        }
-        catch(std::format_error& error)
-        {
-            cout  << error.what();
-        }
-#endif
-
+                out << "Function Not enabled" << endl;
                 emit sendToMain(QString::fromStdString(out.str()));
-
-                if (list_Position.empty())
-                {
-                    // define a state object
-                    State curr_state;
-
-                    // reset the state
-                    curr_state.Reset();
-                    curr_state.EN_Position();
-                    //read current position
-                    ReadState(1, curr_state);
-                    last_record_destination[0] = curr_state.position;
-                    ReadState(2, curr_state);
-                    last_record_destination[1] = curr_state.position;
-                }
-
-                if ( !Elbow_Up_limit_error || !Elbow_Down_limit_error)
-                {
-                    if (!Elbow_Up_limit_error)
-                    {
-                        // if X > 0 && motor 1 going positive, move motor 2 first
-                        // if X < 0 && motor 1 going negative, move motor 2 first
-                        if ( (x >= 0 && position_Gen_Elbow_Up[0] > last_record_destination[0]) ||
-                             (x <= 0 && position_Gen_Elbow_Up[0] < last_record_destination[0]) )
-                        {
-                            //Position motor 2
-                            Record_Position(2,accel_limit,position_Gen_Elbow_Up[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                              kd_scale,l_bounds_min[1],l_bounds_max[1],Delay);
-                            //Position motor 1
-                            Record_Position(1,accel_limit,position_Gen_Elbow_Up[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                              kd_scale,l_bounds_min[0],l_bounds_max[0],Delay);
-                        }
-                        else
-                        {
-                            //Position motor 1
-                            Record_Position(1,accel_limit,position_Gen_Elbow_Up[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                              kd_scale,l_bounds_min[0],l_bounds_max[0],Delay);
-                            //Position motor 2
-                            Record_Position(2,accel_limit,position_Gen_Elbow_Up[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                              kd_scale,l_bounds_min[1],l_bounds_max[1],Delay);
-                        }
-                    }
-                    else if (!Elbow_Down_limit_error)
-                    {
-                        // if X > 0 && motor 1 going positive, move motor 2 first
-                        // if X < 0 && motor 1 going negative, move motor 2 first
-                        if ( (x >= 0 && position_Gen_Elbow_Down[0] > last_record_destination[0]) ||
-                             (x <= 0 && position_Gen_Elbow_Down[0] < last_record_destination[0]) )
-                        {
-                            //Position motor 2
-                            Record_Position(2,accel_limit,position_Gen_Elbow_Down[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                              kd_scale,l_bounds_min[1],l_bounds_max[1],Delay);
-                            //Position motor 1
-                            Record_Position(1,accel_limit,position_Gen_Elbow_Down[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                              kd_scale,l_bounds_min[0],l_bounds_max[0],Delay);
-                        }
-                        else
-                        {
-                            //Position motor 1
-                            Record_Position(1,accel_limit,position_Gen_Elbow_Down[0],velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                              kd_scale,l_bounds_min[0],l_bounds_max[0],Delay);
-                            //Position motor 2
-                            Record_Position(2,accel_limit,position_Gen_Elbow_Down[1],velocity_limit,max_torque,feedforward_torque,kp_scale,
-                                              kd_scale,l_bounds_min[1],l_bounds_max[1],Delay);
-                        }
-                    }
-                }
-
             }
-        }
-        else
-        {
-            out.str("");
-            out << "Function Not enabled" << endl;
-            emit sendToMain(QString::fromStdString(out.str()));
-        }
+            break;
 
+        }
+        default:
+            break;
     }
-    else
-    {
-        emit sendToMain(msg);
-    }
+
 }

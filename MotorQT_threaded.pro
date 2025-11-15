@@ -53,22 +53,10 @@ LIBS += \
 RESOURCES += \
         resources.qrc
 
-# select a group below by uncommenting the selected one and commenting the others with #
+# for c++ 23 g++-15.2.0, uncomment #define CPP23 in mainwindows.h
 
-# for c++ 20
-        QMAKE_CXXFLAGS_CXX2A = -std:c++20
-        QMAKE_CXXFLAGS += -std=c++2a
-        QMAKE_CXX = g++-13
-
-# for c++ 23 g++-14.2.0, uncomment #define CPP23 in mainwindows.h
-#        QMAKE_CXXFLAGS_CXX2A = -std:c++23
-#        QMAKE_CXXFLAGS += -std=c++23
-#        QMAKE_CXX = g++-14.2.0
-
-# for c++ 23 g++-15.1.0, uncomment #define CPP23 in mainwindows.h
-
-#         QMAKE_CXXFLAGS_CXX2A = -std:c++23
-#         QMAKE_CXXFLAGS += -std=c++23
-#         QMAKE_CXX = g++-15.1.0
+         QMAKE_CXXFLAGS_CXX2A = -std:c++23
+         QMAKE_CXXFLAGS += -std=c++23
+         QMAKE_CXX = g++-15.2.0
 
 DISTFILES +=
