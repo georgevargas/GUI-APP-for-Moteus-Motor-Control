@@ -57,6 +57,6 @@ RESOURCES += \
 
          QMAKE_CXXFLAGS_CXX2A = -std:c++23
          QMAKE_CXXFLAGS += -std=c++23
-         QMAKE_CXX = g++-15.2.0
+         QMAKE_CXX = g++-16.1.0
 
 DISTFILES +=
