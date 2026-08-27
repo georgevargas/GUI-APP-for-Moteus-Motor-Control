@@ -5622,7 +5622,7 @@ int QCPLabelPainterPrivate::size() const
   {
     QFontMetrics fontMetrics(labelFont);
     QRect bounds;
-    bounds = fontMetrics.boundingRect(0, 0, 0, 0, Qt::TextDontClip | Qt::AlignHCenter | Qt::AlignVCenter, label);
+    bounds = fontMetrics.boundingRect(0, 0, 0, 0, static_cast<int>(Qt::TextDontClip) | Qt::AlignHCenter | Qt::AlignVCenter, label);
     result += bounds.height() + labelPadding;
   }
 
@@ -5801,14 +5801,14 @@ void QCPLabelPainterPrivate::drawText(QCPPainter *painter, const QPointF &pos, c
   painter->setPen(QPen(labelData.color));
   if (!labelData.expPart.isEmpty()) // use superscripted exponent typesetting
   {
-    painter->drawText(0, 0, 0, 0, Qt::TextDontClip, labelData.basePart);
+    painter->drawText(0, 0, 0, 0, static_cast<int>(Qt::TextDontClip), labelData.basePart);
     if (!labelData.suffixPart.isEmpty())
       painter->drawText(labelData.baseBounds.width()+1+labelData.expBounds.width(), 0, 0, 0, Qt::TextDontClip, labelData.suffixPart);
     painter->setFont(labelData.expFont);
-    painter->drawText(labelData.baseBounds.width()+1, 0, labelData.expBounds.width(), labelData.expBounds.height(), Qt::TextDontClip,  labelData.expPart);
+    painter->drawText(labelData.baseBounds.width()+1, 0, labelData.expBounds.width(), labelData.expBounds.height(), static_cast<int>(Qt::TextDontClip),  labelData.expPart);
   } else
   {
-    painter->drawText(0, 0, labelData.totalBounds.width(), labelData.totalBounds.height(), Qt::TextDontClip | Qt::AlignHCenter, labelData.basePart);
+    painter->drawText(0, 0, labelData.totalBounds.width(), labelData.totalBounds.height(), static_cast<int>(Qt::TextDontClip) | Qt::AlignHCenter, labelData.basePart);
   }
   
   /* Debug code to draw label bounding boxes, baseline, and capheight
@@ -5890,15 +5890,15 @@ QCPLabelPainterPrivate::LabelData QCPLabelPainterPrivate::getTickLabelData(const
     else
       result.expFont.setPixelSize(result.expFont.pixelSize()*0.75);
     // calculate bounding rects of base part(s), exponent part and total one:
-    result.baseBounds = baseFontMetrics.boundingRect(0, 0, 0, 0, Qt::TextDontClip, result.basePart);
-    result.expBounds = QFontMetrics(result.expFont).boundingRect(0, 0, 0, 0, Qt::TextDontClip, result.expPart);
+    result.baseBounds = baseFontMetrics.boundingRect(0, 0, 0, 0, static_cast<int>(Qt::TextDontClip), result.basePart);
+    result.expBounds = QFontMetrics(result.expFont).boundingRect(0, 0, 0, 0, static_cast<int>(Qt::TextDontClip), result.expPart);
     if (!result.suffixPart.isEmpty())
-      result.suffixBounds = QFontMetrics(result.baseFont).boundingRect(0, 0, 0, 0, Qt::TextDontClip, result.suffixPart);
+      result.suffixBounds = QFontMetrics(result.baseFont).boundingRect(0, 0, 0, 0, static_cast<int>(Qt::TextDontClip), result.suffixPart);
     result.totalBounds = result.baseBounds.adjusted(0, 0, result.expBounds.width()+result.suffixBounds.width()+2, 0); // +2 consists of the 1 pixel spacing between base and exponent (see drawTickLabel) and an extra pixel to include AA
   } else // useBeautifulPowers == false
   {
     result.basePart = text;
-    result.totalBounds = baseFontMetrics.boundingRect(0, 0, 0, 0, Qt::TextDontClip | Qt::AlignHCenter, result.basePart);
+    result.totalBounds = baseFontMetrics.boundingRect(0, 0, 0, 0, static_cast<int>(Qt::TextDontClip) | Qt::AlignHCenter, result.basePart);
   }
   result.totalBounds.moveTopLeft(QPoint(0, 0));
   applyAnchorTransform(result);
@@ -10046,13 +10046,13 @@ void QCPAxisPainterPrivate::draw(QCPPainter *painter)
     margin += labelPadding;
     painter->setFont(labelFont);
     painter->setPen(QPen(labelColor));
-    labelBounds = painter->fontMetrics().boundingRect(0, 0, 0, 0, Qt::TextDontClip, label);
+    labelBounds = painter->fontMetrics().boundingRect(0, 0, 0, 0, static_cast<int>(Qt::TextDontClip), label);
     if (type == QCPAxis::atLeft)
     {
       QTransform oldTransform = painter->transform();
       painter->translate((origin.x()-margin-labelBounds.height()), origin.y());
       painter->rotate(-90);
-      painter->drawText(0, 0, axisRect.height(), labelBounds.height(), Qt::TextDontClip | Qt::AlignCenter, label);
+      painter->drawText(0, 0, axisRect.height(), labelBounds.height(), static_cast<int>(Qt::TextDontClip) | Qt::AlignCenter, label);
       painter->setTransform(oldTransform);
     }
     else if (type == QCPAxis::atRight)
@@ -10060,13 +10060,13 @@ void QCPAxisPainterPrivate::draw(QCPPainter *painter)
       QTransform oldTransform = painter->transform();
       painter->translate((origin.x()+margin+labelBounds.height()), origin.y()-axisRect.height());
       painter->rotate(90);
-      painter->drawText(0, 0, axisRect.height(), labelBounds.height(), Qt::TextDontClip | Qt::AlignCenter, label);
+      painter->drawText(0, 0, axisRect.height(), labelBounds.height(), static_cast<int>(Qt::TextDontClip) | Qt::AlignCenter, label);
       painter->setTransform(oldTransform);
     }
     else if (type == QCPAxis::atTop)
-      painter->drawText(origin.x(), origin.y()-margin-labelBounds.height(), axisRect.width(), labelBounds.height(), Qt::TextDontClip | Qt::AlignCenter, label);
+      painter->drawText(origin.x(), origin.y()-margin-labelBounds.height(), axisRect.width(), labelBounds.height(), static_cast<int>(Qt::TextDontClip) | Qt::AlignCenter, label);
     else if (type == QCPAxis::atBottom)
-      painter->drawText(origin.x(), origin.y()+margin, axisRect.width(), labelBounds.height(), Qt::TextDontClip | Qt::AlignCenter, label);
+      painter->drawText(origin.x(), origin.y()+margin, axisRect.width(), labelBounds.height(), static_cast<int>(Qt::TextDontClip) | Qt::AlignCenter, label);
   }
   
   // set selection boxes:
@@ -10157,7 +10157,7 @@ int QCPAxisPainterPrivate::size()
   {
     QFontMetrics fontMetrics(labelFont);
     QRect bounds;
-    bounds = fontMetrics.boundingRect(0, 0, 0, 0, Qt::TextDontClip | Qt::AlignHCenter | Qt::AlignVCenter, label);
+    bounds = fontMetrics.boundingRect(0, 0, 0, 0, static_cast<int>(Qt::TextDontClip) | Qt::AlignHCenter | Qt::AlignVCenter, label);
     result += bounds.height() + labelPadding;
   }
 
@@ -10318,15 +10318,15 @@ void QCPAxisPainterPrivate::drawTickLabel(QCPPainter *painter, double x, double 
   if (!labelData.expPart.isEmpty()) // indicator that beautiful powers must be used
   {
     painter->setFont(labelData.baseFont);
-    painter->drawText(0, 0, 0, 0, Qt::TextDontClip, labelData.basePart);
+    painter->drawText(0, 0, 0, 0, static_cast<int>(Qt::TextDontClip), labelData.basePart);
     if (!labelData.suffixPart.isEmpty())
-      painter->drawText(labelData.baseBounds.width()+1+labelData.expBounds.width(), 0, 0, 0, Qt::TextDontClip, labelData.suffixPart);
+      painter->drawText(labelData.baseBounds.width()+1+labelData.expBounds.width(), 0, 0, 0, static_cast<int>(Qt::TextDontClip), labelData.suffixPart);
     painter->setFont(labelData.expFont);
-    painter->drawText(labelData.baseBounds.width()+1, 0, labelData.expBounds.width(), labelData.expBounds.height(), Qt::TextDontClip,  labelData.expPart);
+    painter->drawText(labelData.baseBounds.width()+1, 0, labelData.expBounds.width(), labelData.expBounds.height(), static_cast<int>(Qt::TextDontClip),  labelData.expPart);
   } else
   {
     painter->setFont(labelData.baseFont);
-    painter->drawText(0, 0, labelData.totalBounds.width(), labelData.totalBounds.height(), Qt::TextDontClip | Qt::AlignHCenter, labelData.basePart);
+    painter->drawText(0, 0, labelData.totalBounds.width(), labelData.totalBounds.height(), static_cast<int>(Qt::TextDontClip) | Qt::AlignHCenter, labelData.basePart);
   }
   
   // reset painter settings to what it was before:
@@ -10390,15 +10390,15 @@ QCPAxisPainterPrivate::TickLabelData QCPAxisPainterPrivate::getTickLabelData(con
     else
       result.expFont.setPixelSize(int(result.expFont.pixelSize()*0.75));
     // calculate bounding rects of base part(s), exponent part and total one:
-    result.baseBounds = QFontMetrics(result.baseFont).boundingRect(0, 0, 0, 0, Qt::TextDontClip, result.basePart);
-    result.expBounds = QFontMetrics(result.expFont).boundingRect(0, 0, 0, 0, Qt::TextDontClip, result.expPart);
+    result.baseBounds = QFontMetrics(result.baseFont).boundingRect(0, 0, 0, 0, static_cast<int>(Qt::TextDontClip), result.basePart);
+    result.expBounds = QFontMetrics(result.expFont).boundingRect(0, 0, 0, 0, static_cast<int>(Qt::TextDontClip), result.expPart);
     if (!result.suffixPart.isEmpty())
-      result.suffixBounds = QFontMetrics(result.baseFont).boundingRect(0, 0, 0, 0, Qt::TextDontClip, result.suffixPart);
+      result.suffixBounds = QFontMetrics(result.baseFont).boundingRect(0, 0, 0, 0, static_cast<int>(Qt::TextDontClip), result.suffixPart);
     result.totalBounds = result.baseBounds.adjusted(0, 0, result.expBounds.width()+result.suffixBounds.width()+2, 0); // +2 consists of the 1 pixel spacing between base and exponent (see drawTickLabel) and an extra pixel to include AA
   } else // useBeautifulPowers == false
   {
     result.basePart = text;
-    result.totalBounds = QFontMetrics(result.baseFont).boundingRect(0, 0, 0, 0, Qt::TextDontClip | Qt::AlignHCenter, result.basePart);
+    result.totalBounds = QFontMetrics(result.baseFont).boundingRect(0, 0, 0, 0, static_cast<int>(Qt::TextDontClip) | Qt::AlignHCenter, result.basePart);
   }
   result.totalBounds.moveTopLeft(QPoint(0, 0)); // want bounding box aligned top left at origin, independent of how it was created, to make further processing simpler
   
@@ -18972,10 +18972,10 @@ void QCPPlottableLegendItem::draw(QCPPainter *painter)
   painter->setFont(getFont());
   painter->setPen(QPen(getTextColor()));
   QSize iconSize = mParentLegend->iconSize();
-  QRect textRect = painter->fontMetrics().boundingRect(0, 0, 0, iconSize.height(), Qt::TextDontClip, mPlottable->name());
+  QRect textRect = painter->fontMetrics().boundingRect(0, 0, 0, iconSize.height(), static_cast<int>(Qt::TextDontClip), mPlottable->name());
   QRect iconRect(mRect.topLeft(), iconSize);
   int textHeight = qMax(textRect.height(), iconSize.height());  // if text has smaller height than icon, center text vertically in icon height, else align tops
-  painter->drawText(mRect.x()+iconSize.width()+mParentLegend->iconTextPadding(), mRect.y(), textRect.width(), textHeight, Qt::TextDontClip, mPlottable->name());
+  painter->drawText(mRect.x()+iconSize.width()+mParentLegend->iconTextPadding(), mRect.y(), textRect.width(), textHeight, static_cast<int>(Qt::TextDontClip), mPlottable->name());
   // draw icon:
   painter->save();
   painter->setClipRect(iconRect, Qt::IntersectClip);
@@ -19006,7 +19006,7 @@ QSize QCPPlottableLegendItem::minimumOuterSizeHint() const
   QRect textRect;
   QFontMetrics fontMetrics(getFont());
   QSize iconSize = mParentLegend->iconSize();
-  textRect = fontMetrics.boundingRect(0, 0, 0, iconSize.height(), Qt::TextDontClip, mPlottable->name());
+  textRect = fontMetrics.boundingRect(0, 0, 0, iconSize.height(), static_cast<int>(Qt::TextDontClip), mPlottable->name());
   result.setWidth(iconSize.width() + mParentLegend->iconTextPadding() + textRect.width());
   result.setHeight(qMax(textRect.height(), iconSize.height()));
   result.rwidth() += mMargins.left()+mMargins.right();
@@ -19913,7 +19913,7 @@ void QCPTextElement::draw(QCPPainter *painter)
 QSize QCPTextElement::minimumOuterSizeHint() const
 {
   QFontMetrics metrics(mFont);
-  QSize result(metrics.boundingRect(0, 0, 0, 0, Qt::TextDontClip, mText).size());
+  QSize result(metrics.boundingRect(0, 0, 0, 0, static_cast<int>(Qt::TextDontClip), mText).size());
   result.rwidth() += mMargins.left()+mMargins.right();
   result.rheight() += mMargins.top()+mMargins.bottom();
   return result;
@@ -19923,7 +19923,7 @@ QSize QCPTextElement::minimumOuterSizeHint() const
 QSize QCPTextElement::maximumOuterSizeHint() const
 {
   QFontMetrics metrics(mFont);
-  QSize result(metrics.boundingRect(0, 0, 0, 0, Qt::TextDontClip, mText).size());
+  QSize result(metrics.boundingRect(0, 0, 0, 0, static_cast<int>(Qt::TextDontClip), mText).size());
   result.setWidth(QWIDGETSIZE_MAX);
   result.rheight() += mMargins.top()+mMargins.bottom();
   return result;
@@ -29794,7 +29794,7 @@ double QCPItemText::selectTest(const QPointF &pos, bool onlySelectable, QVariant
   inputTransform.translate(-positionPixels.x(), -positionPixels.y());
   QPointF rotatedPos = inputTransform.map(pos);
   QFontMetrics fontMetrics(mFont);
-  QRect textRect = fontMetrics.boundingRect(0, 0, 0, 0, Qt::TextDontClip|mTextAlignment, mText);
+  QRect textRect = fontMetrics.boundingRect(0, 0, 0, 0, static_cast<int>(Qt::TextDontClip)|mTextAlignment, mText);
   QRect textBoxRect = textRect.adjusted(-mPadding.left(), -mPadding.top(), mPadding.right(), mPadding.bottom());
   QPointF textPos = getTextDrawPoint(positionPixels, textBoxRect, mPositionAlignment);
   textBoxRect.moveTopLeft(textPos.toPoint());
@@ -29811,7 +29811,7 @@ void QCPItemText::draw(QCPPainter *painter)
   if (!qFuzzyIsNull(mRotation))
     transform.rotate(mRotation);
   painter->setFont(mainFont());
-  QRect textRect = painter->fontMetrics().boundingRect(0, 0, 0, 0, Qt::TextDontClip|mTextAlignment, mText);
+  QRect textRect = painter->fontMetrics().boundingRect(0, 0, 0, 0, static_cast<int>(Qt::TextDontClip)|mTextAlignment, mText);
   QRect textBoxRect = textRect.adjusted(-mPadding.left(), -mPadding.top(), mPadding.right(), mPadding.bottom());
   QPointF textPos = getTextDrawPoint(QPointF(0, 0), textBoxRect, mPositionAlignment); // 0, 0 because the transform does the translation
   textRect.moveTopLeft(textPos.toPoint()+QPoint(mPadding.left(), mPadding.top()));
@@ -29830,7 +29830,7 @@ void QCPItemText::draw(QCPPainter *painter)
     }
     painter->setBrush(Qt::NoBrush);
     painter->setPen(QPen(mainColor()));
-    painter->drawText(textRect, Qt::TextDontClip|mTextAlignment, mText);
+    painter->drawText(textRect, static_cast<int>(Qt::TextDontClip)|mTextAlignment, mText);
   }
 }
 
@@ -29844,7 +29844,7 @@ QPointF QCPItemText::anchorPixelPosition(int anchorId) const
   if (!qFuzzyIsNull(mRotation))
     transform.rotate(mRotation);
   QFontMetrics fontMetrics(mainFont());
-  QRect textRect = fontMetrics.boundingRect(0, 0, 0, 0, Qt::TextDontClip|mTextAlignment, mText);
+  QRect textRect = fontMetrics.boundingRect(0, 0, 0, 0, static_cast<int>(Qt::TextDontClip)|mTextAlignment, mText);
   QRectF textBoxRect = textRect.adjusted(-mPadding.left(), -mPadding.top(), mPadding.right(), mPadding.bottom());
   QPointF textPos = getTextDrawPoint(QPointF(0, 0), textBoxRect, mPositionAlignment); // 0, 0 because the transform does the translation
   textBoxRect.moveTopLeft(textPos.toPoint());
@@ -34372,10 +34372,10 @@ void QCPPolarLegendItem::draw(QCPPainter *painter)
   painter->setFont(getFont());
   painter->setPen(QPen(getTextColor()));
   QSizeF iconSize = mParentLegend->iconSize();
-  QRectF textRect = painter->fontMetrics().boundingRect(0, 0, 0, iconSize.height(), Qt::TextDontClip, mPolarGraph->name());
+  QRectF textRect = painter->fontMetrics().boundingRect(0, 0, 0, iconSize.height(), static_cast<int>(Qt::TextDontClip), mPolarGraph->name());
   QRectF iconRect(mRect.topLeft(), iconSize);
   int textHeight = qMax(textRect.height(), iconSize.height());  // if text has smaller height than icon, center text vertically in icon height, else align tops
-  painter->drawText(mRect.x()+iconSize.width()+mParentLegend->iconTextPadding(), mRect.y(), textRect.width(), textHeight, Qt::TextDontClip, mPolarGraph->name());
+  painter->drawText(mRect.x()+iconSize.width()+mParentLegend->iconTextPadding(), mRect.y(), textRect.width(), textHeight, static_cast<int>(Qt::TextDontClip), mPolarGraph->name());
   // draw icon:
   painter->save();
   painter->setClipRect(iconRect, Qt::IntersectClip);
@@ -34399,7 +34399,7 @@ QSize QCPPolarLegendItem::minimumOuterSizeHint() const
   QRect textRect;
   QFontMetrics fontMetrics(getFont());
   QSize iconSize = mParentLegend->iconSize();
-  textRect = fontMetrics.boundingRect(0, 0, 0, iconSize.height(), Qt::TextDontClip, mPolarGraph->name());
+  textRect = fontMetrics.boundingRect(0, 0, 0, iconSize.height(), static_cast<int>(Qt::TextDontClip), mPolarGraph->name());
   result.setWidth(iconSize.width() + mParentLegend->iconTextPadding() + textRect.width());
   result.setHeight(qMax(textRect.height(), iconSize.height()));
   result.rwidth() += mMargins.left()+mMargins.right();
@@ -35525,4 +35525,5 @@ QVector<QPointF> QCPPolarGraph::dataToLines(const QVector<QCPGraphData> &data) c
   return result;
 }
 /* end of 'src/polar/polargraph.cpp' */
+
 

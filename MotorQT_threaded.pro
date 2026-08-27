@@ -45,18 +45,17 @@ FORMS += \
         mainwindow.ui
 
 LIBS += \
-        -L/usr/local/lib \
-
-LIBS += \
-        -L/usr/lib
+        -L/usr/local/gcc-16.2.0/lib64
 
 RESOURCES += \
         resources.qrc
 
-# for c++ 23 g++-15.2.0, uncomment #define CPP23 in mainwindows.h
+# for c++ 23 g++-16.2.0, uncomment #define CPP23 in mainwindows.h
 
          QMAKE_CXXFLAGS_CXX2A = -std:c++23
          QMAKE_CXXFLAGS += -std=c++23
-         QMAKE_CXX = g++-16.1.0
+         QMAKE_CXXFLAGS += -LLIBDIR
+         QMAKE_CXXFLAGS += -Wl,-rpath -Wl,LIBDIR
+         QMAKE_CXX = g++-16.2.0
 
 DISTFILES +=
