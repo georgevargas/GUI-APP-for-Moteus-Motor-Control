@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include <new>
+
 namespace mjbots {
 namespace moteus {
 
@@ -29,8 +31,15 @@ class Optional {
   }
 
   Optional& operator=(const T& val) {
-    engaged_ = true;
-    val_ = val;
+    if (engaged_) {
+      val_ = val;
+    } else {
+      // val_ is the inactive union member; we must construct a T
+      // there before reading or destroying it.  Plain assignment to
+      // the unconstructed storage is undefined behaviour.
+      ::new (&val_) T(val);
+      engaged_ = true;
+    }
     return *this;
   }
 
