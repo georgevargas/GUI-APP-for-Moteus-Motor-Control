@@ -732,7 +732,7 @@ void Motorworker::getFromMain_file_commands(Worker_Cmd msg, QString file_name) /
             Position_wait = false;
 
             std::ostringstream out;
-            string fileName = file_name.toStdString();
+            std::string fileName = file_name.toStdString();
             ofstream db;
             db.open(fileName);
             if( db.is_open() )
@@ -767,17 +767,15 @@ void Motorworker::getFromMain_file_commands(Worker_Cmd msg, QString file_name) /
             Rec_run_Enable = false;
             Step_Mode = false;
             Position_wait = false;
+            std::string fileName = file_name.toStdString();
 
             std::ostringstream out;
-
-            QString fileName = file_name;
-            QString line;
             int val_int;
             double val_double;
             string val_string;
-            std::istringstream iss;
-            QFile file(fileName);
-            if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+
+            std::ifstream db(fileName);
+            if( db.is_open() )
             {
 
                 list_Position.clear();
@@ -789,73 +787,47 @@ void Motorworker::getFromMain_file_commands(Worker_Cmd msg, QString file_name) /
                 list_Kp_scale.clear();
                 list_Kd_scale.clear();
                 list_accel_limit.clear();
-                while  (!file.atEnd())
+                while  (!db.eof())
                 {
-                    line = file.readLine(); // read in sequence number
-                    iss.str(line.toStdString());
-                    iss >> val_int;
-                    if (iss.fail()) // check if not a number
+                    db >> val_int;
+                    if (db.fail()) // check if not a number
                     {
-                        // something wrong happened
-                        iss.clear();
-                        out.str("");
-                        out << "sequence number in recorded file is not a number. Check for extra eol at file end" << endl;
-                        emit sendToMain(QString::fromStdString(out.str()));
-                        break;
+                       if (!db.eof()) // if its not at eof
+                       {
+                            // something wrong happened
+                            out.str("");
+                            out << "sequence number in recorded file is not a number. Check for extra eol at file end" << endl;
+                            emit sendToMain(QString::fromStdString(out.str()));
+                       }
+
+                       break;
                     }
 
-                    line = file.readLine();
-                    iss.str(line.toStdString());
-                    iss >> val_string;
-                    iss >> val_double;
+                    db >> val_string >> val_double;
                     list_Position.push_back(val_double);
 
-                    line = file.readLine();
-                    iss.str(line.toStdString());
-                    iss >> val_string;
-                    iss >> val_int;
+                    db >> val_string >> val_int;
                     list_Motor_id.push_back(val_int);
 
-                    line = file.readLine();
-                    iss.str(line.toStdString());
-                    iss >> val_string;
-                    iss >> val_double;
+                    db >> val_string >> val_double;
                     list_Delay.push_back(val_double);
 
-                    line = file.readLine();
-                    iss.str(line.toStdString());
-                    iss >> val_string;
-                    iss >> val_double;
+                    db >> val_string >> val_double;
                     list_velocity_limit.push_back(val_double);
 
-                    line = file.readLine();
-                    iss.str(line.toStdString());
-                    iss >> val_string;
-                    iss >> val_double;
+                    db >> val_string >> val_double;
                     list_accel_limit.push_back(val_double);
 
-                    line = file.readLine();
-                    iss.str(line.toStdString());
-                    iss >> val_string;
-                    iss >> val_double;
+                    db >> val_string >> val_double;
                     list_Max_torque.push_back(val_double);
 
-                    line = file.readLine();
-                    iss.str(line.toStdString());
-                    iss >> val_string;
-                    iss >> val_double;
+                    db >> val_string >> val_double;
                     list_Feedforward_torque.push_back(val_double);
 
-                    line = file.readLine();
-                    iss.str(line.toStdString());
-                    iss >> val_string;
-                    iss >> val_double;
+                    db >> val_string >> val_double;
                     list_Kp_scale.push_back(val_double);
 
-                    line = file.readLine();
-                    iss.str(line.toStdString());
-                    iss >> val_string;
-                    iss >> val_double;
+                    db >> val_string >> val_double;
                     list_Kd_scale.push_back(val_double);
 
                 }
@@ -867,7 +839,7 @@ void Motorworker::getFromMain_file_commands(Worker_Cmd msg, QString file_name) /
                 emit sendToMain(QString::fromStdString(out.str()));
             }
 
-            file.close();
+            db.close();
             current_list_index = 0;
             break;
         }
@@ -1329,7 +1301,6 @@ void Motorworker::Motorworker::getFromMain_diagnostic_write_commands(Worker_Cmd 
             emit sendToMain(QString::fromStdString(out.str()));
             break;
         }
-
         case Worker_Cmd::Get_Cur_XY:
         {
             std::ostringstream out;
@@ -1542,7 +1513,6 @@ void Motorworker::getFromMain_position_commands(Worker_Cmd msg, int Motor_id, do
             Record_Position(Motor_id, accel_limit,curr_state.position, velocity_limit,max_torque, feedforward_torque,kp_scale,
                                            kd_scale, bounds_min,bounds_max,Delay);
             break;
-
         }
         case Worker_Cmd::Run_Recorded:
         {
@@ -1568,7 +1538,6 @@ void Motorworker::getFromMain_position_commands(Worker_Cmd msg, int Motor_id, do
                Rec_run_Enable = true;
             }
            break;
-
         }
         case Worker_Cmd::Step_Recorded:
         {
@@ -1607,7 +1576,6 @@ void Motorworker::getFromMain_position_commands(Worker_Cmd msg, int Motor_id, do
             Dynamic_Motor_id = Motor_id;
             break;
         }
-
         case Worker_Cmd::Send_Start:
         {
             Rec_run_Enable = false;
@@ -1659,7 +1627,6 @@ void Motorworker::getFromMain_position_commands(Worker_Cmd msg, int Motor_id, do
             position_Motor_id = Motor_id;
             Position_wait = true;
             break;
-
         }
         case Worker_Cmd::Go_To_Rest_Position:
         {
@@ -1719,67 +1686,66 @@ void Motorworker::getFromMain_position_commands(Worker_Cmd msg, int Motor_id, do
                 emit sendToMain(QString::fromStdString(out.str()));
             }
             break;
-
         }
-    case Worker_Cmd::Go_To_Position:
-    {
-        Rec_run_Enable = false;
-        Position_wait = false;
-
-        if (!Check_Motor(Motor_id))
+        case Worker_Cmd::Go_To_Position:
         {
-           if (Motor_error)
-           {
-               // send one stop command
-               SendStopCommand(Motor_id);
-           }
-           else if (TrajectoryComplete_error)
-           {
-               // wait for TrajectoryComplete
-               Wait_TrajectoryComplete(Motor_id);
-           }
-        }
+            Rec_run_Enable = false;
+            Position_wait = false;
 
-        // define a state object
-        State curr_state;
+            if (!Check_Motor(Motor_id))
+            {
+               if (Motor_error)
+               {
+                   // send one stop command
+                   SendStopCommand(Motor_id);
+               }
+               else if (TrajectoryComplete_error)
+               {
+                   // wait for TrajectoryComplete
+                   Wait_TrajectoryComplete(Motor_id);
+               }
+            }
 
-        // reset the state
-        curr_state.Reset();
+            // define a state object
+            State curr_state;
 
-        //read current position
-        curr_state.EN_Position();
-        ReadState(Motor_id, curr_state);
+            // reset the state
+            curr_state.Reset();
 
-        std::ostringstream out;
-        out.str("");
-        out << "Motor = " << Motor_id << " Starting position:\t" << curr_state.position << endl;
-        emit sendToMain(QString::fromStdString(out.str()));
+            //read current position
+            curr_state.EN_Position();
+            ReadState(Motor_id, curr_state);
 
-        double position_limited = position;
-        if (bounds_max != NAN && position_limited > bounds_max)
-            position_limited = bounds_max;
-        else if (bounds_min != NAN && position_limited < bounds_min)
-            position_limited = bounds_min;
-
-        if (!SendPositionCommand(   Motor_id,
-                                    position_limited,
-                                    velocity_limit,
-                                    accel_limit,
-                                    max_torque,
-                                    feedforward_torque,
-                                    kp_scale,
-                                    kd_scale,
-                                    0.0 // end velocity
-                                    ))
-        {
-            out << "error on posiion command " << Motor_id << endl;
+            std::ostringstream out;
+            out.str("");
+            out << "Motor = " << Motor_id << " Starting position:\t" << curr_state.position << endl;
             emit sendToMain(QString::fromStdString(out.str()));
-        }
 
-        position_Motor_id = Motor_id;
-        Position_wait = true;
-        break;
-    }
+            double position_limited = position;
+            if (bounds_max != NAN && position_limited > bounds_max)
+                position_limited = bounds_max;
+            else if (bounds_min != NAN && position_limited < bounds_min)
+                position_limited = bounds_min;
+
+            if (!SendPositionCommand(   Motor_id,
+                                        position_limited,
+                                        velocity_limit,
+                                        accel_limit,
+                                        max_torque,
+                                        feedforward_torque,
+                                        kp_scale,
+                                        kd_scale,
+                                        0.0 // end velocity
+                                        ))
+            {
+                out << "error on posiion command " << Motor_id << endl;
+                emit sendToMain(QString::fromStdString(out.str()));
+            }
+
+            position_Motor_id = Motor_id;
+            Position_wait = true;
+            break;
+        }
         case Worker_Cmd::Run_Forever:
         {
             Rec_run_Enable = false;
@@ -1836,7 +1802,6 @@ void Motorworker::getFromMain_position_commands(Worker_Cmd msg, int Motor_id, do
             position_Motor_id = Motor_id;
             Position_wait = true;
             break;
-
         }
         case Worker_Cmd::Record_XY:
         {
@@ -2017,5 +1982,4 @@ void Motorworker::getFromMain_position_commands(Worker_Cmd msg, int Motor_id, do
         default:
             break;
     }
-
 }
